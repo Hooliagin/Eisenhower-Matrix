@@ -99,5 +99,5 @@ insert into allowed_users (user_id) select id from auth.users where email = '…
 ```
 
 ## Entwicklung
-`npm install`, `npm run dev`, `npm run build` (Typecheck + Build). Env-Variablen siehe `.env.example`
-(nur der öffentliche Publishable Key – Sicherheit kommt über RLS).
+`npm install`, `npm run dev`, `npm run build` (Typecheck + Build). Env-Variablen stehen in `.env.production`
+(nur URL + öffentlicher Publishable Key – Sicherheit kommt über RLS), daher braucht Vercel keine eigenen Env-Vars.
