@@ -161,7 +161,13 @@ union all select 'termin', event_date, start_time, title from events where event
 order by 2, 3;
 ```
 
-**Dienste (Arbeitsschichten):** Der Nutzer schickt seinen Dienstplan (Foto/Text) → jede Schicht als `events` mit
+**Dienste – Normalfall:** Der Nutzer lädt **keinen** Dienstplan hoch. Er tippt auf der Startseite (Karte „Körper heute“)
+**„+ 6 h“ / „+ 12 h“** oder sagt im Chat „heute Dienst, 6 Stunden, mit dem Rad“ → Event ohne Uhrzeit mit `shift_hours`:
+```sql
+insert into events (title, event_date, kind, shift_hours, ride_km_each_way, source)
+values ('Dienst', (now() at time zone 'Europe/Berlin')::date, 'dienst', 6, 13, 'claude');   -- ride_km_each_way = null, wenn nicht mit dem Rad
+```
+**Dienste mit Uhrzeit** (nur falls er doch Zeiten nennt): Schicht als `events` mit
 `kind = 'dienst'`, `title = 'Dienst'` (oder Bezeichnung), `start_time`, `end_time`, **`ride_km_each_way = 13`** (fährt mit dem
 Rad hin & zurück, je 13 km). Die App plant Hin- und Rückfahrt (~3 min/km ≈ 39 min) als feste Blöcke um die Schicht;
 Termine und Dienste sind unverschiebbar, Aufgaben werden drumherum geplant. Jeder Diensttag gibt ab dem Tag automatisch

@@ -201,6 +201,9 @@ export interface NutritionDay {
   fluid_target_ml: number;
   burn_base: number;
   burn_activity: number;
+  shift_event_id: string | null;
+  shift_hours: number | null;
+  shift_by_bike: boolean | null;
 }
 
 export interface Meal {

@@ -105,6 +105,7 @@ export interface CalendarEvent {
   source: "app" | "claude";
   kind: "termin" | "dienst";
   ride_km_each_way: number | null;
+  shift_hours: number | null;
 }
 
 export interface Project {

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { addDrink, removeLastDrink, useNutrition, type DrinkKind } from "../lib/data";
+import { isoDate } from "../lib/dates";
+import { supabase } from "../lib/supabase";
 
 const DRINKS: { kind: DrinkKind; icon: string; label: string }[] = [
   { kind: "water_glass", icon: "🥛", label: "Glas" },
@@ -42,6 +44,26 @@ export default function NutritionCard() {
     void refresh();
   }
 
+  async function logShift(hours: number) {
+    if (n?.shift_event_id) await supabase.from("events").delete().eq("id", n.shift_event_id);
+    await supabase
+      .from("events")
+      .insert({ title: "Dienst", event_date: isoDate(), kind: "dienst", shift_hours: hours, ride_km_each_way: 13, source: "app" });
+    void refresh();
+  }
+
+  async function toggleBike() {
+    if (!n?.shift_event_id) return;
+    await supabase.from("events").update({ ride_km_each_way: n.shift_by_bike ? null : 13 }).eq("id", n.shift_event_id);
+    void refresh();
+  }
+
+  async function clearShift() {
+    if (!n?.shift_event_id) return;
+    await supabase.from("events").delete().eq("id", n.shift_event_id);
+    void refresh();
+  }
+
   if (!n) return null;
   const burn = n.burn_base + n.burn_activity;
   const balance = n.kcal_in - burn;
@@ -74,6 +96,25 @@ export default function NutritionCard() {
             <span className="text-lg leading-none">{d.icon}</span>+ {d.label}
           </button>
         ))}
+      </div>
+
+      <div className="flex items-center gap-1.5 text-[11px]">
+        <span className="text-slate-500">👟 Dienst heute:</span>
+        {n.shift_hours ? (
+          <>
+            <span className="rounded-full bg-violet-600/30 px-2 py-0.5 text-violet-200">{Number(n.shift_hours).toLocaleString("de-DE")} h</span>
+            <button onClick={toggleBike} className={`rounded-full px-2 py-0.5 ${n.shift_by_bike ? "bg-emerald-600/30 text-emerald-200" : "bg-slate-800 text-slate-500 line-through"}`}>
+              🚲 26 km
+            </button>
+            <button onClick={clearShift} className="ml-auto text-slate-600">✕</button>
+          </>
+        ) : (
+          [6, 12].map((h) => (
+            <button key={h} onClick={() => logShift(h)} className="rounded-full bg-slate-800 px-2.5 py-0.5 text-slate-300">
+              + {h} h
+            </button>
+          ))
+        )}
       </div>
 
       <button className="flex flex-col gap-1.5 text-left" onClick={() => setShowMeals(!showMeals)}>

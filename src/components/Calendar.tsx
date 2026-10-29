@@ -25,7 +25,7 @@ export function Upcoming({ events, deadlines, limitDays }: { events: CalendarEve
     ...events.map((e) => ({
       kind: e.kind === "dienst" ? ("dienst" as const) : ("event" as const),
       date: e.event_date,
-      title: e.kind === "dienst" ? `Dienst${e.end_time ? ` bis ${e.end_time.slice(0, 5)}` : ""}` : e.title,
+      title: e.kind === "dienst" ? `Dienst${e.end_time ? ` bis ${e.end_time.slice(0, 5)}` : e.shift_hours ? ` (${Number(e.shift_hours).toLocaleString("de-DE")} h)` : ""}` : e.title,
       time: e.start_time,
       id: e.id,
     })),
@@ -169,6 +169,7 @@ export default function Calendar() {
                     <span className="text-violet-300">Dienst</span>
                     {e.title !== "Dienst" && ` · ${e.title}`}
                     {e.end_time && <span className="text-slate-500"> bis {e.end_time.slice(0, 5)}</span>}
+                    {e.shift_hours && <span className="text-slate-500"> · {Number(e.shift_hours).toLocaleString("de-DE")} h</span>}
                     {e.ride_km_each_way && <span className="text-slate-500"> · 🚲 {e.ride_km_each_way * 2} km</span>}
                   </>
                 ) : (
