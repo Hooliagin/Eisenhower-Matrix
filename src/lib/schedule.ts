@@ -23,11 +23,24 @@ function fixedStart(t: Task, day: Date): Date {
 
 /**
  * Lay today's open tasks out from `now`, in list order. A running task stays where it began;
- * tasks with a fixed start time are anchored, and flexible tasks that would collide get pushed past them.
+ * tasks with a fixed start time are anchored. `hard` blocks (appointments, shifts, the ride there)
+ * never move – every task is fitted around them; a fixed-time task that collides is marked late.
  */
-export function buildSchedule(tasks: Task[], now: Date): Slot[] {
+export function buildSchedule(tasks: Task[], now: Date, hard: Task[] = []): Slot[] {
   const slots: Slot[] = [];
   let cursor = new Date(Math.ceil(now.getTime() / (5 * MIN)) * 5 * MIN);
+
+  const blocks = hard
+    .map((t) => ({ task: t, start: fixedStart(t, now), end: new Date(fixedStart(t, now).getTime() + minutesOf(t) * MIN) }))
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
+  blocks.forEach((b) => slots.push({ ...b, running: false, late: false }));
+
+  /** Earliest start ≥ `from` where `dur` fits without overlapping a hard block. */
+  const fit = (from: Date, dur: number) => {
+    let start = from;
+    for (const b of blocks) if (b.start.getTime() < start.getTime() + dur && b.end > start) start = b.end;
+    return start;
+  };
 
   for (const t of tasks.filter((t) => t.started_at)) {
     const start = new Date(t.started_at!);
@@ -42,21 +55,28 @@ export function buildSchedule(tasks: Task[], now: Date): Slot[] {
 
   const placeFixed = (t: Task) => {
     const want = fixedStart(t, now);
-    const start = want > cursor ? want : cursor;
-    const end = new Date(start.getTime() + minutesOf(t) * MIN);
+    const dur = minutesOf(t) * MIN;
+    const start = fit(want > cursor ? want : cursor, dur);
+    const end = new Date(start.getTime() + dur);
     slots.push({ task: t, start, end, running: false, late: start > want });
     cursor = end;
   };
 
-  for (const t of flexible) {
+  const queue = [...flexible];
+  while (queue.length) {
+    // In list order – but if the next task doesn't fit before a hard block, let a later one that does fill the gap.
+    let idx = queue.findIndex((t) => fit(cursor, minutesOf(t) * MIN).getTime() === cursor.getTime());
+    if (idx < 0) idx = 0;
+    const [t] = queue.splice(idx, 1);
     const dur = minutesOf(t) * MIN;
-    while (fixed.length && fixedStart(fixed[0], now).getTime() < cursor.getTime() + dur) placeFixed(fixed.shift()!);
-    const end = new Date(cursor.getTime() + dur);
-    slots.push({ task: t, start: cursor, end, running: false, late: false });
+    while (fixed.length && fixedStart(fixed[0], now).getTime() < fit(cursor, dur).getTime() + dur) placeFixed(fixed.shift()!);
+    const start = fit(cursor, dur);
+    const end = new Date(start.getTime() + dur);
+    slots.push({ task: t, start, end, running: false, late: false });
     cursor = end;
   }
   fixed.forEach(placeFixed);
-  return slots;
+  return slots.sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 
 export function hhmm(d: Date): string {

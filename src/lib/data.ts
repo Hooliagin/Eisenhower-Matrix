@@ -141,7 +141,7 @@ export function useCharacter() {
       ]);
       return { summary: must(s), stats: must(c) };
     },
-    ["tasks", "reading_log", "workout_sessions", "character_stats"],
+    ["tasks", "reading_log", "workout_sessions", "character_stats", "events"],
     { summary: [], stats: [] },
   );
 }
@@ -156,7 +156,7 @@ export function useElements() {
           .gte("day", isoDate(addDays(weekStart(), -7 * 4)))
           .order("day", { ascending: false }),
       ),
-    ["tasks", "reading_log", "workout_sessions"],
+    ["tasks", "reading_log", "workout_sessions", "events"],
     [],
   );
 }
@@ -212,7 +212,9 @@ export function useCalendar(from: string) {
   );
 }
 
-export async function createEvent(e: Pick<CalendarEvent, "title" | "event_date" | "start_time">) {
+export async function createEvent(
+  e: Pick<CalendarEvent, "title" | "event_date" | "start_time"> & Partial<Pick<CalendarEvent, "end_time" | "kind" | "ride_km_each_way">>,
+) {
   must(await supabase.from("events").insert(e));
 }
 

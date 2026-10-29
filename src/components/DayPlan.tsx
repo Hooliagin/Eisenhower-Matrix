@@ -11,14 +11,29 @@ interface Props {
   patch: (id: string, p: Partial<Task>) => void;
 }
 
-function eventAsTask(e: CalendarEvent): Task {
-  const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
-  const minutes = e.end_time ? Math.max(15, toMin(e.end_time) - toMin(e.start_time!)) : 120;
+const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+const toTime = (m: number) => `${String(Math.floor((((m % 1440) + 1440) % 1440) / 60)).padStart(2, "0")}:${String(((m % 60) + 60) % 60).padStart(2, "0")}`;
+
+function block(id: string, title: string, start: string, minutes: number, e: CalendarEvent): Task {
   return {
-    id: `event-${e.id}`, title: e.title, notes: e.notes, quadrant: "schedule", position: 0, due_date: e.event_date,
-    done: false, done_at: null, source: e.source, created_at: "", estimate_minutes: minutes, actual_minutes: null,
-    started_at: null, planned_start: e.start_time, planned_minutes: minutes,
+    id, title, notes: null, quadrant: "schedule", position: 0, due_date: e.event_date, done: false, done_at: null,
+    source: e.source, created_at: "", estimate_minutes: minutes, actual_minutes: null, started_at: null,
+    planned_start: start, planned_minutes: minutes,
   };
+}
+
+/** Timed events become fixed blocks; a shift also gets its bike ride there and back (~3 min per km). */
+function eventBlocks(e: CalendarEvent): Task[] {
+  const start = toMin(e.start_time!);
+  const minutes = e.end_time ? Math.max(15, toMin(e.end_time) - start) : 120;
+  const main = block(`event-${e.id}`, e.kind === "dienst" ? `Dienst${e.title !== "Dienst" ? `: ${e.title}` : ""}` : e.title, e.start_time!, minutes, e);
+  if (e.kind !== "dienst" || !e.ride_km_each_way) return [main];
+  const ride = e.ride_km_each_way * 3;
+  return [
+    block(`event-${e.id}-hin`, `🚲 Hinfahrt (${e.ride_km_each_way} km)`, toTime(start - ride), ride, e),
+    main,
+    block(`event-${e.id}-rueck`, `🚲 Rückfahrt (${e.ride_km_each_way} km)`, toTime(start + minutes), ride, e),
+  ];
 }
 
 function askMinutes(question: string, fallback: number): number | null {
@@ -35,9 +50,9 @@ export default function DayPlan({ tasks, doneToday, events, patch }: Props) {
     return () => clearInterval(id);
   }, []);
 
-  const timed = events.filter((e) => e.start_time).map(eventAsTask);
+  const timed = events.filter((e) => e.start_time).flatMap(eventBlocks);
   const allDay = events.filter((e) => !e.start_time);
-  const slots = buildSchedule([...tasks, ...timed], now);
+  const slots = buildSchedule(tasks, now, timed);
   const endOfDay = slots.length ? slots[slots.length - 1].end : null;
   const factor = tasks[0]?.estimate_factor ?? doneToday[0]?.estimate_factor ?? 1;
 
@@ -93,7 +108,7 @@ export default function DayPlan({ tasks, doneToday, events, patch }: Props) {
                   <br />
                   <span className="text-slate-600">{hhmm(end)}</span>
                 </span>
-                <span className="flex-1 text-sm text-sky-100">📅 {t.title}</span>
+                <span className="flex-1 text-sm text-sky-100">{t.title.startsWith("🚲") ? t.title : `📅 ${t.title}`}</span>
               </li>
             );
           const learned = (t.history_samples ?? 0) > 0;

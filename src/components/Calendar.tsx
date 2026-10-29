@@ -22,7 +22,13 @@ export function Upcoming({ events, deadlines, limitDays }: { events: CalendarEve
   const today = isoDate();
   const items = [
     ...deadlines.filter((t) => !t.done && t.due_date).map((t) => ({ kind: "deadline" as const, date: t.due_date!, title: t.title, time: null, id: t.id })),
-    ...events.map((e) => ({ kind: "event" as const, date: e.event_date, title: e.title, time: e.start_time, id: e.id })),
+    ...events.map((e) => ({
+      kind: e.kind === "dienst" ? ("dienst" as const) : ("event" as const),
+      date: e.event_date,
+      title: e.kind === "dienst" ? `Dienst${e.end_time ? ` bis ${e.end_time.slice(0, 5)}` : ""}` : e.title,
+      time: e.start_time,
+      id: e.id,
+    })),
   ]
     .filter((i) => (limitDays === undefined ? i.date >= today : daysUntil(i.date) <= limitDays))
     .sort((a, b) => a.date.localeCompare(b.date) || (a.time ?? "").localeCompare(b.time ?? ""));
@@ -34,7 +40,7 @@ export function Upcoming({ events, deadlines, limitDays }: { events: CalendarEve
         const d = daysUntil(i.date);
         return (
           <li key={i.kind + i.id} className="flex items-center gap-2 text-sm">
-            <span className={`h-2 w-2 shrink-0 rounded-full ${i.kind === "deadline" ? "bg-red-400" : "bg-sky-400"}`} />
+            <span className={`h-2 w-2 shrink-0 rounded-full ${i.kind === "deadline" ? "bg-red-400" : i.kind === "dienst" ? "bg-violet-400" : "bg-sky-400"}`} />
             <span className="min-w-0 flex-1 truncate">
               {i.kind === "deadline" && <span className="text-slate-500">bis </span>}
               {i.title}
@@ -64,7 +70,9 @@ export default function Calendar() {
   const { data: templates } = useTemplates();
   const [title, setTitle] = useState("");
   const [time, setTime] = useState("");
-  const [kind, setKind] = useState<"event" | "deadline">("event");
+  const [kind, setKind] = useState<"event" | "deadline" | "dienst">("event");
+  const [endTime, setEndTime] = useState("");
+  const [rideKm, setRideKm] = useState("13");
 
   const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
   const today = isoDate();
@@ -77,12 +85,22 @@ export default function Calendar() {
   const sel = on(selected);
 
   async function add() {
-    const t = title.trim();
+    const t = title.trim() || (kind === "dienst" ? "Dienst" : "");
     if (!t) return;
     setTitle("");
-    if (kind === "event") await createEvent({ title: t, event_date: selected, start_time: time || null });
+    if (kind === "dienst")
+      await createEvent({
+        title: t,
+        event_date: selected,
+        start_time: time || null,
+        end_time: endTime || null,
+        kind: "dienst",
+        ride_km_each_way: Number(rideKm) || null,
+      });
+    else if (kind === "event") await createEvent({ title: t, event_date: selected, start_time: time || null });
     else await createTasks([{ title: t, quadrant: "schedule", due_date: selected }]);
     setTime("");
+    setEndTime("");
   }
 
   function toggleDeadline(t: Task) {
@@ -123,7 +141,8 @@ export default function Calendar() {
                 {d.getDate()}
                 <span className="mt-0.5 flex gap-0.5">
                   {deadlines.some((t) => !t.done) && <span className="h-1.5 w-1.5 rounded-full bg-red-400" />}
-                  {events.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />}
+                  {events.some((e) => e.kind !== "dienst") && <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />}
+                  {events.some((e) => e.kind === "dienst") && <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />}
                   {workouts.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}
                 </span>
               </button>
@@ -133,6 +152,7 @@ export default function Calendar() {
         <div className="mt-2 flex justify-center gap-3 text-[10px] text-slate-500">
           <span><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-red-400" />Deadline</span>
           <span><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-sky-400" />Termin</span>
+          <span><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-violet-400" />Dienst</span>
           <span><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />Training</span>
         </div>
       </div>
@@ -142,8 +162,19 @@ export default function Calendar() {
         <ul className="flex flex-col gap-1.5 text-sm">
           {sel.events.map((e) => (
             <li key={e.id} className="flex items-center gap-2">
-              <span className="w-12 font-mono text-xs text-sky-300">{e.start_time?.slice(0, 5) ?? "ganzt."}</span>
-              <span className="flex-1">{e.title}</span>
+              <span className={`w-12 font-mono text-xs ${e.kind === "dienst" ? "text-violet-300" : "text-sky-300"}`}>{e.start_time?.slice(0, 5) ?? "ganzt."}</span>
+              <span className="flex-1">
+                {e.kind === "dienst" ? (
+                  <>
+                    <span className="text-violet-300">Dienst</span>
+                    {e.title !== "Dienst" && ` · ${e.title}`}
+                    {e.end_time && <span className="text-slate-500"> bis {e.end_time.slice(0, 5)}</span>}
+                    {e.ride_km_each_way && <span className="text-slate-500"> · 🚲 {e.ride_km_each_way * 2} km</span>}
+                  </>
+                ) : (
+                  e.title
+                )}
+              </span>
               <button className="text-xs text-slate-600" onClick={() => confirm(`„${e.title}“ löschen?`) && void deleteEvent(e.id)}>✕</button>
             </li>
           ))}
@@ -168,18 +199,30 @@ export default function Calendar() {
         </ul>
         <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-800 pt-3">
           <div className="flex w-full gap-1">
-            {(["event", "deadline"] as const).map((k) => (
+            {(["event", "deadline", "dienst"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setKind(k)}
                 className={`rounded-full px-2.5 py-1 text-xs ${kind === k ? "bg-slate-100 text-slate-900" : "bg-slate-800 text-slate-400"}`}
               >
-                {k === "event" ? "Termin" : "Deadline"}
+                {k === "event" ? "Termin" : k === "deadline" ? "Deadline" : "Dienst"}
               </button>
             ))}
           </div>
-          <input className="min-w-0 flex-1 py-1.5 text-sm" placeholder={kind === "event" ? "Termin…" : "Was muss bis dahin fertig sein?"} value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
-          {kind === "event" && <input type="time" className="w-28 py-1.5 text-sm" value={time} onChange={(e) => setTime(e.target.value)} />}
+          <input
+            className="min-w-0 flex-1 py-1.5 text-sm"
+            placeholder={kind === "event" ? "Termin…" : kind === "dienst" ? "Dienst (optional: Notiz)" : "Was muss bis dahin fertig sein?"}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+          />
+          {kind !== "deadline" && <input type="time" className="w-28 py-1.5 text-sm" value={time} onChange={(e) => setTime(e.target.value)} title="Beginn" />}
+          {kind === "dienst" && (
+            <div className="flex w-full items-center gap-2 text-xs text-slate-400">
+              bis <input type="time" className="w-28 py-1.5 text-sm" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              🚲 <input inputMode="numeric" className="w-14 py-1.5 text-center text-sm" value={rideKm} onChange={(e) => setRideKm(e.target.value)} /> km je Weg
+            </div>
+          )}
           <button className="btn-primary" onClick={add}>+</button>
         </div>
       </section>

@@ -101,6 +101,8 @@ export interface CalendarEvent {
   end_time: string | null;
   notes: string | null;
   source: "app" | "claude";
+  kind: "termin" | "dienst";
+  ride_km_each_way: number | null;
 }
 
 export interface Project {

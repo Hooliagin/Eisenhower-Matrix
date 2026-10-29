@@ -149,6 +149,18 @@ union all select 'termin', event_date, start_time, title from events where event
 order by 2, 3;
 ```
 
+**Dienste (Arbeitsschichten):** Der Nutzer schickt seinen Dienstplan (Foto/Text) → jede Schicht als `events` mit
+`kind = 'dienst'`, `title = 'Dienst'` (oder Bezeichnung), `start_time`, `end_time`, **`ride_km_each_way = 13`** (fährt mit dem
+Rad hin & zurück, je 13 km). Die App plant Hin- und Rückfahrt (~3 min/km ≈ 39 min) als feste Blöcke um die Schicht;
+Termine und Dienste sind unverschiebbar, Aufgaben werden drumherum geplant. Jeder Diensttag gibt ab dem Tag automatisch
+Körper-XP + Feuer (26 km ≈ 78 min). Fällt die Fahrt aus (Bahn, krank): `ride_km_each_way = null`; Schicht fällt aus: Event löschen.
+Weitere Radfahrten nennt der Nutzer im Chat → als erledigte Aufgabe mit `attribute = 'koerper'`, `element = 'feuer'`,
+`actual_minutes` (≈ 3 min/km) eintragen.
+```sql
+insert into events (title, event_date, start_time, end_time, kind, ride_km_each_way, source)
+values ('Dienst', '2026-11-02', '06:00', '14:00', 'dienst', 13, 'claude');
+```
+
 Habits (`habits`, `habit_logs`) sind aus der App entfernt – der Nutzer trackt Habits in anderen Apps.
 Die Tabellen existieren noch (alle Habits `active = false`), werden aber nicht mehr angezeigt.
 
