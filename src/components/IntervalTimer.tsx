@@ -56,6 +56,23 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
     }
   });
   const noiseRef = useRef<ReturnType<typeof startNoise> | null>(null);
+
+  // Dark mode: black screen while running (screen stays technically on so sound keeps playing); tap reveals controls.
+  const [dark, setDark] = useState(() => {
+    try {
+      return localStorage.getItem("timer-dark") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [revealedAt, setRevealedAt] = useState(0);
+  useEffect(() => {
+    try {
+      localStorage.setItem("timer-dark", dark ? "1" : "0");
+    } catch {
+      /* storage unavailable */
+    }
+  }, [dark]);
   const noiseOn = calm && noise !== "off" && !!startedAt && !pausedAt && st.kind === "work";
 
   useEffect(() => {
@@ -163,6 +180,9 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
     } else setPausedAt(Date.now());
   }
 
+  const running = !!startedAt && !pausedAt && st.kind !== "done";
+  const blackout = dark && running && now - revealedAt > 6000;
+
   const bg = plain
     ? "bg-teal-950"
     : calm
@@ -176,10 +196,24 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
   const phasePct = st.phaseSeconds ? 1 - st.remaining / st.phaseSeconds : 1;
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col items-center justify-between p-6 pt-safe pb-safe transition-colors ${bg}`}>
+    <div
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-between px-6 transition-colors ${bg}`}
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)", paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
+    >
+      {blackout && (
+        <button
+          aria-label="Bedienung anzeigen"
+          className="fixed inset-0 z-[60] bg-black"
+          onClick={() => setRevealedAt(Date.now())}
+        >
+          {now - (startedAt ?? 0) < 4000 && <span className="text-xs text-white/20">Tippen zum Anzeigen</span>}
+        </button>
+      )}
       <div className="flex w-full items-center justify-between">
         <span className="text-sm text-slate-400">{title}</span>
-        <button className="btn-ghost px-3" onClick={close}>✕</button>
+        <button className="btn-ghost h-11 w-11 text-lg" onClick={close} aria-label="Timer schließen">
+          ✕
+        </button>
       </div>
 
       <div className="flex flex-col items-center gap-4">
@@ -245,14 +279,24 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
             {resuming ? "▶ Weitermachen" : "▶ Start"}
           </button>
         )}
+        <button
+          className={`self-center rounded-full px-3 py-1 text-xs ${dark ? "bg-slate-200 text-slate-900" : "bg-slate-800 text-slate-300"}`}
+          onClick={() => setDark(!dark)}
+        >
+          🌑 Bildschirm dunkel {dark ? "an" : "aus"}
+        </button>
         {startedAt && st.kind !== "done" && (
           <>
             <button className="btn-ghost py-4 text-lg" onClick={togglePause}>
               {pausedAt ? "▶ Weiter" : "⏸ Pause"}
             </button>
-            {onSaveProgress && (
+            {onSaveProgress ? (
               <button className="btn-ghost py-3 text-sm" onClick={saveForLater}>
-                💾 Später weitermachen ({fmtSeconds(doneSeconds)} gespeichert)
+                💾 Beenden & später weitermachen ({fmtSeconds(doneSeconds)})
+              </button>
+            ) : (
+              <button className="btn-ghost py-3 text-sm" onClick={close}>
+                Beenden
               </button>
             )}
           </>

@@ -55,8 +55,8 @@ export type NoiseKind = "white" | "pink" | "brown";
 export function startNoise(kind: NoiseKind, volume: number): { stop: () => void; setVolume: (v: number) => void } {
   if (!audio) return { stop: () => {}, setVolume: () => {} };
   const ctx = audio;
-  const seconds = 8;
-  const fade = Math.floor(ctx.sampleRate * 0.5);
+  const seconds = 30;
+  const fade = Math.floor(ctx.sampleRate * 2);
   const n = ctx.sampleRate * seconds;
   const raw = new Float32Array(n + fade);
 
@@ -89,9 +89,11 @@ export function startNoise(kind: NoiseKind, volume: number): { stop: () => void;
   const buffer = ctx.createBuffer(1, n, ctx.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < n; i++) data[i] = raw[i];
+  // Blend the tail into the head with an equal-power curve: the two noise pieces are uncorrelated, so a
+  // linear cross-fade would dip ~3 dB mid-way (an audible "breathing" every loop); sin/cos keeps power constant.
   for (let i = 0; i < fade; i++) {
-    const k = i / fade;
-    data[i] = raw[i] * k + raw[n + i] * (1 - k); // blend the tail into the head
+    const k = (i / fade) * (Math.PI / 2);
+    data[i] = raw[i] * Math.sin(k) + raw[n + i] * Math.cos(k);
   }
 
   const src = ctx.createBufferSource();

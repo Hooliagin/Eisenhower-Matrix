@@ -96,7 +96,10 @@ Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig
 - `timer` (jsonb, Sekunden): `{"rounds":3,"work":180,"rest":30,"prep":10}` → 🥊 Vollbild-Rundentimer (langer Ton = Start, Glocke =
   Rundenende, 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong und **Hintergrundrauschen** (Stille/Weiß/Rosa/Braun +
 Lautstärke, im Browser erzeugt – keine Audiodateien; Wahl wird pro Gerät gemerkt, Standard Braun; läuft nur während der
-Meditation, stoppt bei Pause/Ende). Abschluss speichert
+Meditation, stoppt bei Pause/Ende; Schleife 30 s mit Equal-Power-Überblendung, damit es nicht periodisch leiser wird).
+**🌑 Bildschirm dunkel** (alle Timer, pro Gerät gemerkt): Bildschirm wird schwarz, bleibt technisch an (Wake Lock), damit
+Ton/Rauschen weiterlaufen – schaltet iOS den Bildschirm wirklich aus, stoppt der Browser den Ton. Tipp irgendwo → Bedienung für
+6 s sichtbar. Unten „Beenden & später weitermachen“ (bzw. „Beenden“), oben großes ✕ unter der Statusleiste. Abschluss speichert
   die Aufgabe als erledigt mit Dauer (ohne Vorlauf). `"style":"plain"` → einfacher Countdown (Startton, Endsignal,
 Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „🥊 Timer“.
 - **Später weitermachen:** Bricht Joshua einen Timer ab (Button „💾 Später weitermachen“ oder ✕ nach ≥ 30 s), wird der Stand in
