@@ -1,5 +1,6 @@
 import { useRef, useState, type TouchEvent } from "react";
 import { useDraggable } from "@dnd-kit/core";
+import { ELEMENT_ORDER, ELEMENTS } from "../lib/character";
 import { QUADRANTS, type Quadrant, type Task } from "../lib/types";
 
 const SWIPE = 90;
@@ -10,11 +11,12 @@ interface Props {
   onDelete: (t: Task) => void;
   onMove: (t: Task, q: Quadrant) => void;
   onRename: (t: Task, title: string) => void;
+  onElement?: (t: Task, element: Task["element"]) => void;
   draggable?: boolean;
 }
 
 /** Swipe right = erledigt, swipe left = löschen, long-press = ziehen, tap = Details. */
-export default function TaskCard({ task, onDone, onDelete, onMove, onRename, draggable = true }: Props) {
+export default function TaskCard({ task, onDone, onDelete, onMove, onRename, onElement, draggable = true }: Props) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id, disabled: !draggable || task.done });
   const [dx, setDx] = useState(0);
   const [open, setOpen] = useState(false);
@@ -81,6 +83,7 @@ export default function TaskCard({ task, onDone, onDelete, onMove, onRename, dra
           >
             {task.title}
             {task.source === "claude" && <span className="ml-1 text-[10px] text-violet-400">✦</span>}
+            {task.element && <span className="ml-1 text-[10px]">{ELEMENTS[task.element].emoji}</span>}
           </span>
           {task.due_date && <span className="text-[10px] text-slate-500">{task.due_date.slice(5).split("-").reverse().join(".")}</span>}
         </div>
@@ -93,6 +96,21 @@ export default function TaskCard({ task, onDone, onDelete, onMove, onRename, dra
               className="py-1 text-sm"
             />
             {task.notes && <p className="text-xs text-slate-400">{task.notes}</p>}
+            {onElement && (
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] text-slate-500">Element:</span>
+                {ELEMENT_ORDER.map((e) => (
+                  <button
+                    key={e}
+                    onClick={() => onElement(task, task.element === e ? null : e)}
+                    className={`rounded-full px-2 py-0.5 text-xs ${task.element === e ? "bg-slate-100 text-slate-900" : "bg-slate-800"}`}
+                    title={ELEMENTS[e].label}
+                  >
+                    {ELEMENTS[e].emoji}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex flex-wrap gap-1">
               {(Object.keys(QUADRANTS) as (keyof typeof QUADRANTS)[]).map((q) => (
                 <button

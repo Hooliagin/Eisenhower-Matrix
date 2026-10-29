@@ -56,7 +56,12 @@ select sum(minutes) from reading_log where log_date >= date_trunc('week', now() 
 ```
 
 ### Charakter / Gamification (`character_summary`, `character_stats`, `measurements`, `tasks.attribute`)
-Avatar auf der Startseite mit drei Attributen: **Körper**, **Intellekt**, **Charisma**. 1 XP ≈ 1 investierte Minute:
+Avatar auf der Startseite mit sechs Attributen: **Körper** (`koerper`), **Intellekt** (`intellekt`), **Charisma** (`charisma`),
+**Spiritualität** (`spirit`: Beten, Meditieren, Stille, religiöse Lektüre), **Kreativität** (`kreativ`: Videos, Websites,
+Schreiben, Gestalten), **Verbundenheit** (`verbunden`: Freunde, Familie, Putschi, Geburtstage).
+**Level** = Lebenszeit-XP (fällt nie). **Form** = XP der letzten 14 Tage gegen 2× Wochenziel (sinkt bei Vernachlässigung).
+Wochenziele (in `src/lib/character.ts`): Körper 300, Intellekt 210, Charisma 60, Spiritualität 70, Kreativität 180, Verbundenheit 180.
+1 XP ≈ 1 investierte Minute:
 Training (abgeschlossene Session) = 75 XP Körper, Lesezeit = Minuten → Intellekt, erledigte Aufgaben mit `attribute`
 = ihre Dauer (`actual_minutes`, sonst Schätzung, sonst 20). Level n ab 30·(n−1)² XP. Trend = XP letzte 14 Tage vs. 14 davor.
 **Aufgaben passend taggen**, wenn sie trainieren: Impro/soziale Übungen → `charisma`, Recherche/Lernen → `intellekt`,
@@ -75,13 +80,24 @@ on conflict (attribute, name) do update set rating = excluded.rating, note = exc
 select * from character_summary;
 ```
 
+### Elemente (Reiter „Elemente“, `tasks.element`, View `element_events`)
+Selbsteinschätzung, wo die Zeit hinfließt: 🔥 **Feuer** (Antrieb: Training, Projekte vorantreiben, Erschaffen),
+💧 **Wasser** (Gefühl & Verbindung: Freunde, Familie, Gebet, Meditation, Natur mit Putschi),
+🌍 **Erde** (Basis & Ordnung: Haushalt, Finanzen, Behördliches, Routinen, Schlaf, Ernährung),
+💨 **Luft** (Geist & Kommunikation: Lesen, Lernen, Recherche, Gespräche, Impro).
+Quelle: Trainings-Sessions → Feuer (75 min), Lesezeit → Luft, erledigte Aufgaben → `tasks.element`, sonst aus `attribute`
+abgeleitet (`element_of()`: koerper/kreativ → feuer, spirit/verbunden → wasser, intellekt/charisma → luft).
+**Jede neue Aufgabe mit `element` anlegen** (und `attribute`, wenn sie einen Charakterwert trainiert).
+Plan-Erinnerungen fürs Training („Training: …“) bekommen weder `element` noch `attribute` – die Session zählt schon.
+
 ### Tägliche Routinen (`routines`)
 Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig pro Tag) und steht ganz vorne im Tagesplan
 (`position` = Reihenfolge am Morgen). Erzeugt beim App-Start per `spawn_routine_tasks(datum)`; Claude kann die Funktion
 selbst aufrufen. Verpasste Routinen stapeln sich nicht (alte werden im Plan ausgeblendet), in der Matrix erscheinen sie nie.
-Aktuell: „Tageslichtlampe: 10 min helles Licht“ (gegen Winterdepression, Anfang des Tages).
+Routinen können `attribute`/`element` tragen (wird an die Tagesaufgabe vererbt).
+Aktuell: „Tageslichtlampe: 10 min helles Licht“ (Erde; gegen Winterdepression, Anfang des Tages).
 ```sql
-insert into routines (title, estimate_minutes, position, planned_start) values ('Dehnen', 10, 2, null);
+insert into routines (title, estimate_minutes, position, attribute, element) values ('Beten', 10, 2, 'spirit', 'wasser');
 select public.spawn_routine_tasks((now() at time zone 'Europe/Berlin')::date);
 ```
 

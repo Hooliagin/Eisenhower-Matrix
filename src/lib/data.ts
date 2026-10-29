@@ -146,6 +146,21 @@ export function useCharacter() {
   );
 }
 
+export function useElements() {
+  return useLive<{ element: string; day: string; minutes: number; label: string }[]>(
+    async () =>
+      must(
+        await supabase
+          .from("element_events")
+          .select("*")
+          .gte("day", isoDate(addDays(weekStart(), -7 * 4)))
+          .order("day", { ascending: false }),
+      ),
+    ["tasks", "reading_log", "workout_sessions"],
+    [],
+  );
+}
+
 // ---------- Reading ----------
 
 export function useBooks() {

@@ -8,10 +8,11 @@ import Home from "./components/Home";
 import Tasks from "./components/Tasks";
 import Projects from "./components/Projects";
 import Calendar from "./components/Calendar";
+import Elements from "./components/Elements";
 import Fitness from "./components/fitness/Fitness";
 import RestTimerBar from "./components/RestTimerBar";
 
-export type Tab = "today" | "tasks" | "projects" | "calendar" | "fitness";
+export type Tab = "today" | "tasks" | "projects" | "calendar" | "fitness" | "elements";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "today", label: "Heute", icon: "☀️" },
@@ -19,6 +20,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "projects", label: "Projekte", icon: "📁" },
   { id: "calendar", label: "Kalender", icon: "📅" },
   { id: "fitness", label: "Fitness", icon: "🏋️" },
+  { id: "elements", label: "Elemente", icon: "☯️" },
 ];
 
 function readTab(): Tab {
@@ -86,6 +88,7 @@ export default function App() {
         {tab === "projects" && <Projects />}
         {tab === "calendar" && <Calendar />}
         {tab === "fitness" && <Fitness />}
+        {tab === "elements" && <Elements />}
       </div>
       <RestTimerBar />
       <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-slate-800 bg-[#0b0f17]/95 backdrop-blur">
@@ -94,7 +97,7 @@ export default function App() {
             <button
               key={t.id}
               onClick={() => go(t.id)}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${tab === t.id ? "text-white" : "text-slate-500"}`}
+              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] ${tab === t.id ? "text-white" : "text-slate-500"}`}
             >
               <span className="text-lg leading-none">{t.icon}</span>
               {t.label}

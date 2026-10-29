@@ -17,6 +17,8 @@ export interface Task {
   planned_start: string | null;
   project_id?: string | null;
   routine_id?: string | null;
+  attribute?: string | null;
+  element?: "feuer" | "wasser" | "erde" | "luft" | null;
   // Computed by the tasks_planned view (learning)
   planned_minutes?: number;
   history_samples?: number | null;

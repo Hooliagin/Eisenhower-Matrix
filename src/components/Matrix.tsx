@@ -30,6 +30,10 @@ export function useTaskActions(tasks: Task[], setTasks: (t: Task[]) => void) {
       patch(t.id, { quadrant: q, position: Date.now() / 1000 });
       void updateTask(t.id, { quadrant: q, position: Date.now() / 1000 });
     },
+    onElement: (t: Task, element: Task["element"]) => {
+      patch(t.id, { element });
+      void updateTask(t.id, { element });
+    },
     onRename: (t: Task, title: string) => {
       patch(t.id, { title });
       void updateTask(t.id, { title });

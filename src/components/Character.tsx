@@ -1,5 +1,5 @@
 import { useCharacter } from "../lib/data";
-import { ATTR_ORDER, ATTRS, levelProgress, trend, TREND_ICON, type Attribute, type AttrSummary, type CharacterStat } from "../lib/character";
+import { ATTR_ORDER, ATTRS, form, levelProgress, trend, TREND_ICON, type Attribute, type AttrSummary, type CharacterStat } from "../lib/character";
 
 function levels(summary: AttrSummary[]) {
   const by = (a: Attribute) => summary.find((s) => s.attribute === a) ?? { attribute: a, xp_total: 0, xp_14: 0, xp_prev_14: 0 };
@@ -10,10 +10,11 @@ function levels(summary: AttrSummary[]) {
 }
 
 /** Little figure whose build reflects the stats: broader with Körper, brighter mind with Intellekt, more sparkle with Charisma. */
-export function Avatar({ k, i, c, size = 88 }: { k: number; i: number; c: number; size?: number }) {
+export function Avatar({ k, i, c, sp = 1, size = 88 }: { k: number; i: number; c: number; sp?: number; size?: number }) {
   const body = Math.min(1, (k - 1) / 30); // 0..1
   const mind = Math.min(1, (i - 1) / 30);
   const sparkles = Math.min(6, Math.floor((c - 1) / 3) + 1);
+  const halo = Math.min(1, (sp - 1) / 20);
   const shoulder = 15 + body * 9;
   const waist = 10 + body * 3;
   const arm = 4 + body * 3;
@@ -33,6 +34,7 @@ export function Avatar({ k, i, c, size = 88 }: { k: number; i: number; c: number
       {/* torso */}
       <path d={`M${50 - shoulder} 46 Q50 ${41 - body * 2} ${50 + shoulder} 46 L${50 + waist} 80 Q50 84 ${50 - waist} 80 Z`} fill="#ef4444" opacity="0.85" />
       <rect x="44" y="38" width="12" height="8" rx="3" fill="#e5e7eb" />
+      {sp > 1 && <ellipse cx="50" cy="16" rx="10" ry="2.6" fill="none" stroke="#a78bfa" strokeWidth="1.6" opacity={0.35 + halo * 0.65} />}
       {/* head */}
       <circle cx="50" cy="30" r="11" fill="#e5e7eb" />
       <circle cx="46" cy="29" r="1.4" fill="#111827" />
@@ -68,25 +70,26 @@ export function CharacterCard() {
   const total = ATTR_ORDER.reduce((s, a) => s + L[a].level, 0);
   return (
     <button onClick={() => (location.hash = "today/character")} className="card flex items-center gap-3 p-3 text-left">
-      <Avatar k={L.koerper.level} i={L.intellekt.level} c={L.charisma.level} size={72} />
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <Avatar k={L.koerper.level} i={L.intellekt.level} c={L.charisma.level} sp={L.spirit.level} size={72} />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-baseline justify-between">
           <span className="text-sm font-semibold">Joshua</span>
           <span className="text-xs text-slate-400">Gesamt-Level {total}</span>
         </div>
-        {ATTR_ORDER.map((a) => {
-          const t = trend(L[a].s);
-          return (
-            <div key={a} className="flex items-center gap-2 text-[11px]">
-              <span className="w-20 shrink-0 text-slate-300">
-                {ATTRS[a].emoji} {ATTRS[a].label}
-              </span>
-              <span className="w-8 shrink-0 font-semibold">L{L[a].level}</span>
-              <Bar pct={L[a].pct} color={ATTRS[a].color} />
-              <span className={`w-3 shrink-0 text-[9px] ${t === "up" ? "text-emerald-400" : t === "down" ? "text-red-400" : "text-slate-600"}`}>{TREND_ICON[t]}</span>
-            </div>
-          );
-        })}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+          {ATTR_ORDER.map((a) => {
+            const t = trend(L[a].s);
+            return (
+              <div key={a} className="flex items-center gap-1.5 text-[11px]">
+                <span className="w-4 shrink-0 text-center">{ATTRS[a].emoji}</span>
+                <span className="w-6 shrink-0 font-semibold">{L[a].level}</span>
+                <Bar pct={form(L[a].s) / 100} color={ATTRS[a].color} />
+                <span className={`w-2.5 shrink-0 text-[8px] ${t === "up" ? "text-emerald-400" : t === "down" ? "text-red-400" : "text-slate-600"}`}>{TREND_ICON[t]}</span>
+              </div>
+            );
+          })}
+        </div>
+        <span className="text-[10px] text-slate-600">Zahl = Level · Balken = Form der letzten 14 Tage</span>
       </div>
     </button>
   );
@@ -128,8 +131,12 @@ export function CharacterView() {
         <h1 className="text-xl font-semibold">Dein Charakter</h1>
       </header>
 
+      <p className="text-xs text-slate-500">
+        Das <b>Level</b> zeigt, was du insgesamt aufgebaut hast – es fällt nie. Die <b>Form</b> zeigt die letzten 14 Tage gegen
+        dein Wochenziel – sie sinkt, wenn du einen Bereich vernachlässigst.
+      </p>
       <div className="flex justify-center">
-        <Avatar k={L.koerper.level} i={L.intellekt.level} c={L.charisma.level} size={160} />
+        <Avatar k={L.koerper.level} i={L.intellekt.level} c={L.charisma.level} sp={L.spirit.level} size={160} />
       </div>
 
       {data.stats.length >= 3 && (
@@ -153,9 +160,17 @@ export function CharacterView() {
                 {TREND_ICON[t]} {s.xp_14} XP / 14 T{s.xp_prev_14 ? ` (vorher ${s.xp_prev_14})` : ""}
               </span>
             </div>
-            <Bar pct={pct} color={ATTRS[a].color} />
+            <div className="flex items-center gap-2 text-[11px] text-slate-400">
+              <span className="w-12">Level</span>
+              <Bar pct={pct} color={ATTRS[a].color} />
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-slate-400">
+              <span className="w-12">Form</span>
+              <Bar pct={form(s) / 100} color={ATTRS[a].color} />
+              <span className="w-9 text-right">{form(s)} %</span>
+            </div>
             <p className="text-[11px] text-slate-500">
-              {s.xp_total} XP · noch {toNext} bis Level {level + 1} · XP durch {ATTRS[a].how}
+              {s.xp_total} XP · noch {toNext} bis Level {level + 1} · Ziel {ATTRS[a].weeklyTarget} XP/Woche · XP durch {ATTRS[a].how}
             </p>
             {sub.length > 0 ? (
               <ul className="mt-1 flex flex-col gap-2">
