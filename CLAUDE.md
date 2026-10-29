@@ -102,7 +102,8 @@ Routinen können `attribute`/`element` tragen (wird an die Tagesaufgabe vererbt)
 Aktuell: „Tageslichtlampe: 10 min helles Licht“ (täglich, gegen Winterdepression, Anfang des Tages),
 „Starke Mitte: 10 min Reels anderer Parteien schauen & gute an Michael schicken“ (täglich), „Wohnung 10 min lüften“ (täglich),
 „Blumen gießen“ (sonntags; zuletzt gegossen So 25.10.2026),
-„Schattenboxen (3 × 3 min)“ (täglich, Körper/Feuer, mit Rundentimer).
+„Schattenboxen (3 × 3 min)“ (täglich, Körper/Feuer, mit Rundentimer), „Meditieren (10 min)“ (täglich, Spiritualität/Wasser).
+Lüften, Schattenboxen, Meditieren sind `anytime` → Startseite „⚡ Daily“ statt Tagesplan.
 `routines.timer` (jsonb, z. B. `{"rounds":3,"work":180,"rest":30,"prep":10}` in Sekunden) → die Tagesaufgabe bekommt
 statt ▶ einen 🥊-Button, der den Vollbild-Rundentimer mit Signalen öffnet (langer Ton = Start, Glocke = Rundenende,
 2 Klicks = 10 s übrig, Ticken = Pause endet); am Ende wird die Aufgabe mit der Dauer als erledigt gespeichert.
@@ -186,6 +187,35 @@ where id = (select id from detox_sessions where kind = 'evening' and result is n
 select kind, count(*) filter (where result = 'success') geschafft, count(result) gesamt
 from detox_sessions where started_at > now() - interval '30 days' group by kind;
 ```
+
+### Ernährung & Getränke (`meals`, `drink_log`, `nutrition_settings`, View `nutrition_daily`)
+Startseite, Karte „Körper heute“: Getränke per Tipp (🥛 Glas 250 ml, 🍶 Flasche 1 L, ☕ Kaffee = 1 Glas 250 ml ≈ 100 mg Koffein),
+dazu gegessene vs. verbrauchte kcal und **verwertbares** Protein. Kaffee zählt zur Trinkmenge (Ziel 2,5 L), Warnung ab 400 mg Koffein
+(EFSA-Grenze für Erwachsene).
+
+**Essen trägt Claude ein**, wenn der Nutzer es im Chat erzählt (kein Scannen). Vorgehen pro Mahlzeit:
+1. Portionen realistisch schätzen (normaler Teller Nudeln ≈ 125 g trocken; Löffel Pesto ≈ 20 g; bei Unklarheit Annahme in `notes`).
+2. kcal/Makros aus Standard-Nährwerten (BLS/USDA-Größenordnung) je Zutat summieren, gerundet.
+3. `protein_quality` = proteingewichteter Mittelwert der DIAAS-Werte der Zutaten, **gedeckelt bei 1,0**.
+   Richtwerte: Ei 1,13 · Milch/Quark/Käse ~1,1 · Whey ~1,0–1,09 · Rind ~1,1 · Huhn ~1,08 · Schwein ~1,1 · Soja ~0,9 ·
+   Erbse ~0,6–0,8 · Linsen ~0,6 · Hafer ~0,55 · Weizen/Nudeln/Brot ~0,45 · Reis ~0,4 · Nüsse ~0,4–0,5 · Gemüse/Sprossen ~0,6.
+   Kombinationen (Getreide + Hülsenfrüchte) ergänzen sich – dann ~0,1 Aufschlag auf den Mittelwert.
+4. In `notes` kurz die Annahmen (Portion, Hauptquellen) – der Nutzer soll nachvollziehen und korrigieren können.
+```sql
+insert into meals (meal, description, kcal, protein_g, protein_quality, carbs_g, fat_g, fiber_g, notes)
+values ('Mittag', '3 Rühreier mit Brot', 520, 27, 0.85, 30, 30, 3, '3 Eier (19 g P, DIAAS 1), 2 Scheiben Brot (8 g P, ~0,45)');
+insert into drink_log (kind, ml) values ('water_bottle', 1000);
+select * from nutrition_daily where day = (now() at time zone 'Europe/Berlin')::date;
+```
+**Verbrauch** (alles geschätzt, in `nutrition_settings`, bei neuen Messwerten aktualisieren):
+Grundumsatz = Katch-McArdle 370 + 21,6 × fettfreie Masse (67,8 kg → 1834 kcal) × Alltags-PAL 1,4,
+plus Krafttraining +300 kcal/Session (netto), Rad 25 kcal/km (Diensttage 26 km), Körper-Aufgaben (z. B. Schattenboxen) 8 kcal/min.
+**Protein-Ziel** 1,8 g/kg (ISSN: 1,4–2,0 g/kg für Trainierende; in einer Diät eher 2,3–3,1 g/kg) = 144 g verwertbar.
+Quellen: ISSN Position Stand 2017 (Jäger et al., PMC5477153), DIAAS-Übersicht (FAO/WHO, PMC6445816).
+
+**Daily-Quickbuttons** (`routines.anytime = true`): Meditieren (10 min, ruhiger Gong-Timer, `timer.style = 'calm'`),
+Schattenboxen (Rundentimer), Wohnung lüften (nur abhaken). Erscheinen als „⚡ Daily“-Reihe auf der Startseite, nicht im
+zeitlichen Tagesplan; Abschluss → Aufgabe erledigt.
 
 ### Einkaufsliste (`shopping_items`)
 Erscheint auf der Startseite „Heute“. Abgehakte Einträge bleiben durchgestrichen, bis sie entfernt werden.

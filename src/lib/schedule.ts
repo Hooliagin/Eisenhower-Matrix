@@ -92,7 +92,7 @@ export function fmtMinutes(m: number): string {
 }
 
 /** Today's open tasks: everything due by today plus the "do" quadrant, in the user's order. */
-export function todayTasks<T extends { done: boolean; quadrant: string; due_date: string | null; routine_id?: string | null }>(
+export function todayTasks<T extends { done: boolean; quadrant: string; due_date: string | null; routine_id?: string | null; anytime?: boolean }>(
   tasks: T[],
   today = isoDate(),
 ) {
@@ -105,6 +105,8 @@ export function todayTasks<T extends { done: boolean; quadrant: string; due_date
   return tasks.filter(
     (t) =>
       !t.done &&
+      // quick "anytime" habits live in the home-page Daily row, not in the timed plan
+      !t.anytime &&
       (t.quadrant === "do" || (t.due_date && t.due_date <= today)) &&
       !(t.routine_id && t.due_date !== newestRoutineDay.get(t.routine_id)),
   );

@@ -37,6 +37,10 @@ export const SOUNDS = {
   tenSeconds: () => tones([[1500, 0, 0.06], [1500, 0.15, 0.06]], 0.35),
   /** Countdown tick (last 3 s of a pause) */
   tick: () => tones([[1200, 0, 0.08]], 0.3),
+  /** Meditation: soft low gong */
+  gong: () => tones([[196, 0, 2.5], [392, 0, 1.8], [588, 0, 1.2]], 0.25),
+  /** Soft tick for a calm countdown */
+  softTick: () => tones([[600, 0, 0.12]], 0.12),
   /** Whole workout done */
   finished: () => tones([[523, 0, 0.2], [659, 0.2, 0.2], [784, 0.4, 0.2], [1046, 0.6, 0.6]], 0.4),
 };

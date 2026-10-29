@@ -186,6 +186,66 @@ export function useDetox() {
   );
 }
 
+// ---------- Nutrition & drinks ----------
+
+export interface NutritionDay {
+  day: string;
+  kcal_in: number;
+  protein_g: number;
+  protein_effective_g: number;
+  protein_target_g: number;
+  fluid_ml: number;
+  water_ml: number;
+  coffees: number;
+  caffeine_mg: number;
+  fluid_target_ml: number;
+  burn_base: number;
+  burn_activity: number;
+}
+
+export interface Meal {
+  id: string;
+  meal: string | null;
+  description: string;
+  kcal: number;
+  protein_g: number;
+  protein_quality: number;
+  notes: string | null;
+}
+
+export type DrinkKind = "water_glass" | "water_bottle" | "coffee";
+
+export function useNutrition() {
+  return useLive<{ today: NutritionDay | null; meals: Meal[]; sizes: Record<DrinkKind, number> }>(
+    async () => {
+      const today = isoDate();
+      const [n, m, s] = await Promise.all([
+        supabase.from("nutrition_daily").select("*").eq("day", today).maybeSingle(),
+        supabase.from("meals").select("id, meal, description, kcal, protein_g, protein_quality, notes").eq("day", today).order("created_at"),
+        supabase.from("nutrition_settings").select("glass_ml, bottle_ml, coffee_ml").maybeSingle(),
+      ]);
+      const st = must(s) as { glass_ml: number; bottle_ml: number; coffee_ml: number } | null;
+      return {
+        today: must(n) as NutritionDay | null,
+        meals: must(m),
+        sizes: { water_glass: st?.glass_ml ?? 250, water_bottle: st?.bottle_ml ?? 1000, coffee: st?.coffee_ml ?? 250 },
+      };
+    },
+    ["drink_log", "meals", "workout_sessions", "tasks", "events"],
+    { today: null, meals: [], sizes: { water_glass: 250, water_bottle: 1000, coffee: 250 } },
+  );
+}
+
+export async function addDrink(kind: DrinkKind, ml: number) {
+  must(await supabase.from("drink_log").insert({ kind, ml, day: isoDate() }));
+}
+
+/** Undo the most recent drink of today. */
+export async function removeLastDrink() {
+  const { data } = await supabase.from("drink_log").select("id").eq("day", isoDate()).order("created_at", { ascending: false }).limit(1);
+  if (data?.[0]) must(await supabase.from("drink_log").delete().eq("id", data[0].id));
+}
+
 // ---------- Reading ----------
 
 export function useBooks() {

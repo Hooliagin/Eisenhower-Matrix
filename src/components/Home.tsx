@@ -6,6 +6,8 @@ import { supabase } from "../lib/supabase";
 import AddTask from "./AddTask";
 import { CharacterCard, CharacterView } from "./Character";
 import DetoxCard from "./DetoxCard";
+import NutritionCard from "./NutritionCard";
+import QuickHabits from "./QuickHabits";
 import { countdown } from "./Calendar";
 
 function Tile({ icon, title, onClick, children, wide }: { icon: string; title: string; onClick: () => void; children: ReactNode; wide?: boolean }) {
@@ -20,7 +22,7 @@ function Tile({ icon, title, onClick, children, wide }: { icon: string; title: s
 }
 
 export default function Home() {
-  const { data: tasks } = useTasks();
+  const { data: tasks, setData: setTasks } = useTasks();
   const calendar = useCalendar(isoDate(addDays(new Date(), -31)));
   const { data: shopping } = useShopping();
   const { data: proj } = useProjects();
@@ -84,6 +86,8 @@ export default function Home() {
       <CharacterCard />
 
       <DetoxCard />
+
+      <QuickHabits tasks={tasks} patch={(id, p) => setTasks(tasks.map((t) => (t.id === id ? { ...t, ...p } : t)))} />
 
       <AddTask defaultQuadrant="do" compact />
 
@@ -157,6 +161,9 @@ export default function Home() {
           </span>
         </Tile>
       </div>
+
+      <NutritionCard />
+
       <p className="text-center text-[11px] text-slate-600">
         {parseDate(today).toLocaleDateString("de-DE", { day: "numeric", month: "long" })} · alles Weitere in den Reitern unten
       </p>

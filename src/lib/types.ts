@@ -19,7 +19,8 @@ export interface Task {
   routine_id?: string | null;
   attribute?: string | null;
   element?: "feuer" | "wasser" | "erde" | "luft" | null;
-  timer?: { rounds: number; work: number; rest: number; prep?: number } | null;
+  timer?: { rounds: number; work: number; rest: number; prep?: number; style?: "boxing" | "calm" } | null;
+  anytime?: boolean;
   // Computed by the tasks_planned view (learning)
   planned_minutes?: number;
   history_samples?: number | null;

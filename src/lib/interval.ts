@@ -3,6 +3,7 @@ export interface IntervalConfig {
   work: number; // seconds
   rest: number; // seconds between rounds
   prep?: number; // countdown before round 1
+  style?: "boxing" | "calm"; // calm = meditation: soft gong, no 10-second clicks
 }
 
 export type PhaseKind = "prep" | "work" | "rest" | "done";
