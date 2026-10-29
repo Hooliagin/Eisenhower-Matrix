@@ -299,7 +299,8 @@ Startseite, Karte „Körper heute“: Getränke per Tipp – 🥛 Glas 250 ml, 
 Warnung ab 400 mg Koffein (EFSA). Dazu Dienst-Buttons, gegessene vs. verbrauchte kcal und **verwertbares** Protein.
 
 **Essen trägt Claude ein**, wenn Joshua es erzählt (kein Scannen):
-1. Portionen realistisch schätzen (Teller Nudeln ≈ 125 g trocken, Löffel Pesto ≈ 20 g); Annahmen in `notes`.
+1. Portionen realistisch schätzen; Annahmen in `notes`. **Joshuas Portionen:** Teller Nudeln ≈ **150 g trocken** (isst 500 g in 2 Tagen),
+   **Quark = immer Magerquark** (100 g ≈ 67 kcal, 12 g P), Löffel Pesto ≈ 20 g.
 2. kcal/Makros aus Standard-Nährwerten (BLS/USDA-Größenordnung) je Zutat summieren.
 3. `protein_quality` = proteingewichteter DIAAS-Mittelwert, **max. 1,0**. Richtwerte: Ei 1,13 · Milch/Quark/Käse ~1,1 · Whey ~1,0 ·
    Rind ~1,1 · Huhn ~1,08 · Schwein ~1,1 · Soja ~0,9 · Erbse ~0,6–0,8 · Linsen ~0,6 · Hafer ~0,55 · Weizen/Nudeln/Brot ~0,45 ·
