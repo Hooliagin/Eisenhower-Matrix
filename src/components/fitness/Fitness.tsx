@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabase";
 import Plan from "./Plan";
 import Progress from "./Progress";
 import SessionView from "./SessionView";
+import IntervalTimer from "../IntervalTimer";
 
 type View = { kind: "home" } | { kind: "session"; id: string } | { kind: "progress" } | { kind: "plan" };
 
@@ -18,6 +19,7 @@ function readView(): View {
 
 export default function Fitness() {
   const [view, setView] = useState<View>(readView);
+  const [boxing, setBoxing] = useState(false);
   const { data: templates } = useTemplates();
   const { data: sessions, refresh } = useSessions();
 
@@ -52,10 +54,13 @@ export default function Fitness() {
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Fitness</h1>
         <div className="flex gap-2">
+          <button className="btn-ghost" onClick={() => setBoxing(true)}>🥊 Timer</button>
           <button className="btn-ghost" onClick={() => nav({ kind: "plan" })}>Plan</button>
           <button className="btn-ghost" onClick={() => nav({ kind: "progress" })}>Fortschritt</button>
         </div>
       </header>
+
+      {boxing && <IntervalTimer title="Schattenboxen" config={{ rounds: 3, work: 180, rest: 30, prep: 10 }} onClose={() => setBoxing(false)} />}
 
       {active && (
         <button className="card border-emerald-600 bg-emerald-600/15 p-4 text-left" onClick={() => nav({ kind: "session", id: active.id })}>

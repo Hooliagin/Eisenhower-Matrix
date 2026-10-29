@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import IntervalTimer from "./IntervalTimer";
 import { updateTask } from "../lib/data";
 import { isoDate } from "../lib/dates";
 import { buildSchedule, fmtMinutes, hhmm, minutesOf } from "../lib/schedule";
@@ -45,6 +46,7 @@ function askMinutes(question: string, fallback: number): number | null {
 
 export default function DayPlan({ tasks, doneToday, events, patch }: Props) {
   const [now, setNow] = useState(new Date());
+  const [timerTask, setTimerTask] = useState<Task | null>(null);
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
@@ -146,7 +148,9 @@ export default function DayPlan({ tasks, doneToday, events, patch }: Props) {
                 </>
               ) : (
                 <>
-                  <button className="btn-ghost px-2.5" onClick={() => start(t)} aria-label="starten">▶</button>
+                  <button className="btn-ghost px-2.5" onClick={() => (t.timer ? setTimerTask(t) : start(t))} aria-label="starten">
+                    {t.timer ? "🥊" : "▶"}
+                  </button>
                   <button className="btn-ghost px-2.5" onClick={() => finish(t)} aria-label="erledigt">✓</button>
                 </>
               )}
@@ -172,6 +176,18 @@ export default function DayPlan({ tasks, doneToday, events, patch }: Props) {
             ))}
           </ul>
         </div>
+      )}
+
+      {timerTask?.timer && (
+        <IntervalTimer
+          title={timerTask.title}
+          config={timerTask.timer}
+          onClose={() => setTimerTask(null)}
+          onComplete={(minutes) => {
+            save(timerTask, { done: true, done_at: new Date().toISOString(), actual_minutes: minutes });
+            setTimerTask(null);
+          }}
+        />
       )}
 
       {factor !== 1 && (

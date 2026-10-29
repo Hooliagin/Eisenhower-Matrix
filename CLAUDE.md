@@ -99,7 +99,12 @@ das Blumengießen vom Sonntag wartet bis es erledigt ist). In der Matrix erschei
 Routinen können `attribute`/`element` tragen (wird an die Tagesaufgabe vererbt).
 Aktuell: „Tageslichtlampe: 10 min helles Licht“ (täglich, gegen Winterdepression, Anfang des Tages),
 „Starke Mitte: 10 min Reels anderer Parteien schauen“ (täglich), „Wohnung 10 min lüften“ (täglich),
-„Blumen gießen“ (sonntags; zuletzt gegossen So 25.10.2026).
+„Blumen gießen“ (sonntags; zuletzt gegossen So 25.10.2026),
+„Schattenboxen (3 × 3 min)“ (täglich, Körper/Feuer, mit Rundentimer).
+`routines.timer` (jsonb, z. B. `{"rounds":3,"work":180,"rest":30,"prep":10}` in Sekunden) → die Tagesaufgabe bekommt
+statt ▶ einen 🥊-Button, der den Vollbild-Rundentimer mit Signalen öffnet (langer Ton = Start, Glocke = Rundenende,
+2 Klicks = 10 s übrig, Ticken = Pause endet); am Ende wird die Aufgabe mit der Dauer als erledigt gespeichert.
+Den Timer gibt es auch frei unter Fitness → „🥊 Timer“.
 ```sql
 insert into routines (title, estimate_minutes, position, attribute, element) values ('Beten', 10, 2, 'spirit', 'wasser');
 select public.spawn_routine_tasks((now() at time zone 'Europe/Berlin')::date);

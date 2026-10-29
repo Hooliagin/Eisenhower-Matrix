@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { SOUNDS, unlockAudio } from "./sound";
 
 const KEY = "rest-timer-end";
 
@@ -12,32 +13,6 @@ interface TimerState {
 }
 
 const Ctx = createContext<TimerState | null>(null);
-
-let audio: AudioContext | null = null;
-
-/** Must be called from a user gesture (iOS only unlocks audio there). */
-function unlockAudio() {
-  try {
-    audio ??= new AudioContext();
-    if (audio.state === "suspended") void audio.resume();
-  } catch {
-    /* no audio available */
-  }
-}
-
-function beep() {
-  if (!audio) return;
-  [0, 0.25, 0.5].forEach((t) => {
-    const osc = audio!.createOscillator();
-    const gain = audio!.createGain();
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.3, audio!.currentTime + t);
-    gain.gain.exponentialRampToValueAtTime(0.001, audio!.currentTime + t + 0.2);
-    osc.connect(gain).connect(audio!.destination);
-    osc.start(audio!.currentTime + t);
-    osc.stop(audio!.currentTime + t + 0.2);
-  });
-}
 
 function readStored(): { endsAt: number; total: number } | null {
   try {
@@ -99,7 +74,7 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (endsAt && now >= endsAt && !fired.current) {
       fired.current = true;
-      beep();
+      SOUNDS.restDone();
       navigator.vibrate?.([300, 150, 300]);
       if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
         new Notification("Pause vorbei", { body: "Nächster Satz!" });
