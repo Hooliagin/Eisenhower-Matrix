@@ -161,6 +161,31 @@ export function useElements() {
   );
 }
 
+// ---------- Detox windows ----------
+
+export interface DetoxSession {
+  id: string;
+  kind: "evening" | "morning";
+  started_at: string;
+  duration_min: number;
+  result: "success" | "fail" | null;
+}
+
+export function useDetox() {
+  return useLive<DetoxSession[]>(
+    async () =>
+      must(
+        await supabase
+          .from("detox_sessions")
+          .select("id, kind, started_at, duration_min, result")
+          .gte("started_at", addDays(new Date(), -21).toISOString())
+          .order("started_at", { ascending: false }),
+      ),
+    ["detox_sessions"],
+    [],
+  );
+}
+
 // ---------- Reading ----------
 
 export function useBooks() {

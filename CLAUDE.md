@@ -175,6 +175,18 @@ values ('Dienst', '2026-11-02', '06:00', '14:00', 'dienst', 13, 'claude');
 Habits (`habits`, `habit_logs`) sind aus der App entfernt – der Nutzer trackt Habits in anderen Apps.
 Die Tabellen existieren noch (alle Habits `active = false`), werden aber nicht mehr angezeigt.
 
+### Detox-Fenster (`detox_sessions`) – Selbst-Accountability, keine Sperre
+Startseite, Karte unter dem Charakter: ☀️ **Morgen 30 min** (nach dem Aufstehen kein Handy/Social Media/YouTube) und
+🌙 **Abend 60 min** (1 h vor dem Schlafen kein Bildschirm/helles Licht). Nutzer drückt Start → Countdown → danach
+„Geschafft? Ja/Nein“ (Abend beantwortet er meist am nächsten Morgen). Leiste = letzte 7 Ergebnisse. Erfolge zählen als Erde.
+Die App kann das Handy nicht sperren – es geht ums Einhalten. Sagt er es im Chat („gestern Abend geschafft“), Ergebnis setzen:
+```sql
+update detox_sessions set result = 'success', answered_at = now()
+where id = (select id from detox_sessions where kind = 'evening' and result is null order by started_at desc limit 1);
+select kind, count(*) filter (where result = 'success') geschafft, count(result) gesamt
+from detox_sessions where started_at > now() - interval '30 days' group by kind;
+```
+
 ### Einkaufsliste (`shopping_items`)
 Erscheint auf der Startseite „Heute“. Abgehakte Einträge bleiben durchgestrichen, bis sie entfernt werden.
 ```sql
@@ -270,5 +282,8 @@ insert into allowed_users (user_id) select id from auth.users where email = '…
 ```
 
 ## Entwicklung
+Supabase-Queries sind lazy: ohne `await`/`.then` wird nichts gesendet. Für Fire-and-forget immer `fire(query)` aus
+`src/lib/supabase.ts` benutzen, nie `void supabase.from(...)`.
+
 `npm install`, `npm run dev`, `npm run build` (Typecheck + Build). Env-Variablen stehen in `.env.production`
 (nur URL + öffentlicher Publishable Key – Sicherheit kommt über RLS), daher braucht Vercel keine eigenen Env-Vars.

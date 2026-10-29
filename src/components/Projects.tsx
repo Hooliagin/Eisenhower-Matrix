@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createTasks, isDue, resolvedPatch, sentPatch, updateFollowup, useProjects } from "../lib/data";
 import { isoDate, parseDate } from "../lib/dates";
-import { supabase } from "../lib/supabase";
+import { fire, supabase } from "../lib/supabase";
 import type { Followup, Project } from "../lib/types";
 import BooksPanel from "./Books";
 import { countdown } from "./Calendar";
@@ -263,7 +263,7 @@ function StyleCard() {
     })();
   }, [open, profile]);
 
-  const save = () => void supabase.from("style_profile").upsert({ id: 1, profile: profile ?? "" });
+  const save = () => fire(supabase.from("style_profile").upsert({ id: 1, profile: profile ?? "" }));
 
   return (
     <section className="card p-3">

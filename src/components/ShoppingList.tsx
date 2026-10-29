@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useShopping } from "../lib/data";
-import { supabase } from "../lib/supabase";
+import { fire, supabase } from "../lib/supabase";
 import type { ShoppingItem } from "../lib/types";
 
 export default function ShoppingList() {
@@ -19,7 +19,7 @@ export default function ShoppingList() {
 
   function toggle(item: ShoppingItem) {
     setData(items.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)));
-    void supabase.from("shopping_items").update({ done: !item.done }).eq("id", item.id);
+    fire(supabase.from("shopping_items").update({ done: !item.done }).eq("id", item.id));
   }
 
   async function clearDone() {

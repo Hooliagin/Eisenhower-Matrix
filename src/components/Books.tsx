@@ -2,7 +2,7 @@ import { useState } from "react";
 import { logReading, minutesThisWeek, updateBook, useBooks } from "../lib/data";
 import { isoDate, weekDays, WEEKDAY_SHORT } from "../lib/dates";
 import { fmtMinutes } from "../lib/schedule";
-import { supabase } from "../lib/supabase";
+import { fire, supabase } from "../lib/supabase";
 import type { Book, BookStatus } from "../lib/types";
 
 const SECTIONS: { status: BookStatus; label: string }[] = [
@@ -71,7 +71,7 @@ function BookCard({ book, onPatch, onLog }: { book: Book; onPatch: (b: Book, p: 
             ))}
             <button
               className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-red-400"
-              onClick={() => confirm(`„${book.title}“ entfernen?`) && void supabase.from("books").delete().eq("id", book.id)}
+              onClick={() => confirm(`„${book.title}“ entfernen?`) && fire(supabase.from("books").delete().eq("id", book.id))}
             >
               Entfernen
             </button>

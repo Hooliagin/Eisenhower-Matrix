@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../../lib/supabase";
+import { fire, supabase } from "../../lib/supabase";
 import { formatLong, parseDate } from "../../lib/dates";
 import { useRestTimer } from "../../lib/timer";
 import type { Exercise, SetLog, TemplateExercise, WorkoutSession, WorkoutTemplate } from "../../lib/types";
@@ -182,7 +182,7 @@ export default function SessionView({ id, templates, back }: Props) {
         rows={2}
         value={session.notes ?? ""}
         onChange={(e) => setSession({ ...session, notes: e.target.value })}
-        onBlur={() => supabase.from("workout_sessions").update({ notes: session.notes }).eq("id", id)}
+        onBlur={() => fire(supabase.from("workout_sessions").update({ notes: session.notes }).eq("id", id))}
       />
       <button className="btn-primary py-3" onClick={finish}>
         {session.finished_at ? "Speichern & zurück" : "Training abschließen ✓"}

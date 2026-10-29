@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { isoDate } from "./lib/dates";
-import { supabase } from "./lib/supabase";
+import { fire, supabase } from "./lib/supabase";
 import { RestTimerProvider } from "./lib/timer";
 import Login from "./components/Login";
 import Home from "./components/Home";
@@ -54,7 +54,7 @@ export default function App() {
       .then(({ data }) => {
         setOwner(!!data);
         // Today's routine tasks (idempotent on the server).
-        if (data) void supabase.rpc("spawn_routine_tasks", { d: isoDate() });
+        if (data) fire(supabase.rpc("spawn_routine_tasks", { d: isoDate() }));
       });
   }, [session]);
 

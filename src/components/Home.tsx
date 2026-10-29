@@ -5,6 +5,7 @@ import { buildSchedule, fmtMinutes, hhmm, todayTasks } from "../lib/schedule";
 import { supabase } from "../lib/supabase";
 import AddTask from "./AddTask";
 import { CharacterCard, CharacterView } from "./Character";
+import DetoxCard from "./DetoxCard";
 import { countdown } from "./Calendar";
 
 function Tile({ icon, title, onClick, children, wide }: { icon: string; title: string; onClick: () => void; children: ReactNode; wide?: boolean }) {
@@ -81,6 +82,8 @@ export default function Home() {
       </header>
 
       <CharacterCard />
+
+      <DetoxCard />
 
       <AddTask defaultQuadrant="do" compact />
 
