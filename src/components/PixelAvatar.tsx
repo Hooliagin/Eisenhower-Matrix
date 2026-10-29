@@ -1,37 +1,44 @@
 /**
- * Pixel-art Joshua: blond, athletic, black tank top with neon trim, boxing hand wraps.
+ * Pixel-art Joshua: blond, athletic, black tank top with neon trim, MMA gloves, Master cap, tea towel & badge from care work.
  * Drawn from a character map so it stays crisp at any size; an outline is added automatically.
  */
 const SPRITE = [
-  "......HHHHHH......",
-  ".....HHHHHHHH.....",
-  "....HHHHHHHHHH....",
-  "....HHhHHHHhHH....",
-  "....HSSSSSSSSH....",
-  ".....SESSSSES.....",
-  ".....SSSSSSSS.....",
-  ".....SSSmmSSS.....",
-  "......SSSSSS......",
-  ".......ssss.......",
-  "...TTTTTTTTTTTT...",
-  "..SSTTTTNNTTTTSS..",
-  "..SSTTTTTTTTTTSS..",
-  "..SsTTTTTTTTTTsS..",
-  "..SS.TTTTTTTT.SS..",
-  "..SS.TTTTTTTT.SS..",
-  "..WW.NNNNNNNN.WW..",
-  "..WW.PPPPPPPP.WW..",
-  "....PPPPPPPPPP....",
-  "....PPPP..PPPP....",
-  "....PPPP..PPPP....",
-  "....PPPp..pPPP....",
-  "....PPPP..PPPP....",
-  "....PPPP..PPPP....",
-  "....FFFF..FFFF....",
-  "...FFFFF..FFFFF...",
+  "....KKKKKKKKKKKK....",
+  "...KkkkkkkkkkkkkKY..",
+  "......KKKKKKKK...Y..",
+  ".....HHHHHHHHHH..Y..",
+  ".....HhHHHHHHhH..y..",
+  ".....HSSSSSSSSH.....",
+  "......SESSSSES......",
+  "......SSSSSSSS......",
+  "......SSSmmSSS......",
+  ".......SSSSSS.......",
+  "........ssss........",
+  "....TTTTTTTTTTTT....",
+  "..SSDDTTTTNNTTTTSS..",
+  "..SSDdTTTTTTTTTTSS..",
+  "..SsDDTTTTBTTTTTsS..",
+  "..SS.dDTTTTTTTT.SS..",
+  "..SS..TTTTTTTT..SS..",
+  "..GG..NNNNNNNN..GG..",
+  ".GGgG.PPPPPPPP.GgGG.",
+  ".GgGG.PPPPPPPP.GGgG.",
+  ".....PPPPPPPPPP.....",
+  ".....PPPP..PPPP.....",
+  ".....PPPP..PPPP.....",
+  ".....PPPp..pPPP.....",
+  ".....PPPP..PPPP.....",
+  ".....PPPP..PPPP.....",
+  ".....FFFF..FFFF.....",
+  "....FFFFF..FFFFF....",
 ];
 
+// Outfit: Master cap with gold tassel (Politikwissenschaft), MMA gloves, tea towel + name badge (Alltagsbegleiter in der Pflege).
 const PALETTE: Record<string, string> = {
+  K: "#475569", // mortarboard
+  k: "#94a3b8",
+  Y: "#fbbf24", // tassel
+  y: "#d97706",
   H: "#f4d35e", // blond
   h: "#c9a227",
   S: "#f2c29b", // skin
@@ -40,7 +47,11 @@ const PALETTE: Record<string, string> = {
   E: "#1e3a8a", // eyes
   T: "#111827", // tank top
   N: "#22d3ee", // neon trim
-  W: "#f1f5f9", // hand wraps
+  D: "#e2e8f0", // tea towel
+  d: "#60a5fa", // towel stripe
+  B: "#86efac", // name badge
+  G: "#dc2626", // MMA gloves
+  g: "#0f172a",
   P: "#334155", // pants
   p: "#1e293b",
   F: "#e2e8f0", // shoes

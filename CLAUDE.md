@@ -339,13 +339,16 @@ Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen:
 - **Skills** (`skills`): `tier` 0–5 (Gesperrt · Novize · Lehrling · Fortgeschritten · Experte · Meister), `note` = ehrliche Begründung,
   `next_step` = konkrete Quest zur nächsten Stufe (Karte zeigt täglich eine als „▶ QUEST“). **Claude pflegt das aktiv:** Quest geschafft
   oder neue Info (Messwert, Erfolg, Kurs, Kampf, Umsatz) → `tier` hochsetzen, neue `next_step` setzen, ggf. Erfolg eintragen.
-  Nicht schönrechnen. Joshuas Selbsteinschätzung: Kampfsport Intermediate (~10 J., Amateurboxkämpfe), Schießen Anfänger.
+  Nicht schönrechnen. Joshuas Selbsteinschätzung: Kampfsport Intermediate (~10 J., Amateurboxkämpfe; aktuell mehr MMA als Boxen), Schießen Anfänger.
+  Beruf: Pflegehelfer/Alltagsbegleiter (30 h/Woche).
 - **Erfolge** (`achievements`): `kind='background'` = Lebenslauf (Master Politikwissenschaft, 10 J. Kampfsport, Mitgründer Pluma Media,
   KI-Startup MPU – vorerst gescheitert, Kreuzheben 210), `kind='milestone'` = neue Meilensteine mit `earned_on` (Rekorde, Check-ups,
   gelernte Gedichte, Events …) – bei echten Meilensteinen eintragen.
 - **₵ Credits** (`character_meta.credits` 0–100: Pleite/Knapp/Stabil/Polster/Wohlhabend/Frei, `credits_note`, `credits_next`) = Finanzen;
   aktuell 20 „Knapp“. Bei Infos zu Einkommen/Rücklagen anpassen. `class_title` = Klasse unter dem Namen („Kämpfer · Stratege“).
-- **Pixel-Avatar** (`PixelAvatar.tsx`): blond, athletisch, Tanktop mit Neon, Handbandagen; Leuchtfarbe = stärkster Wert.
+- **Pixel-Avatar** (`PixelAvatar.tsx`): blond, athletisch, Tanktop mit Neon; Ausrüstung = Lebenslauf: **MMA-Handschuhe** (macht aktuell
+  eher MMA als Boxen), **Doktorhut mit Quaste** (Master Politikwissenschaft), **Geschirrtuch + Namensschild** (Alltagsbegleiter in der Pflege);
+  Leuchtfarbe = stärkster Wert. Neue Lebensabschnitte/Erfolge können als Ausrüstung dazukommen.
 - **☯ Balance-Mechanik (Elemente ↔ Spiel):** aus den Element-Minuten der **letzten 7 Tage** (`element_events`):
   **Harmonie** 0–100 (normierte Entropie der vier Anteile, 100 = gleich verteilt). Anteil ≥ 22 % → **Buff**, < 10 % → **Debuff**
   (erst ab 60 min gesamt). Wirkung auf die **Form**: eigenes Element ±15 % auf die verknüpften Werte (🔥 Körper & Kreativität,
