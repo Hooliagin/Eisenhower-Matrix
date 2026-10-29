@@ -1,8 +1,21 @@
+import { useState } from "react";
 import { fmtSeconds, useRestTimer } from "../lib/timer";
+import PoemTrainer from "./PoemTrainer";
+
+// Short, phone-free things for the rest between sets (one per pause, rotating).
+const TIPS = [
+  "3 zyklische Seufzer: 2× kurz ein, lang aus",
+  "Ein paar Schlucke Wasser",
+  "Nächsten Satz planen: Gewicht, Wdh., ein Technik-Punkt",
+  "Locker gehen, Schultern kreisen",
+  "Satz im Kopf einmal durchgehen",
+];
 
 export default function RestTimerBar() {
   const { endsAt, remaining, total, add, stop } = useRestTimer();
-  if (!endsAt) return null;
+  const [poem, setPoem] = useState(false);
+  if (!endsAt) return poem ? <PoemTrainer onClose={() => setPoem(false)} /> : null;
+  const tip = TIPS[Math.floor(endsAt / 1000) % TIPS.length];
   const done = remaining === 0;
   const pct = total ? (1 - remaining / total) * 100 : 100;
 
@@ -17,7 +30,13 @@ export default function RestTimerBar() {
         <div className="flex-1">
           <div className="text-xs uppercase tracking-wide text-slate-300">{done ? "Los geht's!" : "Pause"}</div>
           <div className="font-mono text-3xl font-semibold tabular-nums">{fmtSeconds(remaining)}</div>
+          {!done && <div className="truncate text-[11px] text-slate-400">{tip}</div>}
         </div>
+        {!done && (
+          <button className="btn bg-amber-500/90 text-slate-900" onClick={() => setPoem(true)}>
+            📜
+          </button>
+        )}
         {!done && (
           <button className="btn-ghost" onClick={() => add(30)}>
             +30s
@@ -27,6 +46,7 @@ export default function RestTimerBar() {
           {done ? "OK" : "Skip"}
         </button>
       </div>
+      {poem && <PoemTrainer onClose={() => setPoem(false)} />}
     </div>
   );
 }

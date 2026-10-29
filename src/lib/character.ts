@@ -90,3 +90,73 @@ export function trend(s: AttrSummary): "up" | "down" | "flat" {
 }
 
 export const TREND_ICON = { up: "▲", down: "▼", flat: "▶" } as const;
+
+// ---------- RPG layer: skills, ranks, background ----------
+
+export interface Skill {
+  id: string;
+  attribute: Attribute;
+  name: string;
+  icon: string | null;
+  tier: number; // 0–5
+  note: string | null;
+  next_step: string | null;
+  position: number;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  attribute: Attribute | null;
+  kind: "background" | "milestone";
+  earned_on: string | null;
+  when_text: string | null;
+}
+
+export interface CharacterMeta {
+  class_title: string | null;
+  credits: number;
+  credits_note: string | null;
+  credits_next: string | null;
+}
+
+export const TIERS = ["Gesperrt", "Novize", "Lehrling", "Fortgeschritten", "Experte", "Meister"] as const;
+
+/**
+ * What you could already do before the app counts too: each skill tier is worth background XP
+ * for its attribute (Master degree, 10 years of boxing …), so levels don't start at zero.
+ */
+export const TIER_XP = [0, 60, 240, 600, 1200, 2000];
+
+export function backgroundXp(skills: Skill[], a: Attribute): number {
+  return skills.filter((s) => s.attribute === a).reduce((sum, s) => sum + (TIER_XP[s.tier] ?? 0), 0);
+}
+
+/** Rank titles per attribute, one every 5 levels – the "Zwischenstufen" between levels. */
+const RANKS: Record<Attribute, string[]> = {
+  koerper: ["Rekrut", "Kämpfer", "Veteran", "Champion", "Titan", "Legende"],
+  intellekt: ["Schüler", "Gelehrter", "Analyst", "Stratege", "Weiser", "Orakel"],
+  charisma: ["Stimme", "Redner", "Anführer", "Diplomat", "Visionär", "Ikone"],
+  spirit: ["Suchender", "Pilger", "Mönch", "Mystiker", "Erleuchteter", "Heiliger"],
+  kreativ: ["Bastler", "Gestalter", "Künstler", "Visionär", "Meister", "Schöpfer"],
+  verbunden: ["Einzelgänger", "Gefährte", "Freund", "Hüter", "Clanführer", "Herz des Clans"],
+};
+
+export function rank(a: Attribute, level: number): { title: string; next: string | null; nextAt: number } {
+  const i = Math.min(RANKS[a].length - 1, Math.floor((level - 1) / 5));
+  return { title: RANKS[a][i], next: RANKS[a][i + 1] ?? null, nextAt: (i + 1) * 5 + 1 };
+}
+
+/** Character level from all XP together (slower curve than a single attribute). */
+export function characterLevel(totalXp: number) {
+  const step = 90;
+  const level = Math.floor(Math.sqrt(totalXp / step)) + 1;
+  const from = step * (level - 1) ** 2;
+  const to = step * level ** 2;
+  return { level, pct: (totalXp - from) / (to - from), toNext: to - totalXp };
+}
+
+export const CREDIT_TIERS = ["Pleite", "Knapp", "Stabil", "Polster", "Wohlhabend", "Frei"] as const;
+export const creditTier = (credits: number) => CREDIT_TIERS[Math.min(5, Math.floor(credits / 20))];

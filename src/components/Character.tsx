@@ -1,69 +1,96 @@
+import { useEffect, useState } from "react";
 import { fmtMetric, useCharacter, useProgress, type MetricProgress } from "../lib/data";
-import { isoDate } from "../lib/dates";
-import { parseDate } from "../lib/dates";
+import { isoDate, parseDate } from "../lib/dates";
 import { byMetric, useMeasurements } from "./fitness/BodyValues";
-import { ATTR_ORDER, ATTRS, form, levelProgress, trend, TREND_ICON, type Attribute, type AttrSummary, type CharacterStat } from "../lib/character";
+import PixelAvatar from "./PixelAvatar";
+import {
+  ATTR_ORDER,
+  ATTRS,
+  backgroundXp,
+  characterLevel,
+  creditTier,
+  form,
+  levelProgress,
+  rank,
+  TIERS,
+  trend,
+  TREND_ICON,
+  type Attribute,
+  type AttrSummary,
+  type CharacterStat,
+  type Skill,
+} from "../lib/character";
 
-function levels(summary: AttrSummary[]) {
+type Leveled = { s: AttrSummary; bg: number; xp: number; level: number; pct: number; toNext: number };
+
+/** Attribute levels from activity XP plus background XP (skills you already had before the app). */
+function levels(summary: AttrSummary[], skills: Skill[]) {
   const by = (a: Attribute) => summary.find((s) => s.attribute === a) ?? { attribute: a, xp_total: 0, xp_14: 0, xp_prev_14: 0 };
-  return Object.fromEntries(ATTR_ORDER.map((a) => [a, { s: by(a), ...levelProgress(by(a).xp_total) }])) as Record<
-    Attribute,
-    { s: AttrSummary; level: number; pct: number; toNext: number }
-  >;
+  return Object.fromEntries(
+    ATTR_ORDER.map((a) => {
+      const s = by(a);
+      const bg = backgroundXp(skills, a);
+      const xp = Number(s.xp_total) + bg;
+      return [a, { s, bg, xp, ...levelProgress(xp) }];
+    }),
+  ) as Record<Attribute, Leveled>;
 }
 
-/** Little figure whose build reflects the stats: broader with Körper, brighter mind with Intellekt, more sparkle with Charisma. */
-export function Avatar({ k, i, c, sp = 1, size = 88 }: { k: number; i: number; c: number; sp?: number; size?: number }) {
-  const body = Math.min(1, (k - 1) / 30); // 0..1
-  const mind = Math.min(1, (i - 1) / 30);
-  const sparkles = Math.min(6, Math.floor((c - 1) / 3) + 1);
-  const halo = Math.min(1, (sp - 1) / 20);
-  const shoulder = 15 + body * 9;
-  const waist = 10 + body * 3;
-  const arm = 4 + body * 3;
+function Bar({ pct, color, h = "h-1.5" }: { pct: number; color: string; h?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" aria-label="Charakter">
-      <defs>
-        <radialGradient id="mind" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.25 + mind * 0.6} />
-          <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <circle cx="50" cy="50" r="48" fill="#111827" stroke="#1f2937" />
-      <circle cx="50" cy="30" r={16 + mind * 8} fill="url(#mind)" />
-      {/* arms */}
-      <path d={`M${50 - shoulder} 48 Q${50 - shoulder - 4} 62 ${50 - shoulder + 1} 74`} stroke="#f87171" strokeWidth={arm} strokeLinecap="round" fill="none" />
-      <path d={`M${50 + shoulder} 48 Q${50 + shoulder + 4} 62 ${50 + shoulder - 1} 74`} stroke="#f87171" strokeWidth={arm} strokeLinecap="round" fill="none" />
-      {/* torso */}
-      <path d={`M${50 - shoulder} 46 Q50 ${41 - body * 2} ${50 + shoulder} 46 L${50 + waist} 80 Q50 84 ${50 - waist} 80 Z`} fill="#ef4444" opacity="0.85" />
-      <rect x="44" y="38" width="12" height="8" rx="3" fill="#e5e7eb" />
-      {sp > 1 && <ellipse cx="50" cy="16" rx="10" ry="2.6" fill="none" stroke="#a78bfa" strokeWidth="1.6" opacity={0.35 + halo * 0.65} />}
-      {/* head */}
-      <circle cx="50" cy="30" r="11" fill="#e5e7eb" />
-      <circle cx="46" cy="29" r="1.4" fill="#111827" />
-      <circle cx="54" cy="29" r="1.4" fill="#111827" />
-      <path d="M46 34 Q50 37 54 34" stroke="#111827" strokeWidth="1.3" fill="none" strokeLinecap="round" />
-      {/* charisma sparkles */}
-      {Array.from({ length: sparkles }, (_, n) => {
-        const angle = (-150 + n * 50) * (Math.PI / 180);
-        const x = 50 + Math.cos(angle) * 33;
-        const y = 34 + Math.sin(angle) * 26;
-        return (
-          <text key={n} x={x} y={y} fontSize="8" textAnchor="middle" fill="#fbbf24">
-            ✦
-          </text>
-        );
-      })}
-    </svg>
-  );
-}
-
-function Bar({ pct, color }: { pct: number; color: string }) {
-  return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-      <div className="h-full rounded-full" style={{ width: `${Math.max(3, pct * 100)}%`, background: color }} />
+    <div className={`${h} w-full overflow-hidden rounded-sm bg-slate-800`}>
+      <div className="h-full" style={{ width: `${Math.max(3, Math.min(1, pct) * 100)}%`, background: color }} />
     </div>
   );
+}
+
+/** Segmented "pixel" bar like an RPG HP/XP bar. */
+function PixelBar({ pct, color, segments = 12 }: { pct: number; color: string; segments?: number }) {
+  const on = Math.round(Math.max(0, Math.min(1, pct)) * segments);
+  return (
+    <div className="flex gap-[2px]">
+      {Array.from({ length: segments }, (_, i) => (
+        <span key={i} className="h-2 flex-1" style={{ background: i < on ? color : "#1e293b" }} />
+      ))}
+    </div>
+  );
+}
+
+function TierPips({ tier, color }: { tier: number; color: string }) {
+  return (
+    <span className="font-pixel text-xs tracking-tight">
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} style={{ color: i < tier ? color : "#334155" }}>
+          ◆
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Pick a quest of the day from the skills' next steps (rotates daily). */
+function questOfDay(skills: Skill[]): Skill | null {
+  const q = skills.filter((s) => s.next_step);
+  if (!q.length) return null;
+  const day = Math.floor(Date.now() / 86_400_000);
+  return q[day % q.length];
+}
+
+/** Remembers last seen levels on this device and reports what went up since. */
+function useLevelUps(levelsNow: Record<string, number>, ready: boolean): string[] {
+  const [ups, setUps] = useState<string[]>([]);
+  const key = JSON.stringify(levelsNow);
+  useEffect(() => {
+    if (!ready) return;
+    try {
+      const prev = JSON.parse(localStorage.getItem("char-levels") ?? "null") as Record<string, number> | null;
+      if (prev) setUps(Object.keys(levelsNow).filter((k) => prev[k] != null && levelsNow[k] > prev[k]));
+      localStorage.setItem("char-levels", key);
+    } catch {
+      /* storage unavailable */
+    }
+  }, [key, ready]);
+  return ups;
 }
 
 /** Today's new personal bests – one quiet line on the home card, only when there is something. */
@@ -124,35 +151,88 @@ function Progress() {
   );
 }
 
-/** Compact card for the home page. */
+/** RPG character sheet on the home page: pixel avatar, character level, six attributes with ranks, credits, quest. */
 export function CharacterCard() {
-  const { data } = useCharacter();
-  const L = levels(data.summary);
-  const total = ATTR_ORDER.reduce((s, a) => s + L[a].level, 0);
+  const { data, loading } = useCharacter();
+  const L = levels(data.summary, data.skills);
+  const totalXp = ATTR_ORDER.reduce((s, a) => s + L[a].xp, 0);
+  const C = characterLevel(totalXp);
+  const top = [...ATTR_ORDER].sort((a, b) => L[b].xp - L[a].xp)[0];
+  const quest = questOfDay(data.skills);
+  const credits = data.meta?.credits ?? 0;
+  const ups = useLevelUps(
+    { char: C.level, ...Object.fromEntries(ATTR_ORDER.map((a) => [a, L[a].level])) },
+    !loading && data.skills.length > 0,
+  );
+  const upLabel = ups.map((u) => (u === "char" ? `Charakter LV ${C.level}` : `${ATTRS[u as Attribute].label} LV ${L[u as Attribute].level}`));
+
   return (
-    <button onClick={() => (location.hash = "today/character")} className="card flex items-center gap-3 p-3 text-left">
-      <Avatar k={L.koerper.level} i={L.intellekt.level} c={L.charisma.level} sp={L.spirit.level} size={72} />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex items-baseline justify-between">
-          <span className="text-sm font-semibold">Joshua</span>
-          <span className="text-xs text-slate-400">Gesamt-Level {total}</span>
+    <button
+      onClick={() => (location.hash = "today/character")}
+      className="pixel-frame relative overflow-hidden bg-gradient-to-b from-slate-900 to-[#0b0f17] p-3 text-left"
+      style={{ ["--glow" as string]: ATTRS[top].color + "66" }}
+    >
+      {upLabel.length > 0 && (
+        <div className="animate-levelup pointer-events-none absolute inset-x-0 top-8 z-10 text-center font-pixel text-xl text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,.8)]">
+          ⬆ LEVEL UP!
+          <div className="text-xs text-amber-200">{upLabel.join(" · ")}</div>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+      )}
+      <div className="flex items-baseline justify-between">
+        <span className="font-pixel text-lg leading-none text-slate-100">JOSHUA</span>
+        <span className="font-pixel text-sm text-amber-300">LV {C.level}</span>
+      </div>
+      <div className="font-pixel text-[11px] text-cyan-300">{data.meta?.class_title ?? "Abenteurer"}</div>
+
+      <div className="mt-2 flex gap-3">
+        <div className="flex shrink-0 flex-col items-center justify-end">
+          <PixelAvatar size={112} glow={ATTRS[top].color} />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
           {ATTR_ORDER.map((a) => {
             const t = trend(L[a].s);
             return (
-              <div key={a} className="flex items-center gap-1.5 text-[11px]">
-                <span className="w-4 shrink-0 text-center">{ATTRS[a].emoji}</span>
-                <span className="w-6 shrink-0 font-semibold">{L[a].level}</span>
-                <Bar pct={form(L[a].s) / 100} color={ATTRS[a].color} />
-                <span className={`w-2.5 shrink-0 text-[8px] ${t === "up" ? "text-emerald-400" : t === "down" ? "text-red-400" : "text-slate-600"}`}>{TREND_ICON[t]}</span>
+              <div key={a}>
+                <div className="flex items-baseline gap-1 text-[11px] leading-none">
+                  <span className="w-4 text-center">{ATTRS[a].emoji}</span>
+                  <span className="truncate font-pixel text-slate-300">{rank(a, L[a].level).title}</span>
+                  <span className={`text-[8px] ${t === "up" ? "text-emerald-400" : t === "down" ? "text-red-400" : "text-slate-600"}`}>{TREND_ICON[t]}</span>
+                  <span className="ml-auto font-pixel" style={{ color: ATTRS[a].color }}>
+                    {L[a].level}
+                  </span>
+                </div>
+                <div className="mt-0.5 pl-5">
+                  <PixelBar pct={L[a].pct} color={ATTRS[a].color} segments={10} />
+                </div>
               </div>
             );
           })}
         </div>
-        <span className="text-[10px] text-slate-600">Zahl = Level · Balken = Form der letzten 14 Tage</span>
-        <TodayRecords />
       </div>
+
+      <div className="mt-2.5 flex flex-col gap-1.5">
+        <div className="flex items-center gap-2 text-[10px]">
+          <span className="w-12 font-pixel text-amber-300">XP</span>
+          <div className="flex-1">
+            <PixelBar pct={C.pct} color="#fbbf24" segments={20} />
+          </div>
+          <span className="font-pixel text-slate-400">{C.toNext} → LV {C.level + 1}</span>
+        </div>
+        <div className="flex items-center gap-2 text-[10px]">
+          <span className="w-12 font-pixel text-emerald-300">₵ {credits}</span>
+          <div className="flex-1">
+            <PixelBar pct={credits / 100} color="#34d399" segments={20} />
+          </div>
+          <span className="font-pixel text-slate-400">{creditTier(credits)}</span>
+        </div>
+      </div>
+
+      {quest && (
+        <div className="mt-2 truncate rounded-sm border border-slate-800 bg-slate-950/60 px-2 py-1 text-[11px]">
+          <span className="font-pixel text-amber-300">▶ QUEST</span> <span className="text-slate-300">{quest.next_step}</span>
+        </div>
+      )}
+      <TodayRecords />
     </button>
   );
 }
@@ -212,81 +292,198 @@ function Measurements() {
   );
 }
 
+type Tab = "werte" | "skills" | "erfolge" | "fortschritt";
+
 export function CharacterView() {
   const { data } = useCharacter();
-  const L = levels(data.summary);
+  const L = levels(data.summary, data.skills);
+  const totalXp = ATTR_ORDER.reduce((s, a) => s + L[a].xp, 0);
+  const C = characterLevel(totalXp);
+  const top = [...ATTR_ORDER].sort((a, b) => L[b].xp - L[a].xp)[0];
+  const [tab, setTab] = useState<Tab>("werte");
+  const credits = data.meta?.credits ?? 0;
 
   return (
     <div className="flex flex-col gap-4 pt-4">
       <header className="flex items-center gap-2">
         <button className="btn-ghost px-2" onClick={() => (location.hash = "today")}>‹</button>
-        <h1 className="text-xl font-semibold">Dein Charakter</h1>
+        <h1 className="text-xl font-semibold">Charakter</h1>
       </header>
 
-      <p className="text-xs text-slate-500">
-        Das <b>Level</b> zeigt, was du insgesamt aufgebaut hast – es fällt nie. Die <b>Form</b> zeigt die letzten 14 Tage gegen
-        dein Wochenziel – sie sinkt, wenn du einen Bereich vernachlässigst.
-      </p>
-      <div className="flex justify-center">
-        <Avatar k={L.koerper.level} i={L.intellekt.level} c={L.charisma.level} sp={L.spirit.level} size={160} />
+      <section className="pixel-frame flex items-center gap-4 bg-gradient-to-b from-slate-900 to-[#0b0f17] p-4" style={{ ["--glow" as string]: ATTRS[top].color + "66" }}>
+        <PixelAvatar size={150} glow={ATTRS[top].color} />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="font-pixel text-2xl leading-none">JOSHUA</span>
+          <span className="font-pixel text-xs text-cyan-300">{data.meta?.class_title ?? "Abenteurer"}</span>
+          <span className="font-pixel text-3xl text-amber-300">LV {C.level}</span>
+          <PixelBar pct={C.pct} color="#fbbf24" segments={14} />
+          <span className="text-[10px] text-slate-500">
+            {totalXp.toLocaleString("de-DE")} XP · noch {C.toNext} bis LV {C.level + 1}
+          </span>
+          <span className="mt-1 font-pixel text-xs text-emerald-300">
+            ₵ {credits} · {creditTier(credits)}
+          </span>
+          <PixelBar pct={credits / 100} color="#34d399" segments={14} />
+        </div>
+      </section>
+
+      <div className="grid grid-cols-4 gap-1 font-pixel text-xs">
+        {(
+          [
+            ["werte", "Werte"],
+            ["skills", "Skills"],
+            ["erfolge", "Erfolge"],
+            ["fortschritt", "Stats"],
+          ] as const
+        ).map(([k, l]) => (
+          <button key={k} onClick={() => setTab(k)} className={`rounded-sm py-2 ${tab === k ? "bg-amber-400 text-slate-900" : "bg-slate-800 text-slate-300"}`}>
+            {l}
+          </button>
+        ))}
       </div>
 
-      {data.stats.length >= 3 && (
-        <section className="card p-3">
-          <h2 className="text-sm font-semibold text-slate-300">Stärken & Schwächen</h2>
-          <Radar stats={data.stats} />
-        </section>
+      {tab === "werte" && (
+        <>
+          <p className="text-[11px] text-slate-500">
+            <b>Level</b> = alles, was du aufgebaut hast (fällt nie), inklusive Vorgeschichte aus deinen Skills. Alle 5 Level ein neuer <b>Rang</b>.
+            <b> Form</b> = letzte 14 Tage gegen dein Wochenziel – sinkt, wenn du einen Bereich vernachlässigst.
+          </p>
+          {ATTR_ORDER.map((a) => {
+            const { s, bg, xp, level, pct, toNext } = L[a];
+            const t = trend(s);
+            const r = rank(a, level);
+            const sub = data.stats.filter((x) => x.attribute === a);
+            return (
+              <section key={a} className="card flex flex-col gap-2 p-3">
+                <div className="flex items-baseline justify-between">
+                  <h2 className="font-semibold">
+                    {ATTRS[a].emoji} {ATTRS[a].label} <span className="font-pixel" style={{ color: ATTRS[a].color }}>LV {level}</span>
+                  </h2>
+                  <span className="font-pixel text-xs text-slate-300">{r.title}</span>
+                </div>
+                <PixelBar pct={pct} color={ATTRS[a].color} segments={20} />
+                <p className="text-[11px] text-slate-500">
+                  {xp.toLocaleString("de-DE")} XP{bg ? ` (davon ${bg} Vorgeschichte)` : ""} · noch {toNext} bis LV {level + 1}
+                  {r.next && ` · Rang „${r.next}“ ab LV ${r.nextAt}`}
+                </p>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                  <span className="w-10">Form</span>
+                  <Bar pct={form(s) / 100} color={ATTRS[a].color} />
+                  <span className="w-10 whitespace-nowrap text-right">{form(s)} %</span>
+                  <span className={`text-[10px] ${t === "up" ? "text-emerald-400" : t === "down" ? "text-red-400" : "text-slate-500"}`}>{TREND_ICON[t]}</span>
+                </div>
+                <p className="text-[10px] text-slate-600">
+                  {s.xp_14} XP in 14 Tagen · Ziel {ATTRS[a].weeklyTarget} XP/Woche · XP durch {ATTRS[a].how}
+                </p>
+                {sub.length > 0 && (
+                  <ul className="mt-1 flex flex-col gap-2 border-t border-slate-800 pt-2">
+                    {sub.map((st) => (
+                      <li key={st.id}>
+                        <div className="flex justify-between text-xs">
+                          <span>{st.name}</span>
+                          <span className="font-pixel text-slate-400">{st.rating}</span>
+                        </div>
+                        <Bar pct={st.rating / 100} color={ATTRS[a].color} />
+                        {st.note && <p className="mt-0.5 text-[10px] text-slate-500">{st.note}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            );
+          })}
+          {data.stats.length >= 3 && (
+            <section className="card p-3">
+              <h2 className="text-sm font-semibold text-slate-300">Körper-Profil</h2>
+              <Radar stats={data.stats} />
+            </section>
+          )}
+        </>
       )}
 
-      <Progress />
-
-      <Measurements />
-
-      {ATTR_ORDER.map((a) => {
-        const { s, level, pct, toNext } = L[a];
-        const t = trend(s);
-        const sub = data.stats.filter((x) => x.attribute === a);
-        return (
-          <section key={a} className="card flex flex-col gap-2 p-3">
-            <div className="flex items-baseline justify-between">
-              <h2 className="font-semibold">
-                {ATTRS[a].emoji} {ATTRS[a].label} <span className="ml-1 text-slate-400">Level {level}</span>
+      {tab === "skills" && (
+        <>
+          <p className="text-[11px] text-slate-500">
+            Stufen: {TIERS.slice(1).join(" → ")}. Jede Stufe zählt als Vorgeschichte-XP für ihren Wert. Claude stuft hoch, sobald du die Quest geschafft hast.
+          </p>
+          {ATTR_ORDER.filter((a) => data.skills.some((k) => k.attribute === a)).map((a) => (
+            <section key={a} className="card p-3">
+              <h2 className="text-sm font-semibold" style={{ color: ATTRS[a].color }}>
+                {ATTRS[a].emoji} {ATTRS[a].label}
               </h2>
-              <span className={`text-xs ${t === "up" ? "text-emerald-400" : t === "down" ? "text-red-400" : "text-slate-500"}`}>
-                {TREND_ICON[t]} {s.xp_14} XP / 14 T{s.xp_prev_14 ? ` (vorher ${s.xp_prev_14})` : ""}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-[11px] text-slate-400">
-              <span className="w-12">Level</span>
-              <Bar pct={pct} color={ATTRS[a].color} />
-            </div>
-            <div className="flex items-center gap-2 text-[11px] text-slate-400">
-              <span className="w-12">Form</span>
-              <Bar pct={form(s) / 100} color={ATTRS[a].color} />
-              <span className="w-9 text-right">{form(s)} %</span>
-            </div>
-            <p className="text-[11px] text-slate-500">
-              {s.xp_total} XP · noch {toNext} bis Level {level + 1} · Ziel {ATTRS[a].weeklyTarget} XP/Woche · XP durch {ATTRS[a].how}
-            </p>
-            {sub.length > 0 ? (
-              <ul className="mt-1 flex flex-col gap-2">
-                {sub.map((st) => (
-                  <li key={st.id}>
-                    <div className="flex justify-between text-xs">
-                      <span>{st.name}</span>
-                      <span className="text-slate-400">{st.rating}/100</span>
-                    </div>
-                    <Bar pct={st.rating / 100} color={ATTRS[a].color} />
-                    {st.note && <p className="mt-0.5 text-[10px] text-slate-500">{st.note}</p>}
-                  </li>
-                ))}
+              <ul className="mt-1 flex flex-col">
+                {data.skills
+                  .filter((k) => k.attribute === a)
+                  .map((k) => (
+                    <li key={k.id} className="border-t border-slate-800 py-2 first:border-0">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-sm">
+                          {k.icon} {k.name}
+                        </span>
+                        <TierPips tier={k.tier} color={ATTRS[a].color} />
+                      </div>
+                      <div className="font-pixel text-[11px] text-slate-400">{TIERS[k.tier]}</div>
+                      {k.note && <p className="text-[11px] text-slate-500">{k.note}</p>}
+                      {k.next_step && (
+                        <p className="mt-1 text-[11px] text-amber-300">
+                          ▶ Quest → {TIERS[Math.min(5, k.tier + 1)]}: <span className="text-slate-200">{k.next_step}</span>
+                        </p>
+                      )}
+                    </li>
+                  ))}
               </ul>
-            ) : (
-              a === "koerper" && <p className="text-xs text-slate-500">Noch nicht vermessen – schick Claude deine Fitnesswerte, dann wird dein Profil eingeordnet.</p>
+            </section>
+          ))}
+          <section className="card p-3">
+            <h2 className="text-sm font-semibold text-emerald-300">₵ Credits</h2>
+            <div className="mt-1 flex items-center gap-2">
+              <div className="flex-1">
+                <PixelBar pct={credits / 100} color="#34d399" segments={20} />
+              </div>
+              <span className="font-pixel text-xs">{creditTier(credits)}</span>
+            </div>
+            {data.meta?.credits_note && <p className="mt-1 text-[11px] text-slate-500">{data.meta.credits_note}</p>}
+            {data.meta?.credits_next && (
+              <p className="mt-1 text-[11px] text-amber-300">
+                ▶ Quest: <span className="text-slate-200">{data.meta.credits_next}</span>
+              </p>
             )}
           </section>
-        );
-      })}
+        </>
+      )}
+
+      {tab === "erfolge" && (
+        <>
+          {(["milestone", "background"] as const).map((kind) => {
+            const list = data.achievements.filter((x) => x.kind === kind);
+            if (!list.length) return null;
+            return (
+              <section key={kind} className="card p-3">
+                <h2 className="text-sm font-semibold text-slate-300">{kind === "milestone" ? "🏆 Errungenschaften" : "📜 Vorgeschichte"}</h2>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {list.map((x) => (
+                    <div key={x.id} className="pixel-frame flex flex-col gap-0.5 bg-slate-950/60 p-2" style={{ ["--glow" as string]: (x.attribute ? ATTRS[x.attribute].color : "#fbbf24") + "33" }}>
+                      <span className="text-2xl">{x.icon ?? "🏆"}</span>
+                      <span className="font-pixel text-xs leading-tight text-slate-100">{x.title}</span>
+                      {x.description && <span className="text-[10px] leading-snug text-slate-400">{x.description}</span>}
+                      <span className="mt-auto text-[9px] text-slate-500">
+                        {x.earned_on ? parseDate(x.earned_on).toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" }) : x.when_text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </>
+      )}
+
+      {tab === "fortschritt" && (
+        <>
+          <Progress />
+          <Measurements />
+        </>
+      )}
     </div>
   );
 }

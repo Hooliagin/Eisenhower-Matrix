@@ -22,7 +22,7 @@ Vor Änderungen per Titel-Match erst `select`, bei Mehrdeutigkeit nachfragen.
 
 | Reiter | Inhalt |
 |---|---|
-| **Heute** | Nur kompakte Übersicht – **bewusst nicht überfrachten**. Von oben: Charakter-Karte (Avatar, 6 Werte) · Detox-Fenster (☀️ Morgen / 🌙 Abend) · ⚡ Daily-Quickbuttons · Schnell-Eingabe · Kacheln (Heute-Plan, Leute, Kalender, Einkauf, Training, Lesen) · Karte „Körper heute“ (Getränke, Dienst, kcal, Protein). Tipp auf Avatar → Charakter-Detail mit Messungen. |
+| **Heute** | Nur kompakte Übersicht – **bewusst nicht überfrachten**. Von oben: **RPG-Charakterbogen** (Pixel-Avatar, Charakter-LV, 6 Werte mit Rang, XP- & ₵-Credits-Leiste, Quest des Tages) · Detox-Fenster (☀️ Morgen / 🌙 Abend) · ⚡ Daily-Quickbuttons (+ 📜 Gedicht, 🫁 Atem) · Schnell-Eingabe · Kacheln (Heute-Plan, Leute, Kalender, Einkauf, Training, Lesen) · Karte „Körper heute“ (Getränke, Dienst, kcal, Protein). Tipp auf Avatar → Charakter-Detail mit Messungen. |
 | **Aufgaben** | Tagesplan (mit Uhrzeiten) · Eisenhower-Matrix · Einkaufsliste |
 | **Projekte** | Ordner (mit Unterordnern), Leute & Nachfassen mit Nachrichtenentwürfen, Bücherliste (Projekt „Lesen“), „✍️ Mein Schreibstil“ |
 | **Kalender** | Monat mit Deadlines (rot), Terminen (blau), Diensten (lila), Trainings (grün); „Demnächst“-Liste |
@@ -44,6 +44,7 @@ Diese Tabelle entspricht den Views `xp_events`, `element_events` und `nutrition_
 | Erledigte Aufgabe nur mit `element` | – | jeweiliges Element | – |
 | **Unterbrochene** Timer-Aufgabe (`progress_seconds ≥ 30`, noch nicht erledigt) | bisherige Minuten, am Tag des Speicherns | ebenso | Körper-Aufgaben: 8 kcal/min |
 | Atemübung gespeichert (Aufgabe „Atemübung: …“) | 🕊️ Spiritualität (Minuten) | 💧 Wasser | – |
+| Gedicht geübt (`poem_attempts.seconds`) | 🧠 Intellekt (Minuten) · gemeistert (`poems.mastered_on`) +60 | 💨 Luft | – |
 | Detox-Fenster geschafft (`detox_sessions.result='success'`) | – | 🌍 Erde (30/60 min) | – |
 | Cappuccino (`drink_log.kind='coffee'`) | – | – | Aufnahme: +100 kcal, +5 g Protein, 75 mg Koffein |
 | Mahlzeit (`meals`) | – | – | Aufnahme: kcal, Protein × `protein_quality` |
@@ -151,6 +152,24 @@ Jede gespeicherte Übung landet zusätzlich in **`breath_sessions`** (`exercise`
 `avg_rate` = gemessenes Tempo mit Sensor). Auswahl zeigt je Übung „N× gemacht · 🏆 Bestwert · Ø letzte 5“, Endbildschirm
 „🏆 Neuer Rekord!“ bzw. Vergleich mit Ø. Erzählt Joshua Haltezeiten im Chat:
 `insert into breath_sessions (exercise, name, duration_s, holds) values ('wimhof', 'Wim Hof', 660, array[102,108,76]);`
+
+## 📜 Gedichte auswendig lernen (`poems`, `poem_attempts`, `src/lib/poem.ts`, `PoemTrainer.tsx`)
+
+Öffnen: ⚡ Daily → „📜 Gedicht“ oder in jeder **Satzpause** über den 📜-Knopf im Pausen-Timer (Countdown läuft oben weiter,
+„Satz! 💪“ wenn vorbei). Strophenweise: 📖 Lesen → 🧩 Lücken (Anfangsbuchstaben) → 🎤 Aufsagen per Spracherkennung (de-DE) für
+„Diese Strophe“, „Strophe 1–n“ oder „Ganzes Gedicht“. Die App vergleicht Wort für Wort (rot = fehlt, gelb = anders gesagt;
+kleine Erkennungsfehler zählen als richtig) und speichert **jeden Versuch mit Transkript** in `poem_attempts`. ≥ 90 % bei der
+aktuellen Strophe → „✓ Sitzt“ (`poems.learned_stanzas` +1; letzte Strophe → `status='mastered'`, `mastered_on`).
+Text: Strophen durch Leerzeile getrennt. Aktuell: **Belsazar** (Heine, 21 Strophen).
+**„Prüf mal mein Gedicht“** → Claude ist Kontrollinstanz: neueste Versuche lesen, Transkript gegen Text vergleichen (Spracherkennung
+verhört sich bei Eigennamen/alten Formen – „Belsazar“, „Jehovah“, „störrigen“ – nicht als Fehler werten), wiederkehrende Fehler und
+vertauschte/ausgelassene Zeilen benennen, kurzes Feedback in `poem_attempts.feedback` schreiben (App zeigt das neueste). Neues Gedicht:
+`insert into poems (title, author, text, position) …` (gemeinfreie Texte vollständig, sonst Joshua den Text schicken lassen).
+```sql
+select a.created_at, a.stanza_from + 1 as von, a.stanza_to + 1 as bis, a.accuracy, a.transcript
+from poem_attempts a join poems p on p.id = a.poem_id where p.title = 'Belsazar' and a.mode = 'recite' order by a.created_at desc limit 10;
+update poem_attempts set feedback = '…', checked_at = now() where id = '<neuester Versuch>';
+```
 
 ## 📈 Fortschritt & Rekorde (Views `metric_daily`, `metric_progress`)
 
@@ -274,6 +293,27 @@ Sechs Werte: 💪 Körper · 🧠 Intellekt · ✨ Charisma · 🕊️ Spiritual
 **Level** = Lebenszeit-XP (fällt nie, Level n ab 30·(n−1)² XP). **Form** = XP der letzten 14 Tage gegen 2× Wochenziel (sinkt bei
 Vernachlässigung). Wochenziele (`src/lib/character.ts`): Körper 300 · Intellekt 210 · Charisma 60 · Spiritualität 70 ·
 Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen: siehe „Querverbindungen“.
+
+### 🎮 RPG-Schicht (`skills`, `achievements`, `character_meta`) – Joshua will Spielgefühl, Zwischenstufen und „Next Steps“
+- **Charakter-LV** aus allen XP (Schritt 90: LV n ab 90·(n−1)²). **Attribut-LV** = Aktivitäts-XP + **Vorgeschichte-XP** aus Skills
+  (Stufe 1–5 = 60/240/600/1200/2000 XP, `TIER_XP` in `character.ts`) – Lebenslauf zählt, nichts startet bei null.
+  **Ränge** alle 5 Level (z. B. Körper: Rekrut → Kämpfer → Veteran → Champion → Titan → Legende). Level-ups zeigt die Karte als „⬆ LEVEL UP!“.
+- **Skills** (`skills`): `tier` 0–5 (Gesperrt · Novize · Lehrling · Fortgeschritten · Experte · Meister), `note` = ehrliche Begründung,
+  `next_step` = konkrete Quest zur nächsten Stufe (Karte zeigt täglich eine als „▶ QUEST“). **Claude pflegt das aktiv:** Quest geschafft
+  oder neue Info (Messwert, Erfolg, Kurs, Kampf, Umsatz) → `tier` hochsetzen, neue `next_step` setzen, ggf. Erfolg eintragen.
+  Nicht schönrechnen. Joshuas Selbsteinschätzung: Kampfsport Intermediate (~10 J., Amateurboxkämpfe), Schießen Anfänger.
+- **Erfolge** (`achievements`): `kind='background'` = Lebenslauf (Master Politikwissenschaft, 10 J. Kampfsport, Mitgründer Pluma Media,
+  KI-Startup MPU – vorerst gescheitert, Kreuzheben 210), `kind='milestone'` = neue Meilensteine mit `earned_on` (Rekorde, Check-ups,
+  gelernte Gedichte, Events …) – bei echten Meilensteinen eintragen.
+- **₵ Credits** (`character_meta.credits` 0–100: Pleite/Knapp/Stabil/Polster/Wohlhabend/Frei, `credits_note`, `credits_next`) = Finanzen;
+  aktuell 20 „Knapp“. Bei Infos zu Einkommen/Rücklagen anpassen. `class_title` = Klasse unter dem Namen („Kämpfer · Stratege“).
+- **Pixel-Avatar** (`PixelAvatar.tsx`): blond, athletisch, Tanktop mit Neon, Handbandagen; Leuchtfarbe = stärkster Wert.
+- Ausdauer-Skill vorläufig (Ruhepuls/5 km folgen).
+```sql
+update skills set tier = 4, note = '…', next_step = '…', updated_at = now() where name = 'Kraft';
+insert into achievements (title, description, icon, attribute, kind, earned_on) values ('Schulterdrücken 80 kg', '…', '🏋️', 'koerper', 'milestone', '2026-12-01');
+update character_meta set credits = 30, credits_note = '…', credits_next = '…', updated_at = now();
+```
 
 **Messwerte ansehen:** Fitness → **📏 Werte** (`src/components/fitness/BodyValues.tsx`): gruppiert (Kraft · Muskelverteilung ·
 Ausdauer & Beweglichkeit · Körperzusammensetzung), je Wert letzte Messung + Änderung seit der vorigen (grün = gut, gelb = schlechter,

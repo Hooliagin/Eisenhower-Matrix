@@ -16,3 +16,14 @@ input, textarea, select { @apply bg-slate-900 border border-slate-700 rounded-lg
 .card { @apply rounded-xl border border-slate-800 bg-slate-900/60; }
 .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem); }
 .pt-safe { padding-top: env(safe-area-inset-top); }
+/* RPG look: pixel headings, stepped "pixel" frame, crisp sprites */
+h1, h2 { font-family: "Pixelify Sans", ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.01em; }
+.pixel-frame {
+  border: 2px solid #334155;
+  box-shadow: 0 0 0 2px #0b0f17, 0 0 0 4px #1e293b, 0 0 24px -6px var(--glow, rgba(34, 211, 238, 0.35));
+  border-radius: 6px;
+}
+.pixelated { image-rendering: pixelated; shape-rendering: crispEdges; }
+@keyframes levelup { 0% { transform: scale(.6); opacity: 0 } 15% { transform: scale(1.08); opacity: 1 } 85% { opacity: 1 } 100% { transform: translateY(-12px); opacity: 0 } }
+.animate-levelup { animation: levelup 3.2s ease-out forwards; }
+@keyframes bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-2px) } }

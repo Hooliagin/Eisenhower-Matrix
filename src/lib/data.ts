@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 import type { Book, CalendarEvent, Followup, Project, Quadrant, ReadingLog, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
-import type { AttrSummary, CharacterStat } from "./character";
+import type { Achievement, AttrSummary, CharacterMeta, CharacterStat, Skill } from "./character";
 import { addDays, isoDate, weekStart } from "./dates";
 
 /** Refetch on mount, when the tab regains focus, and on realtime changes to `tables`. */
@@ -133,16 +133,19 @@ export function resolvedPatch(f: Followup): Partial<Followup> {
 // ---------- Character ----------
 
 export function useCharacter() {
-  return useLive<{ summary: AttrSummary[]; stats: CharacterStat[] }>(
+  return useLive<{ summary: AttrSummary[]; stats: CharacterStat[]; skills: Skill[]; achievements: Achievement[]; meta: CharacterMeta | null }>(
     async () => {
-      const [s, c] = await Promise.all([
+      const [s, c, k, a, m] = await Promise.all([
         supabase.from("character_summary").select("*"),
         supabase.from("character_stats").select("*").order("attribute").order("position"),
+        supabase.from("skills").select("*").order("attribute").order("position"),
+        supabase.from("achievements").select("*").order("position"),
+        supabase.from("character_meta").select("*").maybeSingle(),
       ]);
-      return { summary: must(s), stats: must(c) };
+      return { summary: must(s), stats: must(c), skills: must(k), achievements: must(a), meta: m.data as CharacterMeta | null };
     },
-    ["tasks", "reading_log", "workout_sessions", "character_stats", "events"],
-    { summary: [], stats: [] },
+    ["tasks", "reading_log", "workout_sessions", "character_stats", "events", "skills", "achievements", "character_meta", "poem_attempts", "poems"],
+    { summary: [], stats: [], skills: [], achievements: [], meta: null },
   );
 }
 
