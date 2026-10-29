@@ -1,294 +1,259 @@
 # Daily Tracker – Arbeitsanleitung für Claude
 
-Persönliche App (nur ein Nutzer) für **Tagesplan/Eisenhower-Matrix**, **Projekte & Nachfassen**, **Kalender** und **Fitness-Tracking**.
-Der Nutzer steuert alles per Chat mit Claude; die Website ist zum Anschauen, Abhaken und Workout-Loggen.
+Persönliche App (nur ein Nutzer: Joshua) für Tagesplanung, Projekte & Nachfassen, Kalender, Fitness, Ernährung und
+einen gamifizierten Charakter. **Joshua steuert alles per Chat mit Claude**; die Website ist zum Anschauen, Abhaken,
+Timer-Starten und Workout-Loggen.
 
-Reiter: **Heute** (nur kompakte Übersichts-Kacheln – bewusst nicht überfrachten!), **Aufgaben** (Tagesplan | Matrix | Einkauf),
-**Projekte**, **Kalender**, **Fitness**.
-
-- Frontend: Vite + React + TypeScript + Tailwind, gehostet auf Vercel (Projekt `eisenhower-matrix`, Team `hooliagins-projects`): https://eisenhower-matrix-bay.vercel.app/
+- Frontend: Vite + React + TypeScript + Tailwind, gehostet auf Vercel (Projekt `eisenhower-matrix`, Team `hooliagins-projects`):
+  https://eisenhower-matrix-bay.vercel.app/ – Deploy automatisch bei Push auf den Branch.
 - Backend: Supabase-Projekt **`daily-tracker`**, ID **`mnwjojtntgihfwotvshl`** (eu-central-1).
-- Schema: `supabase/migrations/`. Alle Tabellen haben RLS „nur Owner“ (`public.allowed_users`).
+- Schema: `supabase/migrations/` (jede Schemaänderung dort als Datei mitschreiben). Alle Tabellen: RLS „nur Owner“ (`allowed_users`).
 
 ## Wie Claude Daten ändert
 
-Immer über das Supabase-MCP (`execute_sql` für Daten, `apply_migration` für Schemaänderungen) mit
-`project_id = mnwjojtntgihfwotvshl`. Der Cloud-Container erreicht `*.supabase.co` per HTTP nicht – das MCP schon.
-Die App aktualisiert sich per Realtime sofort, kein Deploy nötig.
+Immer über das Supabase-MCP (`execute_sql` für Daten, `apply_migration` für Schemaänderungen), `project_id = mnwjojtntgihfwotvshl`.
+Der Cloud-Container erreicht `*.supabase.co` per HTTP nicht – das MCP schon. Die App aktualisiert sich per Realtime, kein Deploy nötig.
+Sprache: **Deutsch**. Datum immer Europe/Berlin: `(now() at time zone 'Europe/Berlin')::date` statt `current_date`.
+Vor Änderungen per Titel-Match erst `select`, bei Mehrdeutigkeit nachfragen.
 
-Sprache in der App und in Einträgen: **Deutsch**. Datumslogik: Zeitzone Europe/Berlin
-(`(now() at time zone 'Europe/Berlin')::date` statt `current_date`).
+---
 
-### Aufgaben (`tasks`)
+## App-Aufbau (Reiter)
+
+| Reiter | Inhalt |
+|---|---|
+| **Heute** | Nur kompakte Übersicht – **bewusst nicht überfrachten**. Von oben: Charakter-Karte (Avatar, 6 Werte) · Detox-Fenster (☀️ Morgen / 🌙 Abend) · ⚡ Daily-Quickbuttons · Schnell-Eingabe · Kacheln (Heute-Plan, Leute, Kalender, Einkauf, Training, Lesen) · Karte „Körper heute“ (Getränke, Dienst, kcal, Protein). Tipp auf Avatar → Charakter-Detail mit Messungen. |
+| **Aufgaben** | Tagesplan (mit Uhrzeiten) · Eisenhower-Matrix · Einkaufsliste |
+| **Projekte** | Ordner (mit Unterordnern), Leute & Nachfassen mit Nachrichtenentwürfen, Bücherliste (Projekt „Lesen“), „✍️ Mein Schreibstil“ |
+| **Kalender** | Monat mit Deadlines (rot), Terminen (blau), Diensten (lila), Trainings (grün); „Demnächst“-Liste |
+| **Fitness** | Trainingsplan A/B/C, Sätze loggen mit 2-min-Pausentimer, Fortschritt, 🥊 Timer |
+| **Elemente** | Wochenverteilung Feuer/Wasser/Erde/Luft gegen 4-Wochen-Schnitt |
+
+## Querverbindungen – was wohin zählt (WICHTIG beim Eintragen)
+
+Jede Aktivität kann gleichzeitig **XP** (Charakterwert), **Element-Minuten** und **Energieverbrauch** erzeugen.
+Diese Tabelle entspricht den Views `xp_events`, `element_events` und `nutrition_daily` (dort im Zweifel nachsehen).
+
+| Eingabe | Charakter-XP (`xp_events`) | Element (`element_events`) | kcal-Verbrauch (`nutrition_daily`) |
+|---|---|---|---|
+| Training-Session abgeschlossen (`workout_sessions.finished_at`) | Körper +75 | 🔥 Feuer 75 min | +300 kcal |
+| Dienst mit Rad (`events.kind='dienst'`, `ride_km_each_way=13`) | Körper +78 (26 km × 3) | 🔥 Feuer 78 min | Rad 26 km × 25 = +650 kcal |
+| Dienst-Stunden (`shift_hours` oder Ende − Beginn) | – | – | +120 kcal pro Stunde |
+| Lesezeit (`reading_log`) | Intellekt (Min.) – Bücher mit Feld **Religion** → Spiritualität | 💨 Luft – Religion → 💧 Wasser | – |
+| Erledigte Aufgabe mit `attribute` | jeweiliger Wert, Dauer = `actual_minutes` → Schätzung → 20 | `tasks.element`, sonst aus `attribute` abgeleitet | nur `attribute='koerper'`: +8 kcal/min |
+| Erledigte Aufgabe nur mit `element` | – | jeweiliges Element | – |
+| Detox-Fenster geschafft (`detox_sessions.result='success'`) | – | 🌍 Erde (30/60 min) | – |
+| Cappuccino (`drink_log.kind='coffee'`) | – | – | Aufnahme: +100 kcal, +5 g Protein, 75 mg Koffein |
+| Mahlzeit (`meals`) | – | – | Aufnahme: kcal, Protein × `protein_quality` |
+
+`element_of(attribute)`: koerper/kreativ → feuer · spirit/verbunden → wasser · intellekt/charisma → luft.
+Grundverbrauch zusätzlich immer: Grundumsatz 1834 × PAL 1,4 ≈ 2568 kcal/Tag.
+
+**Regeln beim Anlegen:**
+- **Jede neue Aufgabe bekommt ein `element`** und ein `attribute`, wenn sie einen Charakterwert trainiert
+  (Sport außerhalb der Sessions → koerper · Recherche/Lernen → intellekt · Impro/Gespräche → charisma · Beten/Meditation →
+  spirit · Videos/Websites/Schreiben → kreativ · Freunde/Familie/Putschi → verbunden). Haushalt/Finanzen/Behörden → nur `element='erde'`.
+- **Nicht doppelt zählen:** Plan-Erinnerungen „Training: …“ bekommen weder `element` noch `attribute` (die Session zählt).
+  Radfahrten zum Dienst nicht zusätzlich als Aufgabe eintragen (zählen über das Dienst-Event).
+- **Weitere Radfahrten** (nicht zum Dienst) → erledigte Aufgabe, `attribute='koerper'`, `element='feuer'`, `actual_minutes` ≈ 3 min/km.
+
+---
+
+## Aufgaben & Tagesplan (`tasks`, View `tasks_planned`)
+
 Quadranten: `do` (dringend & wichtig), `schedule` (wichtig), `delegate` (dringend), `eliminate`, `inbox` (unsortiert).
-Von Claude angelegte Aufgaben bekommen `source = 'claude'`.
+Von Claude angelegte Einträge bekommen `source = 'claude'`. Lesen immer über **`tasks_planned`** (liefert gelernte Dauer).
 
+**Tagesplan** (Aufgaben → Tagesplan; Kachel „Heute“ zeigt jetzt/danach): alle offenen Aufgaben mit `due_date <= heute` oder
+Quadrant `do`, **außer** `anytime`-Routinen und verpassten Routinen, in Reihenfolge `position`, ab jetzt hintereinander gelegt.
+- Termine/Dienste **mit Uhrzeit** sind feste, unverschiebbare Blöcke; Aufgaben werden drumherum geplant, kurze spätere Aufgaben
+  füllen Lücken vor einem Block. Feste Uhrzeit einer Aufgabe (`planned_start`) kollidiert → wird orange („zu spät“) markiert.
+- Nennt Joshua eine Reihenfolge: `position = extract(epoch from now()) + rang`.
+
+Felder: `estimate_minutes` (Schätzung) · `planned_start` (feste Uhrzeit) · `started_at` (läuft, ▶) · `actual_minutes` (echte Dauer,
+Stoppuhr oder „hat 80 min gedauert“) · `project_id` · `routine_id` · `attribute` · `element` · `timer` · `anytime`.
+
+**Zeit-Lernen** (`planned_minutes`): 1. gleicher Titel (`title_key()`) schon erledigt → Median der letzten 5 echten Dauern,
+2. sonst Schätzung × persönlicher Faktor (`estimate_factor`, Median echt/geschätzt, ab 3 Werten, 0,5–3), 3. sonst 30 min.
+Wiederkehrende Aufgaben **immer gleich benennen**; genannte Dauern als `actual_minutes`/`estimate_minutes` speichern.
 ```sql
--- anlegen
-insert into tasks (title, quadrant, due_date, notes, source)
-values ('Steuererklärung abgeben', 'schedule', '2026-11-15', null, 'claude');
--- verschieben / erledigen / löschen
-update tasks set quadrant = 'do' where title ilike '%steuer%' and not done;
-update tasks set done = true, done_at = now() where id = '…';
-delete from tasks where id = '…';
--- Tagesüberblick
-select quadrant, title, due_date from tasks where not done order by quadrant, position;
-select title from tasks where done and done_at::date = (now() at time zone 'Europe/Berlin')::date;
+insert into tasks (title, quadrant, due_date, estimate_minutes, element, attribute, source)
+values ('Steuererklärung abgeben', 'schedule', '2026-11-15', 90, 'erde', null, 'claude');
+update tasks set done = true, done_at = now(), actual_minutes = 80 where title = 'Wohnung aufräumen' and not done;
+select title, planned_minutes, planned_start from tasks_planned
+where not done and not anytime and (due_date <= (now() at time zone 'Europe/Berlin')::date or quadrant = 'do') order by position;
 ```
-Vor Änderungen per Titel-Match erst `select` ausführen und bei Mehrdeutigkeit nachfragen.
+In der **Matrix** erscheinen keine Routinen und Projekt-Einträge nur mit `due_date`.
 
-### Projekte & Nachfassen (`projects`, `followups`, `tasks.project_id`)
-Projekt-Ordner (aktuell: Starke Mitte = die Partei, Pluma Media, Baumklettern, Lesen, Michael Rentsch Consulting Website).
-**Michael Rentsch** taucht in zwei Projekten auf – nicht verwechseln: Partei-Videos/Instagram-Reels → **Starke Mitte**
-(er nimmt Videos für die Partei auf); seine Consulting-Website (Link, Prototyp, Fotos, Brainstorming) → **Michael Rentsch Consulting Website**. Unterordner über `projects.parent_id`
-Einträge sind normale `tasks` mit `project_id` (Quadrant `schedule`; mit `due_date` = Projekt-Deadline).
-In der Matrix erscheinen Projekt-Einträge nur, wenn sie ein `due_date` haben.
+## Routinen (`routines`) & ⚡ Daily-Quickbuttons
 
-### Lesen (`books`, `reading_log`) – Projekt „Lesen“ hat `kind = 'books'` und zeigt die Bücherliste
-- `books.field`: Fiction, „Non-Fiction: Elitentheorie“, Life Skills, Religion (frei erweiterbar)
-- `books.status`: `reading` (lese ich), `to_buy` (besorgen), `want` (habe ich, will lesen), `idea` (Vorschlag von Claude), `done`
-- `progress_pct` 0–100. Nennt der Nutzer Seiten („S. 120 von 300“), in Prozent umrechnen.
-- Lesezeit: „heute 40 min gelesen“ → `reading_log`. Startseite zeigt die Summe der Woche (Accountability!).
-- Übungen aus Büchern (z. B. Impro: Statustransaktionen) als `tasks` im Projekt Lesen.
+Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig pro Tag), erzeugt beim App-Start per
+`spawn_routine_tasks(datum)` (Claude kann die Funktion selbst aufrufen). Vererbt werden `attribute`, `element`, `timer`, `anytime`.
+- `weekdays` (ISO 1 = Mo … 7 = So), `null` = täglich. Verpasste Routine bleibt, bis eine neuere derselben Routine existiert
+  (gestrige tägliche verschwindet, das Blumengießen vom Sonntag wartet).
+- `anytime = true` → nicht im Tagesplan, sondern als **⚡ Daily**-Button auf der Startseite (zwischendurch abhaken).
+- `timer` (jsonb, Sekunden): `{"rounds":3,"work":180,"rest":30,"prep":10}` → 🥊 Vollbild-Rundentimer (langer Ton = Start, Glocke =
+  Rundenende, 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong. Abschluss speichert
+  die Aufgabe als erledigt mit Dauer (ohne Vorlauf). Freier Boxtimer auch unter Fitness → „🥊 Timer“.
+
+| Routine | Wann | Wo | attribute / element |
+|---|---|---|---|
+| Tageslichtlampe: 10 min helles Licht | täglich, Anfang des Tages (gegen Winterdepression) | Tagesplan | – / erde |
+| Starke Mitte: 10 min Reels anderer Parteien schauen & gute an Michael schicken | täglich | Tagesplan | intellekt / luft |
+| Wohnung 10 min lüften | täglich | ⚡ Daily | – / erde |
+| Schattenboxen (3 × 3 min, 30 s Pause) | täglich | ⚡ Daily, Rundentimer | koerper / feuer |
+| Meditieren (10 min) | täglich | ⚡ Daily, Gong-Timer | spirit / wasser |
+| Blumen gießen | sonntags (zuletzt So 25.10.2026) | Tagesplan | – / erde |
 ```sql
-insert into reading_log (minutes, book_id) select 40, id from books where title = 'Neuromancer';
-update books set progress_pct = 60 where title = 'Enemies of the Leviathan';
-update books set status = 'done', progress_pct = 100, finished_at = (now() at time zone 'Europe/Berlin')::date where title = '…';
-select sum(minutes) from reading_log where log_date >= date_trunc('week', now() at time zone 'Europe/Berlin')::date;
-```
-
-### Charakter / Gamification (`character_summary`, `character_stats`, `measurements`, `tasks.attribute`)
-Avatar auf der Startseite mit sechs Attributen: **Körper** (`koerper`), **Intellekt** (`intellekt`), **Charisma** (`charisma`),
-**Spiritualität** (`spirit`: Beten, Meditieren, Stille, religiöse Lektüre), **Kreativität** (`kreativ`: Videos, Websites,
-Schreiben, Gestalten), **Verbundenheit** (`verbunden`: Freunde, Familie, Putschi, Geburtstage).
-**Level** = Lebenszeit-XP (fällt nie). **Form** = XP der letzten 14 Tage gegen 2× Wochenziel (sinkt bei Vernachlässigung).
-Wochenziele (in `src/lib/character.ts`): Körper 300, Intellekt 210, Charisma 60, Spiritualität 70, Kreativität 180, Verbundenheit 180.
-1 XP ≈ 1 investierte Minute:
-Training (abgeschlossene Session) = 75 XP Körper, Lesezeit = Minuten → Intellekt, erledigte Aufgaben mit `attribute`
-= ihre Dauer (`actual_minutes`, sonst Schätzung, sonst 20). Level n ab 30·(n−1)² XP. Trend = XP letzte 14 Tage vs. 14 davor.
-**Aufgaben passend taggen**, wenn sie trainieren: Impro/soziale Übungen → `charisma`, Recherche/Lernen → `intellekt`,
-Sport außerhalb der Trainings-Sessions → `koerper` (Trainings-Sessions nicht doppelt taggen).
-
-Fitnesswerte, die der Nutzer schickt: roh in `measurements` speichern und daraus realistische Teilwerte (0–100) in
-`character_stats` setzen (z. B. Körper → Oberkörperkraft, Beinkraft, Rumpf, Ausdauer, Beweglichkeit, Körperkomposition).
-Einordnung ehrlich an gängigen Kraftstandards relativ zum Körpergewicht (Untrainiert ≈ 15, Anfänger ≈ 30,
-Fortgeschritten ≈ 50, Erfahren ≈ 70, Sehr stark ≈ 85, Elite ≈ 95+) und in `note` kurz begründen (Wert + Kategorie).
-Nicht schönrechnen – der Nutzer will sehen, was stark und was schwach ist. Bei neuen Messungen Werte aktualisieren.
-```sql
-insert into measurements (metric, value, unit) values ('Körpergewicht', 82, 'kg'), ('Shoulder Press 1RM', 60, 'kg');
-insert into character_stats (attribute, name, rating, note, position) values
-  ('koerper', 'Oberkörperkraft', 55, 'Shoulder Press 60 kg bei 82 kg KG ≈ fortgeschritten', 1)
-on conflict (attribute, name) do update set rating = excluded.rating, note = excluded.note;
-select * from character_summary;
-```
-
-### Elemente (Reiter „Elemente“, `tasks.element`, View `element_events`)
-Selbsteinschätzung, wo die Zeit hinfließt: 🔥 **Feuer** (Antrieb: Training, Projekte vorantreiben, Erschaffen),
-💧 **Wasser** (Gefühl & Verbindung: Freunde, Familie, Gebet, Meditation, Natur mit Putschi),
-🌍 **Erde** (Basis & Ordnung: Haushalt, Finanzen, Behördliches, Routinen, Schlaf, Ernährung),
-💨 **Luft** (Geist & Kommunikation: Lesen, Lernen, Recherche, Gespräche, Impro).
-Quelle: Trainings-Sessions → Feuer (75 min), Lesezeit → Luft (Bücher mit Feld „Religion“ → Wasser bzw. Spiritualität), erledigte Aufgaben → `tasks.element`, sonst aus `attribute`
-abgeleitet (`element_of()`: koerper/kreativ → feuer, spirit/verbunden → wasser, intellekt/charisma → luft).
-**Jede neue Aufgabe mit `element` anlegen** (und `attribute`, wenn sie einen Charakterwert trainiert).
-Plan-Erinnerungen fürs Training („Training: …“) bekommen weder `element` noch `attribute` – die Session zählt schon.
-
-### Tägliche Routinen (`routines`)
-Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig pro Tag) und steht ganz vorne im Tagesplan
-(`position` = Reihenfolge am Morgen). Erzeugt beim App-Start per `spawn_routine_tasks(datum)`; Claude kann die Funktion
-selbst aufrufen. `weekdays` (ISO 1 = Mo … 7 = So) = nur an diesen Tagen, `null` = täglich.
-Eine verpasste Routine bleibt im Plan, bis eine neuere derselben Routine existiert (gestrige Tageslichtlampe verschwindet,
-das Blumengießen vom Sonntag wartet bis es erledigt ist). In der Matrix erscheinen Routinen nie.
-Routinen können `attribute`/`element` tragen (wird an die Tagesaufgabe vererbt).
-Aktuell: „Tageslichtlampe: 10 min helles Licht“ (täglich, gegen Winterdepression, Anfang des Tages),
-„Starke Mitte: 10 min Reels anderer Parteien schauen & gute an Michael schicken“ (täglich), „Wohnung 10 min lüften“ (täglich),
-„Blumen gießen“ (sonntags; zuletzt gegossen So 25.10.2026),
-„Schattenboxen (3 × 3 min)“ (täglich, Körper/Feuer, mit Rundentimer), „Meditieren (10 min)“ (täglich, Spiritualität/Wasser).
-Lüften, Schattenboxen, Meditieren sind `anytime` → Startseite „⚡ Daily“ statt Tagesplan.
-`routines.timer` (jsonb, z. B. `{"rounds":3,"work":180,"rest":30,"prep":10}` in Sekunden) → die Tagesaufgabe bekommt
-statt ▶ einen 🥊-Button, der den Vollbild-Rundentimer mit Signalen öffnet (langer Ton = Start, Glocke = Rundenende,
-2 Klicks = 10 s übrig, Ticken = Pause endet); am Ende wird die Aufgabe mit der Dauer als erledigt gespeichert.
-Den Timer gibt es auch frei unter Fitness → „🥊 Timer“.
-```sql
-insert into routines (title, estimate_minutes, position, attribute, element) values ('Beten', 10, 2, 'spirit', 'wasser');
+insert into routines (title, estimate_minutes, position, attribute, element, anytime) values ('Beten', 10, 7, 'spirit', 'wasser', true);
 select public.spawn_routine_tasks((now() at time zone 'Europe/Berlin')::date);
 ```
 
-`followups` = Leute, denen der Nutzer hinterher sein muss:
-- `status = 'todo'`: Nutzer muss schreiben → `draft` = von Claude vorformulierte Nachricht zum Kopieren
-- `status = 'waiting'`: Nachricht ist raus, `last_contact` = wann; ab `follow_up_on` nachhaken (Standard `wait_days` = 2)
-- ohne `draft` = reine Erinnerung (z. B. Kim: „keine Texte, nur erinnern“); `repeat_days` = wiederkehrend
-- In der App: „Gesendet“ → waiting + `follow_up_on = heute + wait_days` + Draft leeren; „Antwort da/Erledigt“ → done
-  (bzw. bei `repeat_days` neu planen).
+## Detox-Fenster (`detox_sessions`) – Selbst-Accountability, keine Sperre
 
-### Nachrichten in Joshuas Stil (`style_profile`, `voice_samples`) – PFLICHT-ABLAUF
-Die Empfänger dürfen nicht merken, dass KI mitschreibt. Deshalb **vor jedem Entwurf**:
-1. `select profile from style_profile;` lesen und befolgen (u. a. keine Gedankenstriche, keine KI-Floskeln, „Hey <Name>,“).
-2. Die 3–5 neuesten `voice_samples` als Stilvorlage lesen.
-
-Wenn Joshua eine Nachricht **diktiert**:
-- Inhalt sauber, aber in *seinen* Worten ausformulieren (Füllwörter dosiert behalten, nichts glattbügeln, nichts erfinden).
-- Was er ausdrücklich weglassen will, weglassen. Die Nachricht endet meist mit seiner Frage.
-- Rohdiktat in `voice_samples` speichern (mit `context` + `followup_id`) und in `followups.dictation` ablegen, Text in `followups.draft`.
-- Wenn das Diktat neue Stilmerkmale zeigt (Wörter, Wendungen, Anrede, Länge), `style_profile` ergänzen. Korrigiert er einen
-  Entwurf („so würde ich das nicht sagen“), die Korrektur ebenfalls ins Profil übernehmen.
-
-Wenn er **nicht** diktiert (z. B. Nachhaken): trotzdem streng nach Profil schreiben, kurz (2–3 Sätze), auf die vorige
-Nachricht Bezug nehmen, konkrete Frage. Wenn ein `waiting`-Eintrag fällig wird und kein Draft da ist, beim nächsten Chat
-eine Nachhak-Nachricht als `draft` hinterlegen. Das Profil ist in der App (Projekte → „Mein Schreibstil“) editierbar –
-vor dem Schreiben also immer frisch lesen.
+Startseite: ☀️ **Morgen 30 min** (nach dem Aufstehen kein Handy/Social Media/YouTube), 🌙 **Abend 60 min** (1 h vor dem Schlafen
+kein Bildschirm/helles Licht). Start → Countdown → „Geschafft? Ja/Nein“ (Abend meist am nächsten Morgen). Leiste = letzte 7.
+Erfolge → 🌍 Erde. Die App sperrt nichts. Sagt Joshua es im Chat, Ergebnis setzen:
 ```sql
-insert into followups (project_id, person, topic, status, last_contact, follow_up_on, draft, dictation, source)
-select id, 'Benjamin', 'Event Wein & Brezel', 'waiting', '2026-10-29', '2026-10-31', 'Hey Benjamin, …', null, 'claude'
-from projects where name = 'Starke Mitte';
-insert into voice_samples (text, context, followup_id) values ('<Rohdiktat>', 'Nachricht an X, Thema Y', '<followup id>');
-select text from voice_samples order by created_at desc limit 5;
--- Was ist fällig?
+update detox_sessions set result = 'success', answered_at = now()
+where id = (select id from detox_sessions where kind = 'evening' and result is null order by started_at desc limit 1);
+```
+
+## Projekte & Nachfassen (`projects`, `followups`, `tasks.project_id`)
+
+Ordner: **Starke Mitte** (= die Partei: Recruiting, Event-Reihe „Wein & Brezel“, Social Media) · **Pluma Media** (Content,
+Werbekampagnen, Konzept über Dienstleistung hinaus; Kim) · **Baumklettern** (AS1-Schein) · **Lesen** (`kind='books'`) ·
+**Michael Rentsch Consulting Website**. Unterordner über `projects.parent_id`. Einträge = `tasks` mit `project_id`
+(Quadrant `schedule`, `due_date` = Projekt-Deadline).
+**Michael Rentsch** (gesprochen mit Ä, Anrede immer „Hey Michael“) gibt es in zwei Projekten – nicht verwechseln:
+Partei-Videos/Instagram-Reels → **Starke Mitte**; seine Consulting-Website (Link, Prototyp, Fotos, Brainstorming) → **Website-Projekt**.
+
+`followups` = Leute, denen Joshua hinterher sein muss:
+- `status='todo'`: muss schreiben → `draft` = vorformulierte Nachricht (Kopieren-Button in der App)
+- `status='waiting'`: Nachricht ist raus (`last_contact`), ab `follow_up_on` nachhaken (`wait_days`, Standard 2)
+- ohne `draft` = reine Erinnerung (Kim: „keine Texte, nur erinnern“, `repeat_days = 7`)
+- App: „Gesendet“ → waiting + `follow_up_on = heute + wait_days` + Draft leeren; „Antwort da/Erledigt“ → done (bzw. neu planen)
+```sql
 select p.name, f.person, f.topic, f.status, f.follow_up_on, f.draft is not null as hat_text
 from followups f left join projects p on p.id = f.project_id
 where f.status <> 'done' and (f.follow_up_on is null or f.follow_up_on <= (now() at time zone 'Europe/Berlin')::date);
 ```
 
-### Kalender: Deadlines & Termine
-- **Deadline** = Aufgabe mit `tasks.due_date` (etwas muss *bis* dahin erledigt sein). Erscheint ab dem Tag im Tagesplan.
-- **Termin** = Eintrag in `events` (etwas findet *an* dem Tag statt), optional mit `start_time`/`end_time`.
-  Termine mit Uhrzeit werden am Tag als feste Blöcke in den Tagesplan eingeplant (ohne `end_time` = 2 h).
+### Nachrichten in Joshuas Stil (`style_profile`, `voice_samples`) – PFLICHT-ABLAUF
+Empfänger dürfen nicht merken, dass KI mitschreibt. **Vor jedem Entwurf**:
+1. `select profile from style_profile;` lesen und befolgen (u. a. keine Gedankenstriche, keine KI-Floskeln, „Hey <Name>,“).
+2. Die 3–5 neuesten `voice_samples` als Stilvorlage lesen.
+
+Wenn Joshua **diktiert**: Inhalt in *seinen* Worten ausformulieren (Füllwörter dosiert behalten, nichts erfinden), Weggelassenes
+weglassen, meist endet die Nachricht mit seiner Frage. Rohdiktat → `voice_samples` (`context`, `followup_id`) und
+`followups.dictation`, Text → `followups.draft`. Neue Stilmerkmale oder Korrekturen („so würde ich das nicht sagen“) → `style_profile`.
+Ohne Diktat (z. B. Nachhaken): streng nach Profil, 2–3 Sätze, Bezug auf vorige Nachricht, konkrete Frage. Fälliger
+`waiting`-Eintrag ohne Draft → beim nächsten Chat Nachhak-Text hinterlegen. Profil ist in der App editierbar → immer frisch lesen.
 ```sql
-insert into tasks (title, quadrant, due_date, source) values ('Rückzahlung Bürgergeld', 'schedule', '2026-11-14', 'claude');
-insert into events (title, event_date, start_time, end_time, source) values ('Ricks Geburtstag', '2026-10-31', '19:00', null, 'claude');
--- Was steht an?
-select 'deadline' art, due_date tag, null zeit, title from tasks where not done and due_date >= (now() at time zone 'Europe/Berlin')::date
-union all select 'termin', event_date, start_time, title from events where event_date >= (now() at time zone 'Europe/Berlin')::date
-order by 2, 3;
+insert into followups (project_id, person, topic, status, last_contact, follow_up_on, draft, dictation, source)
+select id, 'Benjamin', 'Event Wein & Brezel', 'waiting', '2026-10-29', '2026-10-31', 'Hey Benjamin, …', null, 'claude'
+from projects where name = 'Starke Mitte';
+insert into voice_samples (text, context, followup_id) values ('<Rohdiktat>', 'Nachricht an X, Thema Y', '<followup id>');
 ```
 
-**Dienste – Normalfall:** Der Nutzer lädt **keinen** Dienstplan hoch. Er tippt auf der Startseite (Karte „Körper heute“)
-**„+ 6 h“ / „+ 12 h“** oder sagt im Chat „heute Dienst, 6 Stunden, mit dem Rad“ → Event ohne Uhrzeit mit `shift_hours`:
+## Lesen (`books`, `reading_log`) – Projekt „Lesen“
+
+- `field`: Fiction · „Non-Fiction: Elitentheorie“ · Life Skills · Religion (frei erweiterbar)
+- `status`: `reading` · `to_buy` · `want` (habe ich) · `idea` (Vorschlag von Claude) · `done`; `progress_pct` 0–100 (Seiten → %)
+- Lesezeit „heute 40 min“ → `reading_log` (Startseiten-Kachel zeigt Wochensumme). Religion-Bücher zählen für Spiritualität/Wasser.
+- Übungen aus Büchern (Impro: Statustransaktionen) als `tasks` im Projekt Lesen mit `attribute='charisma'`.
+```sql
+insert into reading_log (minutes, book_id) select 40, id from books where title = 'Neuromancer';
+update books set progress_pct = 60 where title = 'Enemies of the Leviathan';
+```
+
+## Kalender (`events`, `tasks.due_date`)
+
+- **Deadline** = Aufgabe mit `due_date` (*bis* dahin). Ab dem Tag im Tagesplan.
+- **Termin** = `events` (`kind='termin'`), optional `start_time`/`end_time` (ohne Ende = 2 h); mit Uhrzeit fester Block im Plan.
+- **Dienst** = `events` (`kind='dienst'`). Joshua ist **Pflegehelfer, 30 h/Woche**, fährt mit dem Rad (je Weg 13 km).
+  **Normalfall: kein Dienstplan-Upload.** Er tippt in „Körper heute“ **„+ 6 h“ / „+ 12 h“** (🚲 an/aus, ✕ löschen) oder sagt
+  „heute 6 Stunden Dienst, mit dem Rad“ → Event ohne Uhrzeit mit `shift_hours`. Nennt er Uhrzeiten: `start_time`/`end_time`
+  → App plant Hin-/Rückfahrt (~39 min) als feste Blöcke. Ohne Rad (Bahn, krank): `ride_km_each_way = null`; fällt aus: löschen.
 ```sql
 insert into events (title, event_date, kind, shift_hours, ride_km_each_way, source)
-values ('Dienst', (now() at time zone 'Europe/Berlin')::date, 'dienst', 6, 13, 'claude');   -- ride_km_each_way = null, wenn nicht mit dem Rad
+values ('Dienst', (now() at time zone 'Europe/Berlin')::date, 'dienst', 6, 13, 'claude');
+insert into events (title, event_date, start_time, source) values ('Ricks Geburtstag', '2026-10-31', '19:00', 'claude');
 ```
-**Dienste mit Uhrzeit** (nur falls er doch Zeiten nennt): Schicht als `events` mit
-`kind = 'dienst'`, `title = 'Dienst'` (oder Bezeichnung), `start_time`, `end_time`, **`ride_km_each_way = 13`** (fährt mit dem
-Rad hin & zurück, je 13 km). Die App plant Hin- und Rückfahrt (~3 min/km ≈ 39 min) als feste Blöcke um die Schicht;
-Termine und Dienste sind unverschiebbar, Aufgaben werden drumherum geplant. Jeder Diensttag gibt ab dem Tag automatisch
-Körper-XP + Feuer (26 km ≈ 78 min). Fällt die Fahrt aus (Bahn, krank): `ride_km_each_way = null`; Schicht fällt aus: Event löschen.
-Weitere Radfahrten nennt der Nutzer im Chat → als erledigte Aufgabe mit `attribute = 'koerper'`, `element = 'feuer'`,
-`actual_minutes` (≈ 3 min/km) eintragen.
+
+## Einkaufsliste (`shopping_items`)
+
+Aufgaben → Einkauf; Startseiten-Kachel zeigt Anzahl offener Artikel. Abgehakte bleiben durchgestrichen bis „Erledigte entfernen“.
 ```sql
-insert into events (title, event_date, start_time, end_time, kind, ride_km_each_way, source)
-values ('Dienst', '2026-11-02', '06:00', '14:00', 'dienst', 13, 'claude');
+insert into shopping_items (name) values ('Milch'), ('Brot');
+update shopping_items set done = true where name ilike '%milch%';
 ```
 
-Habits (`habits`, `habit_logs`) sind aus der App entfernt – der Nutzer trackt Habits in anderen Apps.
-Die Tabellen existieren noch (alle Habits `active = false`), werden aber nicht mehr angezeigt.
+## Ernährung & Getränke (`meals`, `drink_log`, `nutrition_settings`, View `nutrition_daily`)
 
-### Detox-Fenster (`detox_sessions`) – Selbst-Accountability, keine Sperre
-Startseite, Karte unter dem Charakter: ☀️ **Morgen 30 min** (nach dem Aufstehen kein Handy/Social Media/YouTube) und
-🌙 **Abend 60 min** (1 h vor dem Schlafen kein Bildschirm/helles Licht). Nutzer drückt Start → Countdown → danach
-„Geschafft? Ja/Nein“ (Abend beantwortet er meist am nächsten Morgen). Leiste = letzte 7 Ergebnisse. Erfolge zählen als Erde.
-Die App kann das Handy nicht sperren – es geht ums Einhalten. Sagt er es im Chat („gestern Abend geschafft“), Ergebnis setzen:
-```sql
-update detox_sessions set result = 'success', answered_at = now()
-where id = (select id from detox_sessions where kind = 'evening' and result is null order by started_at desc limit 1);
-select kind, count(*) filter (where result = 'success') geschafft, count(result) gesamt
-from detox_sessions where started_at > now() - interval '30 days' group by kind;
-```
+Startseite, Karte „Körper heute“: Getränke per Tipp – 🥛 Glas 250 ml, 🍶 Flasche 1 L, ☕ Kaffee = **Cappuccino** (1 Espresso
+≈ 75 mg Koffein + ~150 ml Vollmilch ≈ 100 kcal & 5 g Protein, automatisch mitgezählt, 200 ml). Trinkziel 2,5 L (Kaffee zählt mit),
+Warnung ab 400 mg Koffein (EFSA). Dazu Dienst-Buttons, gegessene vs. verbrauchte kcal und **verwertbares** Protein.
 
-### Ernährung & Getränke (`meals`, `drink_log`, `nutrition_settings`, View `nutrition_daily`)
-Startseite, Karte „Körper heute“: Getränke per Tipp (🥛 Glas 250 ml, 🍶 Flasche 1 L, ☕ Kaffee = **Cappuccino**: 1 Espresso ≈ 75 mg Koffein
-+ ~150 ml Vollmilch ≈ 100 kcal & 5 g Protein, wird automatisch zu kcal/Protein gezählt, 200 ml Flüssigkeit),
-dazu gegessene vs. verbrauchte kcal und **verwertbares** Protein. Kaffee zählt zur Trinkmenge (Ziel 2,5 L), Warnung ab 400 mg Koffein
-(EFSA-Grenze für Erwachsene).
-
-**Essen trägt Claude ein**, wenn der Nutzer es im Chat erzählt (kein Scannen). Vorgehen pro Mahlzeit:
-1. Portionen realistisch schätzen (normaler Teller Nudeln ≈ 125 g trocken; Löffel Pesto ≈ 20 g; bei Unklarheit Annahme in `notes`).
-2. kcal/Makros aus Standard-Nährwerten (BLS/USDA-Größenordnung) je Zutat summieren, gerundet.
-3. `protein_quality` = proteingewichteter Mittelwert der DIAAS-Werte der Zutaten, **gedeckelt bei 1,0**.
-   Richtwerte: Ei 1,13 · Milch/Quark/Käse ~1,1 · Whey ~1,0–1,09 · Rind ~1,1 · Huhn ~1,08 · Schwein ~1,1 · Soja ~0,9 ·
-   Erbse ~0,6–0,8 · Linsen ~0,6 · Hafer ~0,55 · Weizen/Nudeln/Brot ~0,45 · Reis ~0,4 · Nüsse ~0,4–0,5 · Gemüse/Sprossen ~0,6.
-   Kombinationen (Getreide + Hülsenfrüchte) ergänzen sich – dann ~0,1 Aufschlag auf den Mittelwert.
-4. In `notes` kurz die Annahmen (Portion, Hauptquellen) – der Nutzer soll nachvollziehen und korrigieren können.
+**Essen trägt Claude ein**, wenn Joshua es erzählt (kein Scannen):
+1. Portionen realistisch schätzen (Teller Nudeln ≈ 125 g trocken, Löffel Pesto ≈ 20 g); Annahmen in `notes`.
+2. kcal/Makros aus Standard-Nährwerten (BLS/USDA-Größenordnung) je Zutat summieren.
+3. `protein_quality` = proteingewichteter DIAAS-Mittelwert, **max. 1,0**. Richtwerte: Ei 1,13 · Milch/Quark/Käse ~1,1 · Whey ~1,0 ·
+   Rind ~1,1 · Huhn ~1,08 · Schwein ~1,1 · Soja ~0,9 · Erbse ~0,6–0,8 · Linsen ~0,6 · Hafer ~0,55 · Weizen/Nudeln/Brot ~0,45 ·
+   Reis ~0,4 · Nüsse ~0,4–0,5 · Gemüse/Sprossen ~0,6. Getreide + Hülsenfrüchte ergänzen sich → ~+0,1.
 ```sql
 insert into meals (meal, description, kcal, protein_g, protein_quality, carbs_g, fat_g, fiber_g, notes)
 values ('Mittag', '3 Rühreier mit Brot', 520, 27, 0.85, 30, 30, 3, '3 Eier (19 g P, DIAAS 1), 2 Scheiben Brot (8 g P, ~0,45)');
 insert into drink_log (kind, ml) values ('water_bottle', 1000);
 select * from nutrition_daily where day = (now() at time zone 'Europe/Berlin')::date;
 ```
-**Verbrauch** (alles geschätzt, in `nutrition_settings`, bei neuen Messwerten aktualisieren):
-Grundumsatz = Katch-McArdle 370 + 21,6 × fettfreie Masse (67,8 kg → 1834 kcal) × Alltags-PAL 1,4,
-plus Krafttraining +300 kcal/Session (netto), Rad 25 kcal/km (Diensttage 26 km), Körper-Aufgaben (z. B. Schattenboxen) 8 kcal/min,
-plus **Dienst** 120 kcal/h (Beruf: **Pflegehelfer, 30 h/Woche**, ständig auf den Beinen) – aus `events.kind = 'dienst'` (Ende − Beginn).
-**Protein-Ziel** 1,8 g/kg (ISSN: 1,4–2,0 g/kg für Trainierende; in einer Diät eher 2,3–3,1 g/kg) = 144 g verwertbar.
-Quellen: ISSN Position Stand 2017 (Jäger et al., PMC5477153), DIAAS-Übersicht (FAO/WHO, PMC6445816).
+**Verbrauch** (Schätzung, Werte in `nutrition_settings`, bei neuen Messungen aktualisieren): Grundumsatz Katch-McArdle
+370 + 21,6 × fettfreie Masse (67,8 kg → 1834 kcal) × Alltags-PAL 1,4 + Aktivitäten laut Tabelle „Querverbindungen“.
+**Protein-Ziel** 1,8 g/kg = 144 g verwertbar (ISSN 2017: 1,4–2,0 g/kg; in Diät 2,3–3,1 g/kg).
+Quellen: ISSN Position Stand 2017 (PMC5477153), DIAAS-Übersicht (PMC6445816).
 
-**Daily-Quickbuttons** (`routines.anytime = true`): Meditieren (10 min, ruhiger Gong-Timer, `timer.style = 'calm'`),
-Schattenboxen (Rundentimer), Wohnung lüften (nur abhaken). Erscheinen als „⚡ Daily“-Reihe auf der Startseite, nicht im
-zeitlichen Tagesplan; Abschluss → Aufgabe erledigt.
+## Charakter (`character_summary`, `character_stats`, `measurements`)
 
-### Einkaufsliste (`shopping_items`)
-Erscheint auf der Startseite „Heute“. Abgehakte Einträge bleiben durchgestrichen, bis sie entfernt werden.
+Sechs Werte: 💪 Körper · 🧠 Intellekt · ✨ Charisma · 🕊️ Spiritualität (`spirit`) · 🎨 Kreativität (`kreativ`) · 🤝 Verbundenheit (`verbunden`).
+**Level** = Lebenszeit-XP (fällt nie, Level n ab 30·(n−1)² XP). **Form** = XP der letzten 14 Tage gegen 2× Wochenziel (sinkt bei
+Vernachlässigung). Wochenziele (`src/lib/character.ts`): Körper 300 · Intellekt 210 · Charisma 60 · Spiritualität 70 ·
+Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen: siehe „Querverbindungen“.
+
+**Messwerte** (Joshua schickt Check-ups, Kieser/seca): roh in `measurements`, daraus ehrliche Teilwerte 0–100 in `character_stats`
+mit Begründung in `note` (Untrainiert ≈ 15, Anfänger ≈ 30, Fortgeschritten ≈ 50, Erfahren ≈ 70, Sehr stark ≈ 85, Elite ≈ 95+).
+Nicht schönrechnen. Stand 19.09.2026: 80,1 kg, 182,3 cm, 15,4 % Fett, Skelettmuskelmasse 33,9 kg, Phasenwinkel 6,8°.
+Teilwerte: Muskelmasse, Körperfett, Zellqualität, Rumpf, Arme, Beine, Kraft Unterkörper, Kraft Oberkörper, Beweglichkeit,
+Ausdauer (vorläufig – Ruhepuls und 5-km-Zeit liefert Joshua noch nach).
 ```sql
-insert into shopping_items (name) values ('Milch'), ('Brot');
-update shopping_items set done = true where name ilike '%milch%';
-delete from shopping_items where done;
+insert into measurements (metric, value, unit, note) values ('Körpergewicht', 80.1, 'kg', 'Kieser Check-up');
+insert into character_stats (attribute, name, rating, note, position) values ('koerper', 'Ausdauer', 70, '…', 10)
+on conflict (attribute, name) do update set rating = excluded.rating, note = excluded.note;
 ```
 
-### Tagesplan & Zeit-Lernen
-Die Startseite zeigt einen **Tagesplan**: alle offenen Aufgaben mit `due_date <= heute` oder Quadrant `do`,
-in Reihenfolge von `tasks.position`, ab der aktuellen Uhrzeit hintereinander gelegt.
-Wenn der Nutzer eine Reihenfolge nennt, `position` durchnummerieren (`extract(epoch from now()) + rang`).
+## Elemente (Reiter „Elemente“, View `element_events`)
 
-Felder auf `tasks`:
-- `estimate_minutes`: Schätzung (vom Nutzer genannt oder von Claude vorgeschlagen und so benannt)
-- `planned_start`: feste Uhrzeit (z. B. `'18:00'` für Training am Abend), sonst `null` = flexibel
-- `started_at`: läuft gerade (▶ in der App)
-- `actual_minutes`: tatsächliche Dauer; per Stoppuhr in der App oder wenn der Nutzer im Chat sagt „hat 80 min gedauert“
+🔥 **Feuer** = Antrieb (Training, Rad, Projekte vorantreiben, Erschaffen) · 💧 **Wasser** = Gefühl & Verbindung (Freunde, Familie,
+Gebet, Meditation, Natur mit Putschi, religiöse Lektüre) · 🌍 **Erde** = Basis & Ordnung (Haushalt, Finanzen, Behörden, Routinen,
+Schlaf, Detox) · 💨 **Luft** = Geist & Kommunikation (Lesen, Lernen, Recherche, Gespräche, Impro).
+Anzeige: Minuten dieser Woche vs. Schnitt der 4 Wochen davor, schwächstes Element mit Ideen. Quellen: siehe „Querverbindungen“.
 
-Lesen immer über den View **`tasks_planned`**. Er liefert `planned_minutes` (gelernte Dauer):
-1. dieselbe Aufgabe (gleicher normalisierter Titel, `title_key()`) schon erledigt → Median der letzten 5 echten Dauern
-2. sonst Schätzung × persönlicher Korrekturfaktor (`estimate_factor` = Median echt/geschätzt, ab 3 Datenpunkten, 0,5–3)
-3. sonst 30 min
+## Fitness (`exercises`, `workout_templates`, `template_exercises`, `workout_sessions`, `set_logs`)
 
-Damit das Lernen funktioniert: wiederkehrende Aufgaben **immer gleich benennen** (z. B. „Wohnung aufräumen“),
-und wenn der Nutzer Dauern nennt, `actual_minutes` bzw. `estimate_minutes` setzen.
+Split: **A** Schulter & Rücken (2×/Woche) · **B** Brust & Arme (2×/Woche, Butterflies am Ende) · **C** Beine & Bauch (1×/Woche).
+Festgelegt von Joshua:
+- **Kein zusätzliches Beintraining vorschlagen** (~80 km Rad pro Woche; Beine kraftmäßig stark: Squat 160, Kreuzheben 210).
+- **Kreuzheben** nur Orientierungswert, **nicht** in den Plan (unterer Rücken bereits sehr stark).
+- **Trainingsfokus: Schulterdrücken** (Bestwert 60 kg, nächstes Ziel ≈ 80 kg).
+
+Pause 120 s (`rest_seconds`); `superset_group` = Supersatz (Timer erst nach der letzten Übung der Gruppe); `optional` = eingeklappt.
+`exercises.metric`: `weight_reps` · `weight_distance` (Farmers Walk) · `weight_time`.
 ```sql
-update tasks set done = true, done_at = now(), actual_minutes = 80 where title = 'Wohnung aufräumen' and not done;
-select title, estimate_minutes, planned_minutes, history_samples, estimate_factor, planned_start
-from tasks_planned where not done and (due_date <= (now() at time zone 'Europe/Berlin')::date or quadrant = 'do')
-order by position;
--- Lernstand: wie gut sind die Schätzungen?
-select title, estimate_minutes, actual_minutes from tasks where done and actual_minutes is not null order by done_at desc limit 20;
-```
-
-### Trainingsplan (`exercises`, `workout_templates`, `template_exercises`)
-Split: **A** Schulter & Rücken (2×/Woche), **B** Brust & Arme (2×/Woche), **C** Beine & Bauch (1×/Woche).
-Festgelegt vom Nutzer: **kein zusätzliches Beintraining vorschlagen.** Er fährt ~4×/Woche ca. 20 km Rad (Beine bekommen
-genug Ausdauer-Last, mehr Beintraining verträgt der Körper nicht). Beine sind kraftmäßig stark (Squat 160, Kreuzheben 210).
-Kreuzheben (210 kg) ist nur Orientierungswert und kommt **nicht** in den Plan – der untere Rücken ist bereits sehr stark.
-**Aktueller Trainingsfokus: Schulterdrücken** (Bestwert 60 kg, nächstes Ziel ≈ 80 kg). Fortschritt dort besonders beachten.
-Standardpause 120 s (`rest_seconds`). `superset_group` gleicher Wert = Supersatz (Timer startet erst nach der letzten Übung der Gruppe).
-`optional = true` = wird eingeklappt angezeigt (z. B. Jefferson Curl).
-`exercises.metric`: `weight_reps` (kg × Wdh), `weight_distance` (kg × Meter, z. B. Farmers Walk), `weight_time` (kg × Sek.).
-
-```sql
--- Übung hinzufügen (ans Ende von Tag B)
 insert into exercises (name) values ('Cable Flys') on conflict (name) do nothing;
 insert into template_exercises (template_id, exercise_id, position, target_sets, target_reps)
 select t.id, e.id, coalesce((select max(position) from template_exercises where template_id = t.id), 0) + 1, 3, '10-12'
 from workout_templates t, exercises e where t.code = 'B' and e.name = 'Cable Flys';
--- Übung entfernen (Historie bleibt erhalten)
-delete from template_exercises te using workout_templates t, exercises e
-where te.template_id = t.id and te.exercise_id = e.id and t.code = 'B' and e.name = 'Cable Flys';
--- Satz-/Wdh-Ziel ändern
-update template_exercises te set target_sets = 4, target_reps = '6-8'
-from exercises e where te.exercise_id = e.id and e.name = 'Back Squats';
 ```
-Übungen nie aus `exercises` löschen, wenn es `set_logs` dafür gibt (sonst ist die Historie weg).
-
-### Workouts loggen (`workout_sessions`, `set_logs`)
-Normalerweise loggt der Nutzer selbst in der App. Wenn er im Chat sagt **„heute alles wie geplant / wie letztes Mal“**:
-letzte Session desselben Tages kopieren.
-
+Übungen nie aus `exercises` löschen, wenn es `set_logs` gibt. Normalerweise loggt Joshua selbst; bei „heute wie letztes Mal“:
 ```sql
 with last as (
   select s.id from workout_sessions s join workout_templates t on t.id = s.template_id
@@ -296,21 +261,16 @@ with last as (
 ), new_session as (
   insert into workout_sessions (template_id, session_date, finished_at, notes)
   select id, (now() at time zone 'Europe/Berlin')::date, now(), 'Wie letztes Mal (via Claude)'
-  from workout_templates where code = 'A'
-  returning id
+  from workout_templates where code = 'A' returning id
 )
 insert into set_logs (session_id, exercise_id, set_number, weight, reps, seconds, meters)
 select n.id, l.exercise_id, l.set_number, l.weight, l.reps, l.seconds, l.meters
 from set_logs l, new_session n where l.session_id = (select id from last);
 ```
-Abweichungen („Squats heute 5 kg mehr“) danach per `update set_logs …` anpassen. Habit „Training“ dann auch abhaken.
+Abweichungen danach per `update set_logs …`. Fortschritt: Fitness → Fortschritt (Top-Satz & e1RM pro Woche).
 
-Fortschritt abfragen:
-```sql
-select s.session_date, e.name, l.set_number, l.weight, l.reps
-from set_logs l join workout_sessions s on s.id = l.session_id join exercises e on e.id = l.exercise_id
-where e.name = 'Shoulder Press' order by s.session_date desc, l.set_number limit 30;
-```
+## Nicht mehr verwendet
+Habits (`habits`, `habit_logs`) – Joshua trackt Habits in anderen Apps; Tabellen existieren noch (`active = false`), keine Anzeige.
 
 ## Zugang
 Login per E-Mail + Passwort. Neue Konten sehen nichts, bis ihre `user_id` in `allowed_users` steht:
@@ -320,8 +280,11 @@ insert into allowed_users (user_id) select id from auth.users where email = '…
 ```
 
 ## Entwicklung
-Supabase-Queries sind lazy: ohne `await`/`.then` wird nichts gesendet. Für Fire-and-forget immer `fire(query)` aus
-`src/lib/supabase.ts` benutzen, nie `void supabase.from(...)`.
-
-`npm install`, `npm run dev`, `npm run build` (Typecheck + Build). Env-Variablen stehen in `.env.production`
-(nur URL + öffentlicher Publishable Key – Sicherheit kommt über RLS), daher braucht Vercel keine eigenen Env-Vars.
+- `npm install`, `npm run dev`, `npm run build` (Typecheck + Build). Env in `.env.production` (nur URL + öffentlicher Key, Schutz über RLS).
+- **Supabase-Queries sind lazy**: ohne `await`/`.then` wird nichts gesendet. Fire-and-forget immer mit `fire(query)` aus
+  `src/lib/supabase.ts`, nie `void supabase.from(...)`.
+- Reine Logik (testbar ohne Supabase): `src/lib/schedule.ts` (Tagesplan), `src/lib/interval.ts` (Timer-Phasen),
+  `src/lib/character.ts` (Level/Form), `src/lib/speech.ts` (Diktat-Parsing).
+- Neue Spalten an `tasks` müssen auch an den View `tasks_planned` **angehängt** werden (Spalten nur am Ende ergänzbar).
+- Neue Aktivitätsquellen in **allen drei Views** berücksichtigen: `xp_events`, `element_events`, `nutrition_daily` – und die
+  Tabelle „Querverbindungen“ hier aktualisieren.
