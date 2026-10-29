@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
 import { fmtMetric, useCharacter, useProgress, type MetricProgress } from "../lib/data";
 import { isoDate } from "../lib/dates";
 import { parseDate } from "../lib/dates";
-import { supabase } from "../lib/supabase";
+import { byMetric, useMeasurements } from "./fitness/BodyValues";
 import { ATTR_ORDER, ATTRS, form, levelProgress, trend, TREND_ICON, type Attribute, type AttrSummary, type CharacterStat } from "../lib/character";
 
 function levels(summary: AttrSummary[]) {
@@ -183,63 +182,33 @@ function Radar({ stats }: { stats: CharacterStat[] }) {
   );
 }
 
-interface Measurement {
-  measured_on: string;
-  metric: string;
-  value: number;
-  unit: string | null;
-  note: string | null;
-}
+const KEY_VALUES = ["Körpergewicht", "Körperfett", "Skelettmuskelmasse", "Phasenwinkel", "Schulterdrücken 1RM"];
 
-// For these a falling value is the good direction.
-const LOWER_IS_BETTER = new Set(["Körperfett", "Viszerales Fett", "Taillenumfang", "BMI", "ECW/TBW"]);
-// Direction depends on the goal – shown without judgement.
-const NEUTRAL = new Set(["Körpergewicht", "Größe", "Ruheumsatz"]);
-
+/** Key body values (latest per metric) + link to the full list with history and comparison under Fitness. */
 function Measurements() {
-  const [rows, setRows] = useState<Measurement[]>([]);
-  useEffect(() => {
-    supabase
-      .from("measurements")
-      .select("measured_on, metric, value, unit, note")
-      .order("measured_on", { ascending: false })
-      .then(({ data }) => setRows((data ?? []) as Measurement[]));
-  }, []);
-  if (!rows.length) return null;
-
-  const latestDate = rows[0].measured_on;
-  const latest = rows.filter((r) => r.measured_on === latestDate);
-  const fmt = (d: string) => parseDate(d).toLocaleDateString("de-DE", { month: "short", year: "numeric" });
-
+  const map = byMetric(useMeasurements());
+  const keys = KEY_VALUES.filter((k) => map.has(k));
+  if (!map.size) return null;
   return (
-    <section className="card p-3">
-      <h2 className="text-sm font-semibold text-slate-300">📏 Messungen · {fmt(latestDate)}</h2>
-      <table className="mt-2 w-full text-xs">
-        <tbody>
-          {latest.map((m) => {
-            const prev = rows.find((r) => r.metric === m.metric && r.measured_on < latestDate);
-            const delta = prev ? Number(m.value) - Number(prev.value) : 0;
-            const good = LOWER_IS_BETTER.has(m.metric) ? delta < 0 : delta > 0;
-            return (
-              <tr key={m.metric} className="border-t border-slate-800">
-                <td className="py-1.5 pr-2 text-slate-300">{m.metric}</td>
-                <td className="whitespace-nowrap text-right font-medium">
-                  {Number(m.value).toLocaleString("de-DE")} {m.unit}
-                </td>
-                <td className="w-28 whitespace-nowrap pl-2 text-right text-[11px]">
-                  {prev && delta !== 0 && (
-                    <span className={NEUTRAL.has(m.metric) ? "text-slate-400" : good ? "text-emerald-400" : "text-amber-400"}>
-                      {delta > 0 ? "+" : ""}
-                      {Number(delta.toFixed(2)).toLocaleString("de-DE")} seit {fmt(prev.measured_on)}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </section>
+    <button className="card p-3 text-left" onClick={() => (location.hash = "fitness/body")}>
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-sm font-semibold text-slate-300">📏 Deine Werte</h2>
+        <span className="text-xs text-slate-400">alle {map.size} & Vergleich →</span>
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+        {keys.map((k) => {
+          const [m] = map.get(k)!;
+          return (
+            <div key={k} className="flex justify-between gap-1">
+              <span className="truncate text-slate-400">{k.replace(" 1RM", "")}</span>
+              <span className="font-medium">
+                {Number(Number(m.value).toFixed(1)).toLocaleString("de-DE")} {m.unit}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </button>
   );
 }
 

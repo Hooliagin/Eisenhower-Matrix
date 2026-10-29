@@ -4,16 +4,18 @@ import { formatLong, isoDate, parseDate } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import Plan from "./Plan";
 import Progress from "./Progress";
+import BodyValues from "./BodyValues";
 import SessionView from "./SessionView";
 import IntervalTimer from "../IntervalTimer";
 
-type View = { kind: "home" } | { kind: "session"; id: string } | { kind: "progress" } | { kind: "plan" };
+type View = { kind: "home" } | { kind: "session"; id: string } | { kind: "progress" } | { kind: "plan" } | { kind: "body" };
 
 function readView(): View {
   const [, kind, id] = location.hash.replace("#", "").split("/");
   if (kind === "session" && id) return { kind: "session", id };
   if (kind === "progress") return { kind: "progress" };
   if (kind === "plan") return { kind: "plan" };
+  if (kind === "body") return { kind: "body" };
   return { kind: "home" };
 }
 
@@ -43,6 +45,7 @@ export default function Fitness() {
 
   if (view.kind === "session") return <SessionView id={view.id} templates={templates} back={() => nav({ kind: "home" })} />;
   if (view.kind === "progress") return <Progress back={() => nav({ kind: "home" })} />;
+  if (view.kind === "body") return <BodyValues back={() => nav({ kind: "home" })} />;
   if (view.kind === "plan") return <Plan templates={templates} back={() => nav({ kind: "home" })} />;
 
   const { next, weekly } = suggestTemplate(templates, sessions);
@@ -57,6 +60,7 @@ export default function Fitness() {
           <button className="btn-ghost" onClick={() => setBoxing(true)}>🥊 Timer</button>
           <button className="btn-ghost" onClick={() => nav({ kind: "plan" })}>Plan</button>
           <button className="btn-ghost" onClick={() => nav({ kind: "progress" })}>Fortschritt</button>
+          <button className="btn-ghost" onClick={() => nav({ kind: "body" })}>📏 Werte</button>
         </div>
       </header>
 

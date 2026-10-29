@@ -275,6 +275,13 @@ Sechs Werte: 💪 Körper · 🧠 Intellekt · ✨ Charisma · 🕊️ Spiritual
 Vernachlässigung). Wochenziele (`src/lib/character.ts`): Körper 300 · Intellekt 210 · Charisma 60 · Spiritualität 70 ·
 Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen: siehe „Querverbindungen“.
 
+**Messwerte ansehen:** Fitness → **📏 Werte** (`src/components/fitness/BodyValues.tsx`): gruppiert (Kraft · Muskelverteilung ·
+Ausdauer & Beweglichkeit · Körperzusammensetzung), je Wert letzte Messung + Änderung seit der vorigen (grün = gut, gelb = schlechter,
+grau = neutral wie Gewicht), Tipp → Verlauf mit Kurve und allen Messungen; unten **Check-ups vergleichen** (zwei Tage mit Körpergewicht
+nebeneinander). Charakter-Detail zeigt nur Kernwerte + Link. Damit Verläufe funktionieren: **immer dieselben `metric`-Namen**
+(z. B. „Körpergewicht“, „Körperfett“, „Skelettmuskelmasse“, „Schulterdrücken 1RM“, „Ruhepuls“, „5 km Zeit“) und `measured_on` =
+Messdatum. Bessere Richtung „niedriger“ steht in `LOWER_IS_BETTER` (BodyValues.tsx) – neue solche Werte dort ergänzen.
+
 **Messwerte** (Joshua schickt Check-ups, Kieser/seca): roh in `measurements`, daraus ehrliche Teilwerte 0–100 in `character_stats`
 mit Begründung in `note` (Untrainiert ≈ 15, Anfänger ≈ 30, Fortgeschritten ≈ 50, Erfahren ≈ 70, Sehr stark ≈ 85, Elite ≈ 95+).
 Nicht schönrechnen. Stand 19.09.2026: 80,1 kg, 182,3 cm, 15,4 % Fett, Skelettmuskelmasse 33,9 kg, Phasenwinkel 6,8°.
