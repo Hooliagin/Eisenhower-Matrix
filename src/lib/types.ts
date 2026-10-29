@@ -121,6 +121,7 @@ export interface Followup {
   wait_days: number;
   repeat_days: number | null;
   draft: string | null;
+  dictation: string | null;
   notes: string | null;
   source: "app" | "claude";
   updated_at: string;

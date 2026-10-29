@@ -38,7 +38,7 @@ select title from tasks where done and done_at::date = (now() at time zone 'Euro
 Vor Änderungen per Titel-Match erst `select` ausführen und bei Mehrdeutigkeit nachfragen.
 
 ### Projekte & Nachfassen (`projects`, `followups`, `tasks.project_id`)
-Projekt-Ordner (aktuell: Partei, Pluma Media, Baumklettern, Lesen). Unterordner über `projects.parent_id`
+Projekt-Ordner (aktuell: Starke Mitte = die Partei, Pluma Media, Baumklettern, Lesen). Unterordner über `projects.parent_id`
 (Lesen → „Lese ich gerade“, „Will ich lesen“, „Muss ich besorgen“; Buch = Eintrag im passenden Unterordner, verschieben = `project_id` ändern).
 Einträge sind normale `tasks` mit `project_id` (Quadrant `schedule`; mit `due_date` = Projekt-Deadline).
 In der Matrix erscheinen Projekt-Einträge nur, wenn sie ein `due_date` haben.
@@ -54,13 +54,28 @@ select 'Der Prozess – Kafka', 'schedule', id, 'claude' from projects where nam
 - In der App: „Gesendet“ → waiting + `follow_up_on = heute + wait_days` + Draft leeren; „Antwort da/Erledigt“ → done
   (bzw. bei `repeat_days` neu planen).
 
-**Entwürfe schreiben:** Deutsch, locker, per „du“, kurz (2–4 Sätze), wie eine private Chat-Nachricht, gern ein Emoji am Ende.
-Beim Nachhaken freundlich auf die vorige Nachricht Bezug nehmen, konkrete Frage stellen.
-Wenn ein `waiting`-Eintrag fällig wird und kein Draft da ist, beim nächsten Chat eine Nachhak-Nachricht als `draft` hinterlegen.
+### Nachrichten in Joshuas Stil (`style_profile`, `voice_samples`) – PFLICHT-ABLAUF
+Die Empfänger dürfen nicht merken, dass KI mitschreibt. Deshalb **vor jedem Entwurf**:
+1. `select profile from style_profile;` lesen und befolgen (u. a. keine Gedankenstriche, keine KI-Floskeln, „Hey <Name>,“).
+2. Die 3–5 neuesten `voice_samples` als Stilvorlage lesen.
+
+Wenn Joshua eine Nachricht **diktiert**:
+- Inhalt sauber, aber in *seinen* Worten ausformulieren (Füllwörter dosiert behalten, nichts glattbügeln, nichts erfinden).
+- Was er ausdrücklich weglassen will, weglassen. Die Nachricht endet meist mit seiner Frage.
+- Rohdiktat in `voice_samples` speichern (mit `context` + `followup_id`) und in `followups.dictation` ablegen, Text in `followups.draft`.
+- Wenn das Diktat neue Stilmerkmale zeigt (Wörter, Wendungen, Anrede, Länge), `style_profile` ergänzen. Korrigiert er einen
+  Entwurf („so würde ich das nicht sagen“), die Korrektur ebenfalls ins Profil übernehmen.
+
+Wenn er **nicht** diktiert (z. B. Nachhaken): trotzdem streng nach Profil schreiben, kurz (2–3 Sätze), auf die vorige
+Nachricht Bezug nehmen, konkrete Frage. Wenn ein `waiting`-Eintrag fällig wird und kein Draft da ist, beim nächsten Chat
+eine Nachhak-Nachricht als `draft` hinterlegen. Das Profil ist in der App (Projekte → „Mein Schreibstil“) editierbar –
+vor dem Schreiben also immer frisch lesen.
 ```sql
-insert into followups (project_id, person, topic, status, last_contact, follow_up_on, draft, source)
-select id, 'Benjamin', 'Event Wein & Brezeln', 'waiting', '2026-10-29', '2026-10-31', 'Hey Benjamin, …', 'claude'
-from projects where name = 'Partei';
+insert into followups (project_id, person, topic, status, last_contact, follow_up_on, draft, dictation, source)
+select id, 'Benjamin', 'Event Wein & Brezel', 'waiting', '2026-10-29', '2026-10-31', 'Hey Benjamin, …', null, 'claude'
+from projects where name = 'Starke Mitte';
+insert into voice_samples (text, context, followup_id) values ('<Rohdiktat>', 'Nachricht an X, Thema Y', '<followup id>');
+select text from voice_samples order by created_at desc limit 5;
 -- Was ist fällig?
 select p.name, f.person, f.topic, f.status, f.follow_up_on, f.draft is not null as hat_text
 from followups f left join projects p on p.id = f.project_id

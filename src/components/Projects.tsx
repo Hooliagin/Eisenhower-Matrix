@@ -25,6 +25,7 @@ function statusLine(f: Followup): { text: string; tone: string } {
 export function FollowupCard({ f, project, onPatch }: { f: Followup; project?: Project; onPatch: (f: Followup, p: Partial<Followup>) => void }) {
   const [draft, setDraft] = useState(f.draft ?? "");
   const [copied, setCopied] = useState(false);
+  const [showDictation, setShowDictation] = useState(false);
   useEffect(() => setDraft(f.draft ?? ""), [f.draft]);
   const st = statusLine(f);
 
@@ -53,11 +54,20 @@ export function FollowupCard({ f, project, onPatch }: { f: Followup; project?: P
       {f.status !== "done" && draft && (
         <textarea
           className="mt-2 w-full text-sm leading-snug"
-          rows={Math.min(8, Math.ceil(draft.length / 38) + 1)}
+          rows={Math.min(14, Math.ceil(draft.length / 38) + draft.split("\n").length)}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => draft !== (f.draft ?? "") && onPatch(f, { draft })}
         />
+      )}
+
+      {f.dictation && (
+        <div className="mt-1">
+          <button className="text-[11px] text-slate-500" onClick={() => setShowDictation(!showDictation)}>
+            {showDictation ? "▾" : "▸"} Dein Diktat
+          </button>
+          {showDictation && <p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-900 p-2 text-xs text-slate-400">{f.dictation}</p>}
+        </div>
       )}
 
       {f.status !== "done" && (
@@ -233,6 +243,43 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
   );
 }
 
+function StyleCard() {
+  const [profile, setProfile] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [samples, setSamples] = useState(0);
+
+  useEffect(() => {
+    if (!open || profile !== null) return;
+    void (async () => {
+      const [{ data }, { count }] = await Promise.all([
+        supabase.from("style_profile").select("profile").maybeSingle(),
+        supabase.from("voice_samples").select("id", { count: "exact", head: true }),
+      ]);
+      setProfile(data?.profile ?? "");
+      setSamples(count ?? 0);
+    })();
+  }, [open, profile]);
+
+  const save = () => void supabase.from("style_profile").upsert({ id: 1, profile: profile ?? "" });
+
+  return (
+    <section className="card p-3">
+      <button className="flex w-full items-baseline justify-between text-left" onClick={() => setOpen(!open)}>
+        <span className="text-sm font-semibold text-slate-300">✍️ Mein Schreibstil</span>
+        <span className="text-xs text-slate-500">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <>
+          <p className="mt-1 text-[11px] text-slate-500">
+            Claude lernt aus deinen Diktaten ({samples} bisher) und schreibt Entwürfe danach. Du kannst hier direkt korrigieren.
+          </p>
+          <textarea className="mt-2 w-full text-xs leading-snug" rows={16} value={profile ?? "…"} onChange={(e) => setProfile(e.target.value)} onBlur={save} />
+        </>
+      )}
+    </section>
+  );
+}
+
 function readProjectId(): string | null {
   const [tab, id] = location.hash.replace("#", "").split("/");
   return tab === "projects" && id ? id : null;
@@ -289,6 +336,8 @@ export default function Projects() {
         <input className="min-w-0 flex-1 py-1.5 text-sm" placeholder="Neuer Projekt-Ordner…" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addProject()} />
         <button className="btn-ghost" onClick={addProject}>+</button>
       </div>
+
+      <StyleCard />
     </div>
   );
 }
