@@ -87,3 +87,10 @@ export const QUADRANTS: Record<Exclude<Quadrant, "inbox">, { label: string; hint
   delegate: { label: "Delegieren", hint: "dringend, nicht wichtig", color: "text-amber-400", ring: "border-amber-500/40" },
   eliminate: { label: "Weglassen", hint: "weder noch", color: "text-slate-400", ring: "border-slate-500/40" },
 };
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  done: boolean;
+  position: number;
+}

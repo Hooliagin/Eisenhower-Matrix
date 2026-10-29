@@ -43,6 +43,18 @@ insert into habit_logs (habit_id, log_date)
   on conflict do nothing;                                          -- abhaken
 ```
 
+### Einkaufsliste (`shopping_items`)
+Erscheint auf der Startseite „Heute“. Abgehakte Einträge bleiben durchgestrichen, bis sie entfernt werden.
+```sql
+insert into shopping_items (name) values ('Milch'), ('Brot');
+update shopping_items set done = true where name ilike '%milch%';
+delete from shopping_items where done;
+```
+
+### Tagesreihenfolge
+Die Startseite sortiert „Fokus heute“ nach `tasks.position` (aufsteigend). Wenn der Nutzer eine Reihenfolge nennt,
+`position` entsprechend durchnummerieren (z. B. `extract(epoch from now()) + rang`).
+
 ### Trainingsplan (`exercises`, `workout_templates`, `template_exercises`)
 Split: **A** Schulter & Rücken (2×/Woche), **B** Brust & Arme (2×/Woche), **C** Beine & Bauch (1×/Woche).
 Standardpause 120 s (`rest_seconds`). `superset_group` gleicher Wert = Supersatz (Timer startet erst nach der letzten Übung der Gruppe).

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
-import type { Habit, HabitLog, Quadrant, Task, WorkoutSession, WorkoutTemplate } from "./types";
+import type { Habit, HabitLog, Quadrant, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
 import { addDays, isoDate, weekStart } from "./dates";
 
 /** Refetch on mount, when the tab regains focus, and on realtime changes to `tables`. */
@@ -74,6 +74,16 @@ export async function updateTask(id: string, patch: Partial<Task>) {
 
 export async function deleteTask(id: string) {
   must(await supabase.from("tasks").delete().eq("id", id));
+}
+
+// ---------- Shopping list ----------
+
+export function useShopping() {
+  return useLive<ShoppingItem[]>(
+    async () => must(await supabase.from("shopping_items").select("*").order("done").order("position")),
+    ["shopping_items"],
+    [],
+  );
 }
 
 // ---------- Habits ----------

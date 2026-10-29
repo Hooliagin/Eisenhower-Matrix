@@ -4,6 +4,7 @@ import { formatLong, isoDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 import AddTask from "./AddTask";
 import { HabitToday, useHabitToggle } from "./Habits";
+import ShoppingList from "./ShoppingList";
 import { UndoToast, useTaskActions } from "./Matrix";
 import TaskCard from "./TaskCard";
 
@@ -42,6 +43,8 @@ export default function Today({ go }: { go: (t: Tab) => void }) {
         </div>
         {doneToday.length > 0 && <p className="mt-2 text-xs text-emerald-400">✓ {doneToday.length} heute erledigt</p>}
       </section>
+
+      <ShoppingList />
 
       {inbox.length > 0 && (
         <button onClick={() => go("matrix")} className="card border-dashed px-3 py-2 text-left text-sm text-violet-300">
