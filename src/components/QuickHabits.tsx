@@ -4,6 +4,7 @@ import { isoDate } from "../lib/dates";
 import type { Task } from "../lib/types";
 import BreathSession from "./BreathSession";
 import PoemTrainer from "./PoemTrainer";
+import { PouchiPanel } from "./Pouchi";
 import IntervalTimer from "./IntervalTimer";
 
 function icon(t: Task) {
@@ -28,6 +29,7 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
   const [running, setRunning] = useState<Task | null>(null);
   const [breathing, setBreathing] = useState(false);
   const [poem, setPoem] = useState(false);
+  const [pouchi, setPouchi] = useState(false);
   const today = isoDate();
   const items = tasks.filter((t) => t.anytime && t.due_date === today);
   if (!items.length) return null;
@@ -55,6 +57,9 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
       <div className="mb-1.5 flex items-baseline justify-between px-1">
         <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">⚡ Daily</span>
         <span className="flex items-center gap-2 text-[11px] text-slate-500">
+          <button className="rounded-full bg-orange-900/50 px-2 py-0.5 text-orange-200" onClick={() => setPouchi(true)}>
+            🐕
+          </button>
           <button className="rounded-full bg-amber-900/50 px-2 py-0.5 text-amber-200" onClick={() => setPoem(true)}>
             📜 Gedicht
           </button>
@@ -85,6 +90,7 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
       </div>
       {breathing && <BreathSession onClose={() => setBreathing(false)} />}
       {poem && <PoemTrainer onClose={() => setPoem(false)} />}
+      {pouchi && <PouchiPanel onClose={() => setPouchi(false)} />}
       {running?.timer && (
         <IntervalTimer
           title={running.title}

@@ -185,6 +185,22 @@ from poem_attempts a join poems p on p.id = a.poem_id where p.title = 'Belsazar'
 update poem_attempts set feedback = '…', checked_at = now() where id = '<neuester Versuch>';
 ```
 
+## 🐕 Pouchi (`dog_tricks`, `dog_games`, `src/components/Pouchi.tsx`)
+
+Pouchi ist ein **Pomeranian**. Öffnen: ⚡ Daily → „🐕“, und im Timer „Tricks mit Pouchi“ steht ein Hinweis (Neu lernen · Heute
+wiederholen · Spiel danach) mit Knopf zu allen Tricks & Spielen. Pixel-Pouchi (orange) sitzt neben dem Avatar.
+- `dog_tricks.status`: `kann` · `lernt` · `idee`; `difficulty` 1–3 (★); `how_to` = kurze Trainingsschritte. App: „✓ 5 min geübt“,
+  „🎉 Kann er!“ (→ `kann`, `mastered_on`, Erfolg „Pouchi kann: …“), „🎯 Jetzt lernen“ bei Ideen. Wiederholen: täglich 3 bekannte Tricks.
+- Kann (Stand 29.10.2026): Sitz, Platz, Dreh dich, Komm hoch, Sitz schön (Männchen), High Five links/rechts, Pfötchen, anderes Pfötchen,
+  Gib zehn. Lernt: Touch. Ideen: Andersrum drehen, Winken, Verbeugen, Bleib, Rolle, Peng, Rückwärts, Acht, Schäm dich, Aufräumen, Decke.
+- `dog_games` (Nase/Puzzle/Kopf/Bewegung): Spiel des Tages rotiert täglich; „✓ Gespielt“.
+- Alles Geübte/Gespielte = erledigte Aufgabe „Pouchi: …“ (`attribute='verbunden'`, `element='wasser'`) → zählt wie Aufgaben.
+- Erzählt Joshua „Pouchi kann jetzt X“ → `insert`/Änderungsvorschlag (`dog_tricks` ist in `change_requests` nicht erlaubt → als
+  neue Zeile nur bei neuem Trick; Statuswechsel macht die App, sonst Skill/Erfolg per Vorschlag bzw. Insert). Skill „Pouchi-Training“
+  mitziehen (10 Tricks = Fortgeschritten).
+- Pomeranian-Hinweise (in der App): kurze Einheiten, winzige Leckerlis, Geschirr statt Halsband (Luftröhre), keine hohen Sprünge
+  (Kniescheiben), Spielzeug ohne verschluckbare Teile, Spiele rotieren.
+
 ## 📈 Fortschritt & Rekorde (Views `metric_daily`, `metric_progress`)
 
 `metric_daily` = ein Wert pro Kennzahl und Tag: längstes Wim-Hof-Halten, e1RM je Übung (Epley, ≤ 12 Wdh.), Lesen-Minuten,

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PouchiTimerHint } from "./Pouchi";
 import { stateAt, totalSeconds, type IntervalConfig } from "../lib/interval";
 import { fmtSeconds } from "../lib/timer";
 import { breathSound, SOUNDS, startNoise, unlockAudio, type NoiseKind } from "../lib/sound";
@@ -267,6 +268,7 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
             <div className={`h-full ${plain ? "bg-teal-400" : calm ? "bg-indigo-400" : st.kind === "work" ? "bg-red-500" : "bg-emerald-500"}`} style={{ width: `${phasePct * 100}%` }} />
           </div>
         )}
+        {plain && /pouchi/i.test(title) && <PouchiTimerHint />}
         {calm && (
           <div className="flex flex-col items-center gap-2">
             <div className="flex flex-wrap justify-center gap-1">

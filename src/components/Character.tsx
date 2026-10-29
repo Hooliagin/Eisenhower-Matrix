@@ -3,6 +3,7 @@ import { fmtMetric, useCharacter, useProgress, type MetricProgress } from "../li
 import { isoDate, parseDate } from "../lib/dates";
 import { byMetric, useMeasurements } from "./fitness/BodyValues";
 import PixelAvatar from "./PixelAvatar";
+import { PixelPouchi } from "./Pouchi";
 import {
   ATTR_ORDER,
   ATTRS,
@@ -269,7 +270,12 @@ export function CharacterCard() {
 
       <div className="mt-2 flex gap-3">
         <div className="flex shrink-0 flex-col items-center justify-end">
-          <PixelAvatar size={112} glow={ATTRS[top].color} />
+          <div className="flex items-end">
+            <PixelAvatar size={112} glow={ATTRS[top].color} />
+            <span className="-ml-2 mb-0.5">
+              <PixelPouchi size={30} />
+            </span>
+          </div>
           <div className="mt-1.5">
             <ElementOrbs b={B} size={20} />
           </div>
@@ -410,7 +416,12 @@ export function CharacterView() {
       </header>
 
       <section className="pixel-frame flex items-center gap-4 bg-gradient-to-b from-slate-900 to-[#0b0f17] p-4" style={{ ["--glow" as string]: ATTRS[top].color + "66" }}>
-        <PixelAvatar size={150} glow={ATTRS[top].color} />
+        <div className="flex items-end">
+          <PixelAvatar size={150} glow={ATTRS[top].color} />
+          <span className="-ml-3 mb-1">
+            <PixelPouchi size={40} />
+          </span>
+        </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="font-pixel text-2xl leading-none">JOSHUA</span>
           <span className="font-pixel text-xs text-cyan-300">{data.meta?.class_title ?? "Abenteurer"}</span>
