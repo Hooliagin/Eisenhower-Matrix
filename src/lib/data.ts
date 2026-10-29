@@ -204,6 +204,7 @@ export interface NutritionDay {
   shift_event_id: string | null;
   shift_hours: number | null;
   shift_by_bike: boolean | null;
+  kcal_surplus: number; // daily target = burn + surplus (Aufbau > 0, Diät < 0)
 }
 
 export interface Meal {

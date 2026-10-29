@@ -247,6 +247,8 @@ select * from nutrition_daily where day = (now() at time zone 'Europe/Berlin')::
 ```
 **Verbrauch** (Schätzung, Werte in `nutrition_settings`, bei neuen Messungen aktualisieren): Grundumsatz Katch-McArdle
 370 + 21,6 × fettfreie Masse (67,8 kg → 1834 kcal) × Alltags-PAL 1,4 + Aktivitäten laut Tabelle „Querverbindungen“.
+**Kalorienziel** = Verbrauch + `nutrition_settings.kcal_surplus`. **Aktuell Muskelaufbau: +300 kcal** (lean bulk ≈ +10 %,
+Ziel ≈ 0,25–0,5 kg Zunahme/Monat; bei mehr Fettzunahme senken, Erhalt = 0, Diät negativ). Karte zeigt „noch ~X kcal“ bzw. „Ziel erreicht“.
 **Protein-Ziel** 1,8 g/kg = 144 g verwertbar (ISSN 2017: 1,4–2,0 g/kg; in Diät 2,3–3,1 g/kg).
 Quellen: ISSN Position Stand 2017 (PMC5477153), DIAAS-Übersicht (PMC6445816).
 

@@ -66,7 +66,9 @@ export default function NutritionCard() {
 
   if (!n) return null;
   const burn = n.burn_base + n.burn_activity;
-  const balance = n.kcal_in - burn;
+  const surplus = n.kcal_surplus ?? 0;
+  const target = burn + surplus;
+  const toGo = target - n.kcal_in;
 
   return (
     <section className="card flex flex-col gap-2.5 p-3">
@@ -121,13 +123,16 @@ export default function NutritionCard() {
         <div>
           <div className="flex items-baseline justify-between text-xs">
             <span>
-              🔥 <b>{n.kcal_in}</b> <span className="text-slate-500">gegessen · ~{burn} verbraucht</span>
+              🔥 <b>{n.kcal_in}</b> <span className="text-slate-500">/ {target} kcal</span>
             </span>
-            <span className={`text-[10px] ${balance > 300 ? "text-amber-400" : "text-slate-400"}`}>
-              {balance > 0 ? `+${balance} kcal über Verbrauch` : `noch ~${-balance} kcal Spielraum`}
+            <span className={`text-[10px] ${toGo < -300 ? "text-amber-400" : toGo <= 0 ? "text-emerald-400" : "text-slate-400"}`}>
+              {toGo > 0 ? `noch ~${toGo} kcal` : toGo >= -300 ? "Ziel erreicht ✓" : `${-toGo} kcal über Ziel`}
             </span>
           </div>
-          <Bar value={n.kcal_in} max={burn} color="#f97316" />
+          <Bar value={n.kcal_in} max={target} color="#f97316" />
+          <p className="mt-0.5 text-[10px] text-slate-500">
+            ~{burn} verbraucht{surplus > 0 ? ` + ${surplus} Aufbau` : surplus < 0 ? ` − ${-surplus} Defizit` : ""}
+          </p>
         </div>
         <div>
           <div className="flex items-baseline justify-between text-xs">
