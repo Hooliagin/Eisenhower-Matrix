@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
-import type { Habit, HabitLog, Quadrant, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
+import type { CalendarEvent, Quadrant, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
 import { addDays, isoDate, weekStart } from "./dates";
 
 /** Refetch on mount, when the tab regains focus, and on realtime changes to `tables`. */
@@ -63,7 +63,7 @@ export function useTasks() {
 }
 
 export async function createTasks(
-  rows: { title: string; quadrant: Quadrant; source?: Task["source"]; estimate_minutes?: number | null }[],
+  rows: { title: string; quadrant: Quadrant; source?: Task["source"]; estimate_minutes?: number | null; due_date?: string | null }[],
 ) {
   const base = Date.now() / 1000;
   must(await supabase.from("tasks").insert(rows.map((r, i) => ({ ...r, position: base + i }))));
@@ -88,39 +88,29 @@ export function useShopping() {
   );
 }
 
-// ---------- Habits ----------
+// ---------- Calendar ----------
 
-export function useHabits() {
-  return useLive<{ habits: Habit[]; logs: HabitLog[] }>(
+/** Open tasks with a deadline plus events, from `from` onwards. */
+export function useCalendar(from: string) {
+  return useLive<{ events: CalendarEvent[]; deadlines: Task[] }>(
     async () => {
-      const from = isoDate(addDays(weekStart(), -7 * 11));
-      const [h, l] = await Promise.all([
-        supabase.from("habits").select("*").eq("active", true).order("position"),
-        supabase.from("habit_logs").select("habit_id, log_date").gte("log_date", from),
+      const [e, t] = await Promise.all([
+        supabase.from("events").select("*").gte("event_date", from).order("event_date").order("start_time"),
+        supabase.from("tasks").select("*").not("due_date", "is", null).gte("due_date", from).order("due_date"),
       ]);
-      return { habits: must(h), logs: must(l) };
+      return { events: must(e), deadlines: must(t) };
     },
-    ["habits", "habit_logs"],
-    { habits: [], logs: [] },
+    ["events", "tasks"],
+    { events: [], deadlines: [] },
   );
 }
 
-export async function toggleHabit(habitId: string, date: string, on: boolean) {
-  if (on) must(await supabase.from("habit_logs").upsert({ habit_id: habitId, log_date: date }));
-  else must(await supabase.from("habit_logs").delete().eq("habit_id", habitId).eq("log_date", date));
+export async function createEvent(e: Pick<CalendarEvent, "title" | "event_date" | "start_time">) {
+  must(await supabase.from("events").insert(e));
 }
 
-/** Consecutive days up to today (today may still be open) the habit was done. */
-export function streak(logs: HabitLog[], habitId: string): number {
-  const days = new Set(logs.filter((l) => l.habit_id === habitId).map((l) => l.log_date));
-  let d = new Date();
-  if (!days.has(isoDate(d))) d = addDays(d, -1);
-  let n = 0;
-  while (days.has(isoDate(d))) {
-    n++;
-    d = addDays(d, -1);
-  }
-  return n;
+export async function deleteEvent(id: string) {
+  must(await supabase.from("events").delete().eq("id", id));
 }
 
 // ---------- Fitness ----------

@@ -21,20 +21,6 @@ export interface Task {
   estimate_factor?: number;
 }
 
-export interface Habit {
-  id: string;
-  name: string;
-  emoji: string | null;
-  target_per_week: number;
-  position: number;
-  active: boolean;
-}
-
-export interface HabitLog {
-  habit_id: string;
-  log_date: string;
-}
-
 export type Metric = "weight_reps" | "weight_time" | "weight_distance";
 
 export interface Exercise {
@@ -101,4 +87,14 @@ export interface ShoppingItem {
   name: string;
   done: boolean;
   position: number;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  event_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  notes: string | null;
+  source: "app" | "claude";
 }

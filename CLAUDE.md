@@ -1,6 +1,6 @@
 # Daily Tracker – Arbeitsanleitung für Claude
 
-Persönliche App (nur ein Nutzer) für **Eisenhower-Matrix**, **Habits** und **Fitness-Tracking**.
+Persönliche App (nur ein Nutzer) für **Eisenhower-Matrix**, **Tagesplan**, **Kalender** und **Fitness-Tracking**.
 Der Nutzer steuert alles per Chat mit Claude; die Website ist zum Anschauen, Abhaken und Workout-Loggen.
 
 - Frontend: Vite + React + TypeScript + Tailwind, gehostet auf Vercel (Projekt `eisenhower-matrix`, Team `hooliagins-projects`): https://eisenhower-matrix-bay.vercel.app/
@@ -34,14 +34,21 @@ select title from tasks where done and done_at::date = (now() at time zone 'Euro
 ```
 Vor Änderungen per Titel-Match erst `select` ausführen und bei Mehrdeutigkeit nachfragen.
 
-### Habits (`habits`, `habit_logs`)
+### Kalender: Deadlines & Termine
+- **Deadline** = Aufgabe mit `tasks.due_date` (etwas muss *bis* dahin erledigt sein). Erscheint ab dem Tag im Tagesplan.
+- **Termin** = Eintrag in `events` (etwas findet *an* dem Tag statt), optional mit `start_time`/`end_time`.
+  Termine mit Uhrzeit werden am Tag als feste Blöcke in den Tagesplan eingeplant (ohne `end_time` = 2 h).
 ```sql
-insert into habits (name, emoji, target_per_week, position) values ('Lesen', '📖', 5, 5);
-update habits set active = false where name = 'Lesen';          -- archivieren
-insert into habit_logs (habit_id, log_date)
-  select id, (now() at time zone 'Europe/Berlin')::date from habits where name = '2 L Wasser'
-  on conflict do nothing;                                          -- abhaken
+insert into tasks (title, quadrant, due_date, source) values ('Rückzahlung Bürgergeld', 'schedule', '2026-11-14', 'claude');
+insert into events (title, event_date, start_time, end_time, source) values ('Ricks Geburtstag', '2026-10-31', '19:00', null, 'claude');
+-- Was steht an?
+select 'deadline' art, due_date tag, null zeit, title from tasks where not done and due_date >= (now() at time zone 'Europe/Berlin')::date
+union all select 'termin', event_date, start_time, title from events where event_date >= (now() at time zone 'Europe/Berlin')::date
+order by 2, 3;
 ```
+
+Habits (`habits`, `habit_logs`) sind aus der App entfernt – der Nutzer trackt Habits in anderen Apps.
+Die Tabellen existieren noch (alle Habits `active = false`), werden aber nicht mehr angezeigt.
 
 ### Einkaufsliste (`shopping_items`)
 Erscheint auf der Startseite „Heute“. Abgehakte Einträge bleiben durchgestrichen, bis sie entfernt werden.

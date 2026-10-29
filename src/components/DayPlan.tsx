@@ -2,12 +2,23 @@ import { useEffect, useState } from "react";
 import { updateTask } from "../lib/data";
 import { isoDate } from "../lib/dates";
 import { buildSchedule, fmtMinutes, hhmm, minutesOf } from "../lib/schedule";
-import type { Task } from "../lib/types";
+import type { CalendarEvent, Task } from "../lib/types";
 
 interface Props {
   tasks: Task[]; // today's open tasks, in the user's order
   doneToday: Task[];
+  events: CalendarEvent[]; // today's events; timed ones become fixed blocks
   patch: (id: string, p: Partial<Task>) => void;
+}
+
+function eventAsTask(e: CalendarEvent): Task {
+  const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  const minutes = e.end_time ? Math.max(15, toMin(e.end_time) - toMin(e.start_time!)) : 120;
+  return {
+    id: `event-${e.id}`, title: e.title, notes: e.notes, quadrant: "schedule", position: 0, due_date: e.event_date,
+    done: false, done_at: null, source: e.source, created_at: "", estimate_minutes: minutes, actual_minutes: null,
+    started_at: null, planned_start: e.start_time, planned_minutes: minutes,
+  };
 }
 
 function askMinutes(question: string, fallback: number): number | null {
@@ -17,14 +28,16 @@ function askMinutes(question: string, fallback: number): number | null {
   return n > 0 ? n : null;
 }
 
-export default function DayPlan({ tasks, doneToday, patch }: Props) {
+export default function DayPlan({ tasks, doneToday, events, patch }: Props) {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
 
-  const slots = buildSchedule(tasks, now);
+  const timed = events.filter((e) => e.start_time).map(eventAsTask);
+  const allDay = events.filter((e) => !e.start_time);
+  const slots = buildSchedule([...tasks, ...timed], now);
   const endOfDay = slots.length ? slots[slots.length - 1].end : null;
   const factor = tasks[0]?.estimate_factor ?? doneToday[0]?.estimate_factor ?? 1;
 
@@ -65,10 +78,24 @@ export default function DayPlan({ tasks, doneToday, patch }: Props) {
         {endOfDay && <span className="text-xs text-slate-500">fertig ca. {hhmm(endOfDay)}{isoDate(endOfDay) !== today && " (morgen)"}</span>}
       </div>
 
-      {!slots.length && <p className="text-sm text-slate-500">Nichts mehr geplant für heute. 🎉</p>}
+      {!slots.length && !allDay.length && <p className="text-sm text-slate-500">Nichts mehr geplant für heute. 🎉</p>}
 
       <ol className="relative flex flex-col gap-1.5">
+        {allDay.map((e) => (
+          <li key={e.id} className="card border-sky-800/60 px-3 py-2 text-sm text-sky-200">📅 {e.title} <span className="text-xs text-slate-500">· ganztägig</span></li>
+        ))}
         {slots.map(({ task: t, start: s, end, running, late }) => {
+          if (t.id.startsWith("event-"))
+            return (
+              <li key={t.id} className="card flex items-center gap-2 border-sky-800/60 bg-sky-900/20 px-3 py-2">
+                <span className="w-12 shrink-0 font-mono text-xs leading-tight text-sky-300">
+                  {hhmm(s)}
+                  <br />
+                  <span className="text-slate-600">{hhmm(end)}</span>
+                </span>
+                <span className="flex-1 text-sm text-sky-100">📅 {t.title}</span>
+              </li>
+            );
           const learned = (t.history_samples ?? 0) > 0;
           const elapsed = running ? Math.round((now.getTime() - s.getTime()) / 60_000) : 0;
           return (

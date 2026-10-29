@@ -90,8 +90,6 @@ export default function SessionView({ id, templates, back }: Props) {
     if (!session) return;
     const finished_at = new Date().toISOString();
     await supabase.from("workout_sessions").update({ finished_at, notes: session.notes }).eq("id", id);
-    const { data: habit } = await supabase.from("habits").select("id").eq("active", true).ilike("name", "training").maybeSingle();
-    if (habit) await supabase.from("habit_logs").upsert({ habit_id: habit.id, log_date: session.session_date });
     timer.stop();
     back();
   }

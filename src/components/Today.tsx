@@ -1,10 +1,10 @@
 import type { Tab } from "../App";
-import { suggestTemplate, useSessions, useTasks, useTemplates } from "../lib/data";
-import { formatLong, isoDate } from "../lib/dates";
+import { suggestTemplate, useCalendar, useSessions, useTasks, useTemplates } from "../lib/data";
+import { addDays, formatLong, isoDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 import AddTask from "./AddTask";
 import DayPlan from "./DayPlan";
-import { HabitToday, useHabitToggle } from "./Habits";
+import { Upcoming } from "./Calendar";
 import ShoppingList from "./ShoppingList";
 import { UndoToast, useTaskActions } from "./Matrix";
 import TaskCard from "./TaskCard";
@@ -12,7 +12,7 @@ import TaskCard from "./TaskCard";
 export default function Today({ go }: { go: (t: Tab) => void }) {
   const { data: tasks, setData: setTasks } = useTasks();
   const actions = useTaskActions(tasks, setTasks);
-  const habits = useHabitToggle();
+  const calendar = useCalendar(isoDate(addDays(new Date(), -31)));
   const { data: templates } = useTemplates();
   const { data: sessions } = useSessions();
 
@@ -38,7 +38,7 @@ export default function Today({ go }: { go: (t: Tab) => void }) {
 
       <AddTask defaultQuadrant="do" />
 
-      <DayPlan tasks={focus} doneToday={doneToday} patch={(id, p) => setTasks(tasks.map((t) => (t.id === id ? { ...t, ...p } : t)))} />
+      <DayPlan tasks={focus} doneToday={doneToday} events={calendar.data.events.filter((e) => e.event_date === today)} patch={(id, p) => setTasks(tasks.map((t) => (t.id === id ? { ...t, ...p } : t)))} />
 
       <ShoppingList />
 
@@ -48,9 +48,12 @@ export default function Today({ go }: { go: (t: Tab) => void }) {
         </button>
       )}
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-300">Habits</h2>
-        <HabitToday habits={habits.data.habits} logs={habits.data.logs} onToggle={habits.toggle} />
+      <section className="card p-3">
+        <button onClick={() => go("calendar")} className="mb-2 flex w-full items-baseline justify-between">
+          <h2 className="text-sm font-semibold text-slate-300">📅 Nächste 14 Tage</h2>
+          <span className="text-xs text-slate-500">Kalender →</span>
+        </button>
+        <Upcoming events={calendar.data.events} deadlines={calendar.data.deadlines.filter((t) => t.due_date! > today)} limitDays={14} />
       </section>
 
       <section className="card p-3">

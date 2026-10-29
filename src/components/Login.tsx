@@ -26,7 +26,7 @@ export default function Login() {
       <div className="mb-8 text-center">
         <img src="/icon.svg" alt="" className="mx-auto mb-3 h-14 w-14" />
         <h1 className="text-2xl font-semibold">Daily</h1>
-        <p className="text-sm text-slate-400">Aufgaben · Habits · Training</p>
+        <p className="text-sm text-slate-400">Aufgaben · Kalender · Training</p>
       </div>
       <form onSubmit={submit} className="flex flex-col gap-3">
         <input type="email" autoComplete="email" placeholder="E-Mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
