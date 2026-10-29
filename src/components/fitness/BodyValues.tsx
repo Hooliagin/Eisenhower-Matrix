@@ -220,6 +220,96 @@ export default function BodyValues({ back }: { back: () => void }) {
         </section>
       ))}
       <Compare rows={rows} />
+      <CheckupPhotos />
     </div>
+  );
+}
+
+interface Photo {
+  id: string;
+  measured_on: string;
+  title: string;
+  path: string;
+  key: string;
+  iv: string;
+}
+
+const b64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const photoCache = new Map<string, Promise<string>>();
+
+/** The photo files are AES-GCM-encrypted static assets; the key comes from the owner-only table. */
+function decryptPhoto(p: Photo): Promise<string> {
+  if (!photoCache.has(p.id))
+    photoCache.set(
+      p.id,
+      (async () => {
+        const res = await fetch(`/${p.path}`);
+        if (!res.ok) throw new Error(`Foto ${res.status}`);
+        const key = await crypto.subtle.importKey("raw", b64(p.key), "AES-GCM", false, ["decrypt"]);
+        const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(p.iv) }, key, await res.arrayBuffer());
+        return URL.createObjectURL(new Blob([plain], { type: "image/jpeg" }));
+      })(),
+    );
+  return photoCache.get(p.id)!;
+}
+
+function PhotoThumb({ p, onOpen }: { p: Photo; onOpen: (url: string) => void }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    decryptPhoto(p).then(setUrl, () => setFailed(true));
+  }, [p]);
+  return (
+    <button className="flex flex-col gap-1 text-left" onClick={() => url && onOpen(url)}>
+      <div className="aspect-[3/4] w-full overflow-hidden rounded-lg bg-slate-800">
+        {url ? <img src={url} alt={p.title} className="h-full w-full object-cover object-top" /> : <span className="block p-2 text-[10px] text-slate-500">{failed ? "Fehler" : "lädt …"}</span>}
+      </div>
+      <span className="line-clamp-2 text-[10px] leading-tight text-slate-400">{p.title}</span>
+    </button>
+  );
+}
+
+/** Original check-up photos (Kieser report / app screenshots), grouped by date. */
+function CheckupPhotos() {
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [day, setDay] = useState<string | null>(null);
+  const [big, setBig] = useState<string | null>(null);
+  useEffect(() => {
+    supabase
+      .from("measurement_photos")
+      .select("id, measured_on, title, path, key, iv")
+      .order("measured_on", { ascending: false })
+      .order("position")
+      .then(({ data }) => setPhotos((data ?? []) as Photo[]));
+  }, []);
+  if (!photos.length) return null;
+  const days = [...new Set(photos.map((p) => p.measured_on))];
+  const shown = day ?? days[0];
+  return (
+    <section className="card p-3">
+      <h2 className="text-sm font-semibold text-slate-300">📸 Original-Check-ups</h2>
+      <div className="mt-2 flex gap-1.5">
+        {days.map((d) => (
+          <button key={d} onClick={() => setDay(d)} className={`rounded-full px-2.5 py-1 text-xs ${d === shown ? "bg-slate-200 text-slate-900" : "bg-slate-800 text-slate-300"}`}>
+            {fmtDate(d, true)} · {photos.filter((p) => p.measured_on === d).length}
+          </button>
+        ))}
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {photos
+          .filter((p) => p.measured_on === shown)
+          .map((p) => (
+            <PhotoThumb key={p.id} p={p} onOpen={setBig} />
+          ))}
+      </div>
+      {big && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black" onClick={() => setBig(null)}>
+          <img src={big} alt="" className="mx-auto w-full max-w-3xl" />
+          <button className="fixed right-3 top-3 h-11 w-11 rounded-full bg-slate-800/90 text-lg" style={{ marginTop: "env(safe-area-inset-top)" }} aria-label="Schließen">
+            ✕
+          </button>
+        </div>
+      )}
+    </section>
   );
 }

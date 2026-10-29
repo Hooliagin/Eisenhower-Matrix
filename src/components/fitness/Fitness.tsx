@@ -83,7 +83,7 @@ export default function Fitness() {
               <div className="flex-1">
                 <div className="font-medium">{t.name}</div>
                 <div className="text-xs text-slate-500">
-                  {t.template_exercises.filter((e) => !e.optional).length} Übungen · {thisWeek}/{t.times_per_week} diese Woche
+                  {t.template_exercises.filter((e) => !e.optional).length} Übungen · {t.times_per_week ? `${thisWeek}/${t.times_per_week}` : `${thisWeek}×`} diese Woche{!t.times_per_week && " · bei Bedarf"}
                   {isNext && <span className="ml-1 text-sky-400">· empfohlen</span>}
                 </div>
               </div>

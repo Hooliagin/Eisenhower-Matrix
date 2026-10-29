@@ -26,7 +26,7 @@ Vor Änderungen per Titel-Match erst `select`, bei Mehrdeutigkeit nachfragen.
 | **Aufgaben** | Tagesplan (mit Uhrzeiten) · Eisenhower-Matrix · Einkaufsliste |
 | **Projekte** | Ordner (mit Unterordnern), Leute & Nachfassen mit Nachrichtenentwürfen, Bücherliste (Projekt „Lesen“), „✍️ Mein Schreibstil“ |
 | **Kalender** | Monat mit Deadlines (rot), Terminen (blau), Diensten (lila), Trainings (grün); „Demnächst“-Liste |
-| **Fitness** | Trainingsplan A/B/C, Sätze loggen mit 2-min-Pausentimer, Fortschritt, 🥊 Timer |
+| **Fitness** | Trainingsplan A–E, Sätze loggen mit 2-min-Pausentimer, Fortschritt, 📏 Werte (Messungen, Vergleich, Original-Fotos), 🥊 Timer |
 | **Elemente** | Wochenverteilung Feuer/Wasser/Erde/Luft gegen 4-Wochen-Schnitt |
 
 ## Querverbindungen – was wohin zählt (WICHTIG beim Eintragen)
@@ -281,6 +281,11 @@ grau = neutral wie Gewicht), Tipp → Verlauf mit Kurve und allen Messungen; unt
 nebeneinander). Charakter-Detail zeigt nur Kernwerte + Link. Damit Verläufe funktionieren: **immer dieselben `metric`-Namen**
 (z. B. „Körpergewicht“, „Körperfett“, „Skelettmuskelmasse“, „Schulterdrücken 1RM“, „Ruhepuls“, „5 km Zeit“) und `measured_on` =
 Messdatum. Bessere Richtung „niedriger“ steht in `LOWER_IS_BETTER` (BodyValues.tsx) – neue solche Werte dort ergänzen.
+**📸 Original-Check-ups** (Fotos/Screenshots der Kieser-Berichte, 31.12.2023 und 19.09.2026): Bilder liegen **AES-GCM-verschlüsselt**
+als `public/m/<zufall>.bin` im Repo (allein nutzlos); Schlüssel + IV stehen nur in `measurement_photos` (RLS Owner) – die App
+entschlüsselt im Browser. Neue Fotos: verkleinern (JPEG ~q78), mit zufälligem 32-Byte-Schlüssel + 12-Byte-IV verschlüsseln
+(Node `crypto.webcrypto`), `.bin` committen, Zeile `(measured_on, title, path, key, iv, position)` per `execute_sql` einfügen –
+**Schlüssel nie ins Repo/Migrationen schreiben.** Werte aus den Fotos zusätzlich in `measurements` übernehmen.
 
 **Messwerte** (Joshua schickt Check-ups, Kieser/seca): roh in `measurements`, daraus ehrliche Teilwerte 0–100 in `character_stats`
 mit Begründung in `note` (Untrainiert ≈ 15, Anfänger ≈ 30, Fortgeschritten ≈ 50, Erfahren ≈ 70, Sehr stark ≈ 85, Elite ≈ 95+).
@@ -302,7 +307,9 @@ Anzeige: Minuten dieser Woche vs. Schnitt der 4 Wochen davor, schwächstes Eleme
 
 ## Fitness (`exercises`, `workout_templates`, `template_exercises`, `workout_sessions`, `set_logs`)
 
-Split: **A** Schulter & Rücken (2×/Woche) · **B** Brust & Arme (2×/Woche, Butterflies am Ende) · **C** Beine & Bauch (1×/Woche).
+Split: **A** Schulter & Rücken (2×/Woche) · **B** Brust & Arme (2×/Woche, Butterflies am Ende) · **C** Beine & Bauch (1×/Woche) ·
+**D** Sprint (**mindestens 1×/Woche**; `Sprints` = Zeit pro Sprint in s, Strecke gleich halten) · **E** Unterarme (**bei Bedarf**,
+`times_per_week = 0` → wird nie „empfohlen“, zählt aber normal; zuletzt Mi 28.10.2026). Übungen in D/E sind Vorschläge – Joshua passt sie an.
 Festgelegt von Joshua:
 - **Kein zusätzliches Beintraining vorschlagen** (~80 km Rad pro Woche; Beine kraftmäßig stark: Squat 160, Kreuzheben 210).
 - **Kreuzheben** nur Orientierungswert, **nicht** in den Plan (unterer Rücken bereits sehr stark).

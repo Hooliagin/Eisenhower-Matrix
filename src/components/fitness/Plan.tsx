@@ -15,7 +15,7 @@ export default function Plan({ templates, back }: { templates: WorkoutTemplate[]
             <h2 className="font-semibold">
               {t.code} · {t.name}
             </h2>
-            <span className="text-xs text-slate-500">{t.times_per_week}×/Woche</span>
+            <span className="text-xs text-slate-500">{t.times_per_week ? `${t.times_per_week}×/Woche` : "bei Bedarf"}</span>
           </div>
           <ol className="flex flex-col gap-1 text-sm">
             {t.template_exercises.map((te, i) => (

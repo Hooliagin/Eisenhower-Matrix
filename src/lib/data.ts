@@ -390,8 +390,9 @@ export function suggestTemplate(templates: WorkoutTemplate[], sessions: WorkoutS
     const last = mine[0]?.session_date ?? "0000-00-00";
     return { t, thisWeek, remaining: t.times_per_week - thisWeek, last };
   });
+  // times_per_week = 0 → optional day ("bei Bedarf"), never recommended
   const open = scored.filter((s) => s.remaining > 0);
-  const pool = open.length ? open : scored;
+  const pool = open.length ? open : scored.filter((s) => s.t.times_per_week > 0);
   pool.sort((a, b) => b.remaining - a.remaining || a.last.localeCompare(b.last));
   return { next: pool[0]?.t ?? null, weekly: scored };
 }

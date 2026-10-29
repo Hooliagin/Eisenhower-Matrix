@@ -151,7 +151,7 @@ export default function Home() {
           ) : (
             <span className="truncate text-sm">{trainedToday ? "Läuft gerade" : nextWorkout?.name}</span>
           )}
-          <span className="text-xs text-slate-500">{weekly.map((w) => `${w.t.code} ${w.thisWeek}/${w.t.times_per_week}`).join(" · ")}</span>
+          <span className="text-xs text-slate-500">{weekly.filter((w) => w.t.times_per_week || w.thisWeek).map((w) => (w.t.times_per_week ? `${w.t.code} ${w.thisWeek}/${w.t.times_per_week}` : `${w.t.code} ${w.thisWeek}×`)).join(" · ")}</span>
         </Tile>
 
         <Tile icon="📚" title="Lesen" onClick={() => go(readingProject ? `projects/${readingProject.id}` : "projects")}>
