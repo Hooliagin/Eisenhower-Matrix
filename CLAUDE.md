@@ -26,7 +26,7 @@ Vor Änderungen per Titel-Match erst `select`, bei Mehrdeutigkeit nachfragen.
 | **Aufgaben** | Tagesplan (mit Uhrzeiten) · Eisenhower-Matrix · Einkaufsliste |
 | **Projekte** | Ordner (mit Unterordnern), Leute & Nachfassen mit Nachrichtenentwürfen, Bücherliste (Projekt „Lesen“), „✍️ Mein Schreibstil“ |
 | **Kalender** | Monat mit Deadlines (rot), Terminen (blau), Diensten (lila), Trainings (grün); „Demnächst“-Liste |
-| **Fitness** | Trainingsplan A–E, Sätze loggen mit 2-min-Pausentimer, Fortschritt, 📏 Werte (Messungen, Vergleich, Original-Fotos), 🥊 Timer |
+| **Fitness** | Trainingsplan A–E, Sätze loggen mit 2-min-Pausentimer, Fortschritt, 📏 Werte (Messungen, Verlauf, Vergleich), 🥊 Timer |
 | **Elemente** | Wochenverteilung Feuer/Wasser/Erde/Luft gegen 4-Wochen-Schnitt |
 
 ## Querverbindungen – was wohin zählt (WICHTIG beim Eintragen)
@@ -281,11 +281,9 @@ grau = neutral wie Gewicht), Tipp → Verlauf mit Kurve und allen Messungen; unt
 nebeneinander). Charakter-Detail zeigt nur Kernwerte + Link. Damit Verläufe funktionieren: **immer dieselben `metric`-Namen**
 (z. B. „Körpergewicht“, „Körperfett“, „Skelettmuskelmasse“, „Schulterdrücken 1RM“, „Ruhepuls“, „5 km Zeit“) und `measured_on` =
 Messdatum. Bessere Richtung „niedriger“ steht in `LOWER_IS_BETTER` (BodyValues.tsx) – neue solche Werte dort ergänzen.
-**📸 Original-Check-ups** (Fotos/Screenshots der Kieser-Berichte, 31.12.2023 und 19.09.2026): Bilder liegen **AES-GCM-verschlüsselt**
-als `public/m/<zufall>.bin` im Repo (allein nutzlos); Schlüssel + IV stehen nur in `measurement_photos` (RLS Owner) – die App
-entschlüsselt im Browser. Neue Fotos: verkleinern (JPEG ~q78), mit zufälligem 32-Byte-Schlüssel + 12-Byte-IV verschlüsseln
-(Node `crypto.webcrypto`), `.bin` committen, Zeile `(measured_on, title, path, key, iv, position)` per `execute_sql` einfügen –
-**Schlüssel nie ins Repo/Migrationen schreiben.** Werte aus den Fotos zusätzlich in `measurements` übernehmen.
+**Check-up-Fotos:** Joshua schickt Fotos/Screenshots (Kieser seca mBCA) → **alle Werte ablesen und in `measurements` eintragen**
+(Fotos selbst nicht ablegen). Auch Verlaufsgrafiken auswerten (frühere Messtage, als „aus Grafik abgelesen (± …)“ in `note`).
+Check-ups bisher: 31.12.2023 (Papierbericht), 27.07.2026 (nur aus Grafiken), 19.09.2026 (App).
 
 **Messwerte** (Joshua schickt Check-ups, Kieser/seca): roh in `measurements`, daraus ehrliche Teilwerte 0–100 in `character_stats`
 mit Begründung in `note` (Untrainiert ≈ 15, Anfänger ≈ 30, Fortgeschritten ≈ 50, Erfahren ≈ 70, Sehr stark ≈ 85, Elite ≈ 95+).
