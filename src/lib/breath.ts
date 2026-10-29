@@ -18,6 +18,7 @@ export interface BreathExercise {
   goal: string;
   how: string;
   warning?: string;
+  targetRate?: number; // breaths per minute, compared with the sensor-measured rate
   steps: () => BreathStep[];
 }
 
@@ -30,6 +31,7 @@ const repeatFor = (minutes: number, cycle: BreathStep[]) => {
 export const EXERCISES: BreathExercise[] = [
   {
     id: "resonance",
+    targetRate: 5.5,
     name: "Resonanz-Atmung",
     emoji: "🌊",
     goal: "Ruhe & Herzratenvariabilität",
@@ -41,6 +43,7 @@ export const EXERCISES: BreathExercise[] = [
   },
   {
     id: "sigh",
+    targetRate: 6.7,
     name: "Zyklisches Seufzen",
     emoji: "😮‍💨",
     goal: "Stimmung heben, runterkommen",
@@ -53,6 +56,7 @@ export const EXERCISES: BreathExercise[] = [
   },
   {
     id: "box",
+    targetRate: 3.75,
     name: "Box Breathing",
     emoji: "⬜",
     goal: "Fokus & Stress",
@@ -66,6 +70,7 @@ export const EXERCISES: BreathExercise[] = [
   },
   {
     id: "478",
+    targetRate: 3.2,
     name: "4-7-8",
     emoji: "🌙",
     goal: "Einschlafen",
@@ -79,6 +84,7 @@ export const EXERCISES: BreathExercise[] = [
   },
   {
     id: "wimhof",
+    targetRate: 20,
     name: "Wim Hof",
     emoji: "🧊",
     goal: "Energie & Kälte-Resilienz",

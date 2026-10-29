@@ -138,7 +138,14 @@ erledigte Aufgabe „Atemübung: <Name>“ (`attribute='spirit'`, `element='wass
 | Wim Hof | 3 Runden: 30 tiefe Atemzüge → aus & halten (offen, Tippen) → ein & 15 s halten | Energie (⚠️ nur sitzend/liegend, nie im Wasser/beim Fahren) |
 | Feueratem (Kapalabhati) | 3 × 30 s aktive Ausstöße (~1/s), dazwischen 30 s ruhig | Wach werden (⚠️ nicht bei Schwangerschaft, Bluthochdruck, Herz, Epilepsie) |
 
-Neue Übungen: Eintrag in `EXERCISES` (Schritte `in`/`out`/`hold`/`free`, `open` = endet per Tippen).
+Neue Übungen: Eintrag in `EXERCISES` (Schritte `in`/`out`/`hold`/`free`, `open` = endet per Tippen, `targetRate` = Ziel-Atemzüge/min).
+
+**📱 Atem über das Handy erkennen** (Schalter in der Übungsauswahl, pro Gerät gemerkt, `src/lib/breathSensor.ts`): Handy flach
+auf den Bauch, Ton über Kopfhörer. Der Beschleunigungssensor (iPhone fragt einmal nach „Bewegung & Ausrichtung“) misst das
+Heben/Senken: Live-Kurve der letzten 20 s, **Dein Tempo X/min · Ziel Y/min** (ab 3 Atemzügen, Fenster 60 s) und bei offenem
+Luftanhalten (Wim Hof) automatisch weiter, sobald er wieder einatmet (frühestens nach 5 s, Hinweis „Atmung erkannt ✓“; Tippen
+geht weiterhin). Nur lokal im Browser, nichts wird gespeichert. Mit simulierten Sensordaten (10–100 Hz, mit Rauschen,
+Herzschlag/Schlucken) getestet, auf einem echten Handy noch nicht – Schwellen ggf. in `BreathSensor` nachjustieren.
 
 ## Detox-Fenster (`detox_sessions`) – Selbst-Accountability, keine Sperre
 

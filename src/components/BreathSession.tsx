@@ -5,6 +5,7 @@ import { isoDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 import { fmtSeconds } from "../lib/timer";
 import BreathCircle from "./BreathCircle";
+import { BreathSensor, listenMotion, requestMotionPermission } from "../lib/breathSensor";
 
 type WakeLock = { release: () => Promise<void> };
 
@@ -20,6 +21,17 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
   const [holds, setHolds] = useState<number[]>([]);
   const [saved, setSaved] = useState(false);
   const wake = useRef<WakeLock | null>(null);
+  // Motion sensor: phone lying on the belly
+  const [sensorOn, setSensorOn] = useState(() => {
+    try {
+      return localStorage.getItem("breath-sensor") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [sensorMsg, setSensorMsg] = useState<string | null>(null);
+  const sensor = useRef<BreathSensor | null>(null);
+  const [autoNote, setAutoNote] = useState<string | null>(null);
 
   const step = steps[idx];
   const done = idx >= steps.length && steps.length > 0;
@@ -52,6 +64,52 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (done) SOUNDS.gong();
   }, [done]);
+
+  async function toggleSensor() {
+    if (sensorOn) {
+      setSensorOn(false);
+      setSensorMsg(null);
+    } else {
+      const p = await requestMotionPermission();
+      if (p === "granted") {
+        setSensorOn(true);
+        setSensorMsg(null);
+      } else setSensorMsg(p === "denied" ? "Zugriff auf Bewegungssensoren wurde abgelehnt (iPhone: Einstellungen → Safari → Bewegung & Ausrichtung)." : "Dieses Gerät hat keinen Bewegungssensor.");
+    }
+  }
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("breath-sensor", sensorOn ? "1" : "0");
+    } catch {
+      /* storage unavailable */
+    }
+  }, [sensorOn]);
+
+  // Listen to the sensor while an exercise runs
+  useEffect(() => {
+    if (!sensorOn || !running) return;
+    const s = new BreathSensor();
+    sensor.current = s;
+    const off = listenMotion(s);
+    return () => {
+      off();
+      sensor.current = null;
+    };
+  }, [sensorOn, running]);
+
+  // Open breath holds: arm hold detection, then continue automatically once breathing is felt again
+  useEffect(() => {
+    if (!step?.open) return sensor.current?.stopHold();
+    sensor.current?.startHold(Date.now());
+  }, [idx]);
+  useEffect(() => {
+    if (step?.open && sensor.current && now - stepStart > 5000 && sensor.current.breathingResumed()) {
+      setAutoNote("Atmung erkannt ✓");
+      setTimeout(() => setAutoNote(null), 2500);
+      next();
+    }
+  });
 
   function begin(e: BreathExercise) {
     unlockAudio();
@@ -114,6 +172,17 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
           <label className="flex items-center gap-2 text-sm text-slate-400">
             <input type="checkbox" checked={sound} onChange={(e) => setSound(e.target.checked)} /> Atemgeräusche abspielen
           </label>
+          <button
+            onClick={toggleSensor}
+            className={`card flex flex-col gap-0.5 p-3 text-left ${sensorOn ? "border-emerald-600 bg-emerald-950/30" : ""}`}
+          >
+            <span className="text-sm font-medium">📱 Atem über das Handy erkennen {sensorOn ? "– an" : "– aus"}</span>
+            <span className="text-[11px] text-slate-400">
+              Handy flach auf den Bauch legen (Display nach oben), Ton über Kopfhörer. Zeigt dein Atemtempo und geht nach dem
+              Luftanhalten automatisch weiter, sobald du wieder einatmest.
+            </span>
+          </button>
+          {sensorMsg && <p className="text-xs text-amber-300">{sensorMsg}</p>}
         </div>
       </div>
     );
@@ -136,6 +205,7 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
         <button className="btn-ghost h-11 w-11 text-lg" onClick={(e) => (e.stopPropagation(), onClose())} aria-label="Schließen">✕</button>
       </div>
 
+      {autoNote && <div className="fixed left-1/2 top-24 -translate-x-1/2 rounded-full bg-emerald-600 px-4 py-1.5 text-sm">{autoNote}</div>}
       {done ? (
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="text-2xl font-semibold">Geschafft 🙏</p>
@@ -160,6 +230,7 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
                 Einatmen →
               </button>
             )}
+            {sensorOn && <SensorReadout sensor={sensor.current} now={now} target={ex.targetRate} holding={!!step.open} />}
           </div>
         )
       )}
@@ -185,6 +256,37 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Live breathing curve from the motion sensor plus measured vs. target pace. */
+function SensorReadout({ sensor, now, target, holding }: { sensor: BreathSensor | null; now: number; target?: number; holding: boolean }) {
+  if (!sensor) return null;
+  const pts = sensor.history.filter(([t]) => now - t < 20_000);
+  const rate = sensor.rate(now);
+  if (pts.length < 10) return <p className="text-xs text-slate-500">📱 Sensor startet … Handy ruhig auf den Bauch legen</p>;
+  const vals = pts.map(([, v]) => v);
+  const max = Math.max(...vals.map(Math.abs), 1e-4);
+  const path = pts.map(([t, v]) => `${((t - (now - 20_000)) / 20_000) * 200},${20 - (v / max) * 18}`).join(" ");
+  const inRange = rate != null && target != null && Math.abs(rate - target) <= Math.max(1, target * 0.2);
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <svg viewBox="0 0 200 40" className="h-10 w-52">
+        <polyline points={path} fill="none" stroke="#34d399" strokeWidth="1.5" />
+      </svg>
+      <p className="text-xs text-slate-400">
+        {holding
+          ? "📱 Wartet auf deinen nächsten Atemzug …"
+          : rate == null
+            ? "📱 Messe dein Atemtempo …"
+            : (
+              <>
+                📱 Dein Tempo <b className={inRange ? "text-emerald-400" : "text-amber-300"}>{rate.toFixed(1).replace(".", ",")}/min</b>
+                {target && <> · Ziel {String(target).replace(".", ",")}/min {inRange ? "✓" : ""}</>}
+              </>
+            )}
+      </p>
     </div>
   );
 }
