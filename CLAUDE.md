@@ -1,7 +1,10 @@
 # Daily Tracker – Arbeitsanleitung für Claude
 
-Persönliche App (nur ein Nutzer) für **Eisenhower-Matrix**, **Tagesplan**, **Kalender** und **Fitness-Tracking**.
+Persönliche App (nur ein Nutzer) für **Tagesplan/Eisenhower-Matrix**, **Projekte & Nachfassen**, **Kalender** und **Fitness-Tracking**.
 Der Nutzer steuert alles per Chat mit Claude; die Website ist zum Anschauen, Abhaken und Workout-Loggen.
+
+Reiter: **Heute** (nur kompakte Übersichts-Kacheln – bewusst nicht überfrachten!), **Aufgaben** (Tagesplan | Matrix | Einkauf),
+**Projekte**, **Kalender**, **Fitness**.
 
 - Frontend: Vite + React + TypeScript + Tailwind, gehostet auf Vercel (Projekt `eisenhower-matrix`, Team `hooliagins-projects`): https://eisenhower-matrix-bay.vercel.app/
 - Backend: Supabase-Projekt **`daily-tracker`**, ID **`mnwjojtntgihfwotvshl`** (eu-central-1).
@@ -33,6 +36,30 @@ select quadrant, title, due_date from tasks where not done order by quadrant, po
 select title from tasks where done and done_at::date = (now() at time zone 'Europe/Berlin')::date;
 ```
 Vor Änderungen per Titel-Match erst `select` ausführen und bei Mehrdeutigkeit nachfragen.
+
+### Projekte & Nachfassen (`projects`, `followups`, `tasks.project_id`)
+Projekt-Ordner (aktuell: Partei, Pluma Media, Baumklettern). Projekt-Aufgaben sind normale `tasks` mit `project_id`
+(Quadrant meist `schedule`; mit `due_date` = Projekt-Deadline).
+
+`followups` = Leute, denen der Nutzer hinterher sein muss:
+- `status = 'todo'`: Nutzer muss schreiben → `draft` = von Claude vorformulierte Nachricht zum Kopieren
+- `status = 'waiting'`: Nachricht ist raus, `last_contact` = wann; ab `follow_up_on` nachhaken (Standard `wait_days` = 2)
+- ohne `draft` = reine Erinnerung (z. B. Kim: „keine Texte, nur erinnern“); `repeat_days` = wiederkehrend
+- In der App: „Gesendet“ → waiting + `follow_up_on = heute + wait_days` + Draft leeren; „Antwort da/Erledigt“ → done
+  (bzw. bei `repeat_days` neu planen).
+
+**Entwürfe schreiben:** Deutsch, locker, per „du“, kurz (2–4 Sätze), wie eine private Chat-Nachricht, gern ein Emoji am Ende.
+Beim Nachhaken freundlich auf die vorige Nachricht Bezug nehmen, konkrete Frage stellen.
+Wenn ein `waiting`-Eintrag fällig wird und kein Draft da ist, beim nächsten Chat eine Nachhak-Nachricht als `draft` hinterlegen.
+```sql
+insert into followups (project_id, person, topic, status, last_contact, follow_up_on, draft, source)
+select id, 'Benjamin', 'Event Wein & Brezeln', 'waiting', '2026-10-29', '2026-10-31', 'Hey Benjamin, …', 'claude'
+from projects where name = 'Partei';
+-- Was ist fällig?
+select p.name, f.person, f.topic, f.status, f.follow_up_on, f.draft is not null as hat_text
+from followups f left join projects p on p.id = f.project_id
+where f.status <> 'done' and (f.follow_up_on is null or f.follow_up_on <= (now() at time zone 'Europe/Berlin')::date);
+```
 
 ### Kalender: Deadlines & Termine
 - **Deadline** = Aufgabe mit `tasks.due_date` (etwas muss *bis* dahin erledigt sein). Erscheint ab dem Tag im Tagesplan.

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
-import type { CalendarEvent, Quadrant, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
+import type { CalendarEvent, Followup, Project, Quadrant, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
 import { addDays, isoDate, weekStart } from "./dates";
 
 /** Refetch on mount, when the tab regains focus, and on realtime changes to `tables`. */
@@ -63,7 +63,7 @@ export function useTasks() {
 }
 
 export async function createTasks(
-  rows: { title: string; quadrant: Quadrant; source?: Task["source"]; estimate_minutes?: number | null; due_date?: string | null }[],
+  rows: { title: string; quadrant: Quadrant; source?: Task["source"]; estimate_minutes?: number | null; due_date?: string | null; project_id?: string | null }[],
 ) {
   const base = Date.now() / 1000;
   must(await supabase.from("tasks").insert(rows.map((r, i) => ({ ...r, position: base + i }))));
@@ -86,6 +86,47 @@ export function useShopping() {
     ["shopping_items"],
     [],
   );
+}
+
+// ---------- Projects & follow-ups ----------
+
+export function useProjects() {
+  return useLive<{ projects: Project[]; followups: Followup[]; tasks: Task[] }>(
+    async () => {
+      const since = addDays(new Date(), -14).toISOString();
+      const [p, f, t] = await Promise.all([
+        supabase.from("projects").select("*").eq("archived", false).order("position"),
+        supabase.from("followups").select("*").order("follow_up_on", { nullsFirst: true }),
+        supabase.from("tasks_planned").select("*").not("project_id", "is", null).or(`done.eq.false,done_at.gte.${since}`).order("position"),
+      ]);
+      return { projects: must(p), followups: must(f), tasks: must(t) };
+    },
+    ["projects", "followups", "tasks"],
+    { projects: [], followups: [], tasks: [] },
+  );
+}
+
+/** Open follow-ups whose date has come (or that have none yet). */
+export function isDue(f: Followup, today = isoDate()): boolean {
+  return f.status !== "done" && (!f.follow_up_on || f.follow_up_on <= today);
+}
+
+export async function updateFollowup(id: string, patch: Partial<Followup>) {
+  must(await supabase.from("followups").update(patch).eq("id", id));
+}
+
+/** Message sent: wait for an answer, nudge again after wait_days. */
+export function sentPatch(f: Followup): Partial<Followup> {
+  const today = new Date();
+  return { status: "waiting", last_contact: isoDate(today), follow_up_on: isoDate(addDays(today, f.wait_days)), draft: null };
+}
+
+/** Answer received / reminder handled: done, or re-arm if it repeats. */
+export function resolvedPatch(f: Followup): Partial<Followup> {
+  const today = new Date();
+  return f.repeat_days
+    ? { status: "todo", last_contact: isoDate(today), follow_up_on: isoDate(addDays(today, f.repeat_days)) }
+    : { status: "done", last_contact: isoDate(today) };
 }
 
 // ---------- Calendar ----------

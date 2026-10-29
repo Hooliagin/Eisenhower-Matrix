@@ -8,7 +8,7 @@ const Q_OPTIONS: { id: Quadrant; label: string }[] = [
   ...(Object.keys(QUADRANTS) as (keyof typeof QUADRANTS)[]).map((q) => ({ id: q as Quadrant, label: QUADRANTS[q].label })),
 ];
 
-export default function AddTask({ defaultQuadrant = "inbox" }: { defaultQuadrant?: Quadrant }) {
+export default function AddTask({ defaultQuadrant = "inbox", compact = false }: { defaultQuadrant?: Quadrant; compact?: boolean }) {
   const [text, setText] = useState("");
   const [quadrant, setQuadrant] = useState<Quadrant>(defaultQuadrant);
   const [listening, setListening] = useState(false);
@@ -63,7 +63,7 @@ export default function AddTask({ defaultQuadrant = "inbox" }: { defaultQuadrant
   }
 
   return (
-    <div className="card p-3">
+    <div className={compact ? "" : "card p-3"}>
       <div className="flex gap-2">
         <input
           className="min-w-0 flex-1"
@@ -86,7 +86,7 @@ export default function AddTask({ defaultQuadrant = "inbox" }: { defaultQuadrant
           +
         </button>
       </div>
-      <div className="mt-2 flex gap-1 overflow-x-auto">
+      <div className={`mt-2 flex gap-1 overflow-x-auto ${compact ? "hidden" : ""}`}>
         {Q_OPTIONS.map((q) => (
           <button
             key={q.id}

@@ -15,6 +15,7 @@ export interface Task {
   actual_minutes: number | null;
   started_at: string | null;
   planned_start: string | null;
+  project_id?: string | null;
   // Computed by the tasks_planned view (learning)
   planned_minutes?: number;
   history_samples?: number | null;
@@ -97,4 +98,29 @@ export interface CalendarEvent {
   end_time: string | null;
   notes: string | null;
   source: "app" | "claude";
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  emoji: string | null;
+  description: string | null;
+  position: number;
+  archived: boolean;
+}
+
+export interface Followup {
+  id: string;
+  project_id: string | null;
+  person: string;
+  topic: string;
+  status: "todo" | "waiting" | "done";
+  last_contact: string | null;
+  follow_up_on: string | null;
+  wait_days: number;
+  repeat_days: number | null;
+  draft: string | null;
+  notes: string | null;
+  source: "app" | "claude";
+  updated_at: string;
 }

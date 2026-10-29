@@ -3,17 +3,19 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import { RestTimerProvider } from "./lib/timer";
 import Login from "./components/Login";
-import Today from "./components/Today";
-import Matrix from "./components/Matrix";
+import Home from "./components/Home";
+import Tasks from "./components/Tasks";
+import Projects from "./components/Projects";
 import Calendar from "./components/Calendar";
 import Fitness from "./components/fitness/Fitness";
 import RestTimerBar from "./components/RestTimerBar";
 
-export type Tab = "today" | "matrix" | "calendar" | "fitness";
+export type Tab = "today" | "tasks" | "projects" | "calendar" | "fitness";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "today", label: "Heute", icon: "☀️" },
-  { id: "matrix", label: "Matrix", icon: "▦" },
+  { id: "tasks", label: "Aufgaben", icon: "✓" },
+  { id: "projects", label: "Projekte", icon: "📁" },
   { id: "calendar", label: "Kalender", icon: "📅" },
   { id: "fitness", label: "Fitness", icon: "🏋️" },
 ];
@@ -74,8 +76,9 @@ export default function App() {
   return (
     <RestTimerProvider>
       <div className="pt-safe mx-auto min-h-screen max-w-5xl px-3 pb-32 sm:px-6">
-        {tab === "today" && <Today go={go} />}
-        {tab === "matrix" && <Matrix />}
+        {tab === "today" && <Home />}
+        {tab === "tasks" && <Tasks />}
+        {tab === "projects" && <Projects />}
         {tab === "calendar" && <Calendar />}
         {tab === "fitness" && <Fitness />}
       </div>
