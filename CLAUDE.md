@@ -93,9 +93,13 @@ Plan-Erinnerungen fürs Training („Training: …“) bekommen weder `element` 
 ### Tägliche Routinen (`routines`)
 Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig pro Tag) und steht ganz vorne im Tagesplan
 (`position` = Reihenfolge am Morgen). Erzeugt beim App-Start per `spawn_routine_tasks(datum)`; Claude kann die Funktion
-selbst aufrufen. Verpasste Routinen stapeln sich nicht (alte werden im Plan ausgeblendet), in der Matrix erscheinen sie nie.
+selbst aufrufen. `weekdays` (ISO 1 = Mo … 7 = So) = nur an diesen Tagen, `null` = täglich.
+Eine verpasste Routine bleibt im Plan, bis eine neuere derselben Routine existiert (gestrige Tageslichtlampe verschwindet,
+das Blumengießen vom Sonntag wartet bis es erledigt ist). In der Matrix erscheinen Routinen nie.
 Routinen können `attribute`/`element` tragen (wird an die Tagesaufgabe vererbt).
-Aktuell: „Tageslichtlampe: 10 min helles Licht“ (Erde; gegen Winterdepression, Anfang des Tages).
+Aktuell: „Tageslichtlampe: 10 min helles Licht“ (täglich, gegen Winterdepression, Anfang des Tages),
+„Starke Mitte: 10 min Reels anderer Parteien schauen“ (täglich), „Wohnung 10 min lüften“ (täglich),
+„Blumen gießen“ (sonntags; zuletzt gegossen So 25.10.2026).
 ```sql
 insert into routines (title, estimate_minutes, position, attribute, element) values ('Beten', 10, 2, 'spirit', 'wasser');
 select public.spawn_routine_tasks((now() at time zone 'Europe/Berlin')::date);

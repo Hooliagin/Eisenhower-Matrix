@@ -1,3 +1,4 @@
+import { isoDate } from "./dates";
 import type { Task } from "./types";
 
 export interface Slot {
@@ -88,4 +89,23 @@ export function fmtMinutes(m: number): string {
   const h = Math.floor(m / 60);
   const r = m % 60;
   return r ? `${h} h ${r}` : `${h} h`;
+}
+
+/** Today's open tasks: everything due by today plus the "do" quadrant, in the user's order. */
+export function todayTasks<T extends { done: boolean; quadrant: string; due_date: string | null; routine_id?: string | null }>(
+  tasks: T[],
+  today = isoDate(),
+) {
+  // A missed routine stays until a newer one of the same routine exists: yesterday's
+  // light lamp is replaced by today's, last Sunday's watering waits until it's done.
+  const newestRoutineDay = new Map<string, string>();
+  for (const t of tasks)
+    if (t.routine_id && t.due_date && t.due_date <= today && t.due_date > (newestRoutineDay.get(t.routine_id) ?? ""))
+      newestRoutineDay.set(t.routine_id, t.due_date);
+  return tasks.filter(
+    (t) =>
+      !t.done &&
+      (t.quadrant === "do" || (t.due_date && t.due_date <= today)) &&
+      !(t.routine_id && t.due_date !== newestRoutineDay.get(t.routine_id)),
+  );
 }

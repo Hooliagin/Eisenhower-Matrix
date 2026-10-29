@@ -1,21 +1,9 @@
 import { useCalendar, useTasks } from "../lib/data";
 import { addDays, isoDate } from "../lib/dates";
+import { todayTasks } from "../lib/schedule";
 import AddTask from "./AddTask";
 import DayPlan from "./DayPlan";
 
-/** Today's open tasks: everything due by today plus the "do" quadrant, in the user's order. */
-export function todayTasks<T extends { done: boolean; quadrant: string; due_date: string | null; routine_id?: string | null }>(
-  tasks: T[],
-  today = isoDate(),
-) {
-  return tasks.filter(
-    (t) =>
-      !t.done &&
-      (t.quadrant === "do" || (t.due_date && t.due_date <= today)) &&
-      // a missed routine (e.g. yesterday's light lamp) does not pile up
-      !(t.routine_id && t.due_date && t.due_date < today),
-  );
-}
 
 export default function PlanView({ openMatrix }: { openMatrix: () => void }) {
   const { data: tasks, setData: setTasks } = useTasks();

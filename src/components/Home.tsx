@@ -1,12 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { isDue, minutesThisWeek, suggestTemplate, useBooks, useCalendar, useProjects, useSessions, useShopping, useTasks, useTemplates } from "../lib/data";
 import { addDays, formatLong, isoDate, parseDate } from "../lib/dates";
-import { buildSchedule, fmtMinutes, hhmm } from "../lib/schedule";
+import { buildSchedule, fmtMinutes, hhmm, todayTasks } from "../lib/schedule";
 import { supabase } from "../lib/supabase";
 import AddTask from "./AddTask";
 import { CharacterCard, CharacterView } from "./Character";
 import { countdown } from "./Calendar";
-import { todayTasks } from "./PlanView";
 
 function Tile({ icon, title, onClick, children, wide }: { icon: string; title: string; onClick: () => void; children: ReactNode; wide?: boolean }) {
   return (
