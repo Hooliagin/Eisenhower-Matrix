@@ -16,6 +16,18 @@ Der Cloud-Container erreicht `*.supabase.co` per HTTP nicht – das MCP schon. D
 Sprache: **Deutsch**. Datum immer Europe/Berlin: `(now() at time zone 'Europe/Berlin')::date` statt `current_date`.
 Vor Änderungen per Titel-Match erst `select`, bei Mehrdeutigkeit nachfragen.
 
+**⚠️ Ändern/Löschen bestehender Zeilen:** Das Supabase-MCP verlangt bei `update`/`delete` (und destruktivem DDL) eine Bestätigung,
+die Joshua nicht erreicht (Timeout nach 60 s). **Neue Zeilen (`insert`) und nicht-destruktive Migrationen gehen direkt.** Darum:
+Änderungen an bestehenden Zeilen als **Änderungsvorschlag** in `change_requests` eintragen (`table_name`, `row_id` = id als Text,
+`action` 'update'/'delete', `patch` jsonb, `summary` = kurzer deutscher Satz mit Emoji). Die Startseite zeigt oben „✏️ Claude schlägt
+N Änderungen vor“ → Joshua tippt ✓ / „Alle übernehmen“, die App führt sie mit seiner Sitzung aus. Im Chat kurz sagen, dass Vorschläge
+warten. Selbst korrigieren kann er Mahlzeiten auch direkt (Antippen → ✎ Editor mit kcal/Protein/🚶/Löschen).
+```sql
+insert into change_requests (table_name, row_id, action, patch, summary)
+values ('meals', '<id>', 'update', '{"walk_minutes": 10}', '🚶 Frühstück: 10 min gegangen');
+insert into change_requests (table_name, row_id, action, summary) select 'tasks', id::text, 'delete', '🗑️ Aufgabe „…“ löschen' from tasks where …;
+```
+
 ---
 
 ## App-Aufbau (Reiter)

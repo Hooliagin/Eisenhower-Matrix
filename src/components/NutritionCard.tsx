@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { addDrink, removeLastDrink, useNutrition, type DrinkKind } from "../lib/data";
+import { addDrink, removeLastDrink, useNutrition, type DrinkKind, type Meal } from "../lib/data";
 import { isoDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 
@@ -63,6 +63,8 @@ export default function NutritionCard() {
     await supabase.from("events").delete().eq("id", n.shift_event_id);
     void refresh();
   }
+
+  const [editing, setEditing] = useState<string | null>(null);
 
   async function toggleWalk(id: string, walked: boolean) {
     await supabase.from("meals").update({ walk_minutes: walked ? null : 10 }).eq("id", id);
@@ -163,10 +165,10 @@ export default function NutritionCard() {
           {data.meals.map((m) => (
             <li key={m.id}>
               <div className="flex justify-between gap-2">
-                <span className="text-slate-300">
+                <button className="text-left text-slate-300" onClick={() => setEditing(editing === m.id ? null : m.id)}>
                   {m.meal && <span className="text-slate-500">{m.meal}: </span>}
-                  {m.description}
-                </span>
+                  {m.description} <span className="text-slate-600">✎</span>
+                </button>
                 <span className="flex items-center gap-1.5 whitespace-nowrap text-slate-400">
                   {m.kcal} kcal · {Math.round(m.protein_g)} g P
                   <button
@@ -179,6 +181,15 @@ export default function NutritionCard() {
                 </span>
               </div>
               {m.notes && <p className="text-[10px] text-slate-600">{m.notes}</p>}
+              {editing === m.id && (
+                <MealEditor
+                  meal={m}
+                  onDone={() => {
+                    setEditing(null);
+                    void refresh();
+                  }}
+                />
+              )}
             </li>
           ))}
           {!data.meals.length && <li className="text-slate-500">Noch nichts eingetragen.</li>}
@@ -188,5 +199,54 @@ export default function NutritionCard() {
         </ul>
       )}
     </section>
+  );
+}
+
+/** Fix a meal yourself: text, kcal, protein, walk after it – or delete it. */
+function MealEditor({ meal, onDone }: { meal: Meal; onDone: () => void }) {
+  const [description, setDescription] = useState(meal.description);
+  const [kcal, setKcal] = useState(String(meal.kcal));
+  const [protein, setProtein] = useState(String(meal.protein_g));
+  const [walk, setWalk] = useState(meal.walk_minutes ? String(meal.walk_minutes) : "");
+  const num = (v: string) => Number(v.replace(",", "."));
+
+  async function save() {
+    const { error } = await supabase
+      .from("meals")
+      .update({ description, kcal: Math.round(num(kcal)), protein_g: num(protein), walk_minutes: walk ? Math.round(num(walk)) : null })
+      .eq("id", meal.id);
+    if (error) return alert(error.message);
+    onDone();
+  }
+
+  async function remove() {
+    if (!confirm(`„${meal.description}“ löschen?`)) return;
+    await supabase.from("meals").delete().eq("id", meal.id);
+    onDone();
+  }
+
+  return (
+    <div className="mt-1.5 flex flex-col gap-1.5 rounded-lg bg-slate-950/70 p-2">
+      <input value={description} onChange={(e) => setDescription(e.target.value)} className="py-1.5 text-xs" />
+      <div className="grid grid-cols-3 gap-1.5 text-[10px] text-slate-500">
+        <label>
+          kcal
+          <input inputMode="numeric" value={kcal} onChange={(e) => setKcal(e.target.value)} className="w-full py-1.5 text-xs" />
+        </label>
+        <label>
+          Protein g
+          <input inputMode="decimal" value={protein} onChange={(e) => setProtein(e.target.value)} className="w-full py-1.5 text-xs" />
+        </label>
+        <label>
+          🚶 min
+          <input inputMode="numeric" value={walk} placeholder="–" onChange={(e) => setWalk(e.target.value)} className="w-full py-1.5 text-xs" />
+        </label>
+      </div>
+      <div className="flex gap-1.5">
+        <button className="btn-primary flex-1 py-1.5 text-xs" onClick={() => void save()}>Speichern</button>
+        <button className="btn-ghost py-1.5 text-xs" onClick={onDone}>Abbrechen</button>
+        <button className="btn bg-red-900/60 py-1.5 text-xs text-red-200" onClick={() => void remove()}>Löschen</button>
+      </div>
+    </div>
   );
 }

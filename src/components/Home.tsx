@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import ChangeRequests from "./ChangeRequests";
 import { isDue, minutesThisWeek, suggestTemplate, useBooks, useCalendar, useProjects, useSessions, useShopping, useTasks, useTemplates } from "../lib/data";
 import { addDays, formatLong, isoDate, parseDate } from "../lib/dates";
 import { buildSchedule, fmtMinutes, hhmm, todayTasks } from "../lib/schedule";
@@ -83,6 +84,7 @@ export default function Home() {
         <button className="text-xs text-slate-600" onClick={() => supabase.auth.signOut()}>Abmelden</button>
       </header>
 
+      <ChangeRequests />
       <CharacterCard />
 
       <DetoxCard />
