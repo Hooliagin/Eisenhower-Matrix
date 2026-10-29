@@ -147,6 +147,22 @@ Luftanhalten (Wim Hof) automatisch weiter, sobald er wieder einatmet (frühesten
 geht weiterhin). Nur lokal im Browser, nichts wird gespeichert. Mit simulierten Sensordaten (10–100 Hz, mit Rauschen,
 Herzschlag/Schlucken) getestet, auf einem echten Handy noch nicht – Schwellen ggf. in `BreathSensor` nachjustieren.
 
+Jede gespeicherte Übung landet zusätzlich in **`breath_sessions`** (`exercise` = id aus `breath.ts`, `holds` = Haltezeiten in s,
+`avg_rate` = gemessenes Tempo mit Sensor). Auswahl zeigt je Übung „N× gemacht · 🏆 Bestwert · Ø letzte 5“, Endbildschirm
+„🏆 Neuer Rekord!“ bzw. Vergleich mit Ø. Erzählt Joshua Haltezeiten im Chat:
+`insert into breath_sessions (exercise, name, duration_s, holds) values ('wimhof', 'Wim Hof', 660, array[102,108,76]);`
+
+## 📈 Fortschritt & Rekorde (Views `metric_daily`, `metric_progress`)
+
+`metric_daily` = ein Wert pro Kennzahl und Tag: längstes Wim-Hof-Halten, e1RM je Übung (Epley, ≤ 12 Wdh.), Lesen-Minuten,
+Meditieren & Atmen (Minuten), XP gesamt, verwertbares Protein, Getrunkenes. `metric_progress` = letzter Wert je Kennzahl
+gegen Ø der 28 Tage davor (`avg_prev`), Bestwert davor (`best_prev`), `is_record`, `above_avg`. Anzeige: Charakter-Detail
+„📈 Fortschritt & Rekorde“; auf der Startseite nur eine Zeile „🏆 Neue Bestleistung …“, wenn es heute einen Rekord gibt.
+**Claude meldet Fortschritt aktiv:** Nach jedem Eintrag (und wenn Joshua fragt) `select * from metric_progress where latest_day =
+<heute>` prüfen und Rekorde bzw. „besser als dein Schnitt“ kurz erwähnen, konkret mit Zahlen (z. B. „Luft anhalten 2:10, Rekord,
+bisher 1:48“). Ehrlich, auch wenn etwas unter dem Schnitt liegt, aber ohne Moralpredigt.
+Neue Kennzahl: weiteren `union all`-Block in `metric_daily` (Spalten metric, label, unit, higher_better, day, value).
+
 ## Detox-Fenster (`detox_sessions`) – Selbst-Accountability, keine Sperre
 
 Startseite: ☀️ **Morgen 30 min** (nach dem Aufstehen kein Handy/Social Media/YouTube), 🌙 **Abend 60 min** (1 h vor dem Schlafen

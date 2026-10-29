@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useCharacter } from "../lib/data";
+import { fmtMetric, useCharacter, useProgress, type MetricProgress } from "../lib/data";
+import { isoDate } from "../lib/dates";
 import { parseDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 import { ATTR_ORDER, ATTRS, form, levelProgress, trend, TREND_ICON, type Attribute, type AttrSummary, type CharacterStat } from "../lib/character";
@@ -66,6 +67,64 @@ function Bar({ pct, color }: { pct: number; color: string }) {
   );
 }
 
+/** Today's new personal bests – one quiet line on the home card, only when there is something. */
+function TodayRecords() {
+  const { data } = useProgress();
+  const recs = data.filter((m) => m.is_record && m.latest_day === isoDate());
+  if (!recs.length) return null;
+  return (
+    <span className="truncate text-[11px] text-amber-300">
+      🏆 Neue Bestleistung: {recs.map((m) => `${m.label} ${fmtMetric(m.latest, m.unit)}`).join(" · ")}
+    </span>
+  );
+}
+
+function ProgressRow({ m }: { m: MetricProgress }) {
+  const today = m.latest_day === isoDate();
+  const day = today ? "heute" : parseDate(m.latest_day).toLocaleDateString("de-DE", { day: "numeric", month: "short" });
+  const delta = m.avg_prev != null ? Number(m.latest) - Number(m.avg_prev) : null;
+  return (
+    <tr className="border-t border-slate-800 align-top">
+      <td className="py-1.5 pr-2">
+        <div className="text-slate-300">{m.label}</div>
+        <div className="text-[10px] text-slate-500">
+          Bestwert {fmtMetric(m.best_all, m.unit)}
+          {m.avg_prev != null && <> · Ø 4 Wochen {fmtMetric(m.avg_prev, m.unit)}</>}
+        </div>
+      </td>
+      <td className="whitespace-nowrap py-1.5 text-right">
+        <div className="font-medium">
+          {m.is_record && "🏆 "}
+          {fmtMetric(m.latest, m.unit)}
+        </div>
+        <div className={`text-[10px] ${m.is_record ? "text-amber-300" : m.above_avg ? "text-emerald-400" : "text-slate-500"}`}>
+          {day}
+          {m.is_record ? " · Rekord" : delta != null && delta !== 0 ? ` · ${delta > 0 ? "+" : "−"}${fmtMetric(Math.abs(delta), m.unit)} zum Ø` : ""}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/** Latest value per metric vs. the usual and the personal best. */
+function Progress() {
+  const { data } = useProgress();
+  if (!data.length) return null;
+  return (
+    <section className="card p-3">
+      <h2 className="text-sm font-semibold text-slate-300">📈 Fortschritt & Rekorde</h2>
+      <p className="text-[10px] text-slate-500">Letzter Wert gegen deinen Schnitt der 4 Wochen davor und deinen Bestwert.</p>
+      <table className="mt-2 w-full text-xs">
+        <tbody>
+          {data.map((m) => (
+            <ProgressRow key={m.metric} m={m} />
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
 /** Compact card for the home page. */
 export function CharacterCard() {
   const { data } = useCharacter();
@@ -93,6 +152,7 @@ export function CharacterCard() {
           })}
         </div>
         <span className="text-[10px] text-slate-600">Zahl = Level · Balken = Form der letzten 14 Tage</span>
+        <TodayRecords />
       </div>
     </button>
   );
@@ -208,6 +268,8 @@ export function CharacterView() {
           <Radar stats={data.stats} />
         </section>
       )}
+
+      <Progress />
 
       <Measurements />
 

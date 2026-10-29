@@ -146,6 +146,40 @@ export function useCharacter() {
   );
 }
 
+// ---------- Progress & records ----------
+
+export interface MetricProgress {
+  metric: string;
+  label: string;
+  unit: string;
+  higher_better: boolean;
+  latest_day: string;
+  latest: number;
+  avg_prev: number | null; // Ø of the 28 days before latest_day (days with data)
+  best_prev: number | null; // best ever before latest_day
+  n_prev: number;
+  best_all: number;
+  is_record: boolean;
+  above_avg: boolean;
+}
+
+export function useProgress() {
+  return useLive<MetricProgress[]>(
+    async () => must(await supabase.from("metric_progress").select("*").order("label")),
+    ["tasks", "reading_log", "workout_sessions", "breath_sessions", "meals", "drink_log", "events"],
+    [],
+  );
+}
+
+/** Format a metric value with its unit (seconds as m:ss, ml as L). */
+export function fmtMetric(value: number | null, unit: string): string {
+  if (value == null) return "–";
+  const v = Number(value);
+  if (unit === "s") return `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`;
+  if (unit === "ml") return `${(v / 1000).toLocaleString("de-DE", { maximumFractionDigits: 2 })} L`;
+  return `${Number(v.toFixed(1)).toLocaleString("de-DE")} ${unit}`;
+}
+
 export function useElements() {
   return useLive<{ element: string; day: string; minutes: number; label: string }[]>(
     async () =>

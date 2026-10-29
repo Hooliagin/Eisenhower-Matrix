@@ -32,6 +32,17 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
   const [sensorMsg, setSensorMsg] = useState<string | null>(null);
   const sensor = useRef<BreathSensor | null>(null);
   const [autoNote, setAutoNote] = useState<string | null>(null);
+  const rates = useRef<number[]>([]); // sensor-measured breaths/min, sampled every second
+  const [history, setHistory] = useState<PastSession[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("breath_sessions")
+      .select("exercise, day, holds, avg_rate")
+      .order("created_at", { ascending: false })
+      .limit(200)
+      .then(({ data }) => setHistory((data ?? []) as PastSession[]));
+  }, [saved]);
 
   const step = steps[idx];
   const done = idx >= steps.length && steps.length > 0;
@@ -98,6 +109,13 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
     };
   }, [sensorOn, running]);
 
+  // Sample the measured pace (not during holds) for the session log
+  useEffect(() => {
+    if (!running || step?.kind === "hold" || !sensor.current) return;
+    const r = sensor.current.rate(now);
+    if (r != null && Math.floor(now / 1000) !== Math.floor((now - 100) / 1000)) rates.current.push(r);
+  }, [now]);
+
   // Open breath holds: arm hold detection, then continue automatically once breathing is felt again
   useEffect(() => {
     if (!step?.open) return sensor.current?.stopHold();
@@ -118,6 +136,7 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
     setSteps(s);
     setHolds([]);
     setSaved(false);
+    rates.current = [];
     const t = Date.now();
     setStartedAt(t);
     setStepStart(t);
@@ -136,7 +155,7 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
     if (!ex) return;
     const minutes = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
     const now = new Date().toISOString();
-    const { error } = await supabase.from("tasks").insert({
+    const { data: task, error } = await supabase.from("tasks").insert({
       title: `Atemübung: ${ex.name}`,
       quadrant: "do",
       due_date: isoDate(),
@@ -147,8 +166,19 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
       element: "wasser",
       notes: holds.length ? `Luft angehalten: ${holds.map((h) => fmtSeconds(h)).join(" · ")}` : null,
       source: "app",
+    }).select("id").single();
+    if (error) return;
+    const r = rates.current;
+    await supabase.from("breath_sessions").insert({
+      day: isoDate(),
+      exercise: ex.id,
+      name: ex.name,
+      duration_s: Math.round((Date.now() - startedAt) / 1000),
+      holds,
+      avg_rate: r.length ? Math.round((r.reduce((a, b) => a + b, 0) / r.length) * 10) / 10 : null,
+      task_id: task.id,
     });
-    if (!error) setSaved(true);
+    setSaved(true);
   }
 
   // ---------- Picker ----------
@@ -167,6 +197,7 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
               </span>
               <span className="text-xs text-slate-400">{e.how}</span>
               {e.warning && <span className="text-[11px] text-amber-300/80">⚠️ {e.warning}</span>}
+              <PastStats past={history.filter((h) => h.exercise === e.id)} />
             </button>
           ))}
           <label className="flex items-center gap-2 text-sm text-slate-400">
@@ -211,6 +242,7 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
           <p className="text-2xl font-semibold">Geschafft 🙏</p>
           <p className="text-sm text-slate-400">{fmtSeconds(total)} Minuten</p>
           {holds.length > 0 && <p className="text-sm text-indigo-200">Luft angehalten: {holds.map((h) => fmtSeconds(h)).join(" · ")}</p>}
+          {holds.length > 0 && <HoldVerdict holds={holds} past={history.filter((h) => h.exercise === ex.id && !(saved && h === history[0]))} />}
         </div>
       ) : (
         step && (
@@ -288,5 +320,51 @@ function SensorReadout({ sensor, now, target, holding }: { sensor: BreathSensor 
             )}
       </p>
     </div>
+  );
+}
+
+interface PastSession {
+  exercise: string;
+  day: string;
+  holds: number[];
+  avg_rate: number | null;
+}
+
+const maxHold = (p: PastSession) => (p.holds.length ? Math.max(...p.holds) : 0);
+
+/** Under each exercise in the picker: how often, and for Wim Hof best / average hold. */
+function PastStats({ past }: { past: PastSession[] }) {
+  if (!past.length) return null;
+  const withHolds = past.filter((p) => p.holds.length);
+  const recent = withHolds.slice(0, 5).map(maxHold);
+  return (
+    <span className="text-[11px] text-indigo-300/80">
+      {past.length}× gemacht
+      {withHolds.length > 0 && (
+        <>
+          {" · "}🏆 Bestwert {fmtSeconds(Math.max(...withHolds.map(maxHold)))} · Ø letzte {recent.length}:{" "}
+          {fmtSeconds(Math.round(recent.reduce((a, b) => a + b, 0) / recent.length))}
+        </>
+      )}
+      {past[0].avg_rate != null && ` · zuletzt ${String(past[0].avg_rate).replace(".", ",")}/min`}
+    </span>
+  );
+}
+
+/** End screen: compare today's longest hold with the personal best and recent average. */
+function HoldVerdict({ holds, past }: { holds: number[]; past: PastSession[] }) {
+  const best = Math.max(...holds);
+  const prev = past.filter((p) => p.holds.length).map(maxHold);
+  if (!prev.length) return <p className="text-xs text-slate-400">Erster gemessener Durchgang: ab jetzt siehst du hier deinen Fortschritt.</p>;
+  const record = Math.max(...prev);
+  const recent = prev.slice(0, 5);
+  const avg = Math.round(recent.reduce((a, b) => a + b, 0) / recent.length);
+  if (best > record)
+    return <p className="text-base font-semibold text-amber-300">🏆 Neuer Rekord! {fmtSeconds(best)} (bisher {fmtSeconds(record)})</p>;
+  return (
+    <p className={`text-sm ${best > avg ? "text-emerald-400" : "text-slate-400"}`}>
+      Längstes Halten {fmtSeconds(best)} · Ø letzte {recent.length}: {fmtSeconds(avg)}
+      {best > avg ? ` · +${best - avg} s besser als sonst` : ""} · Rekord {fmtSeconds(record)}
+    </p>
   );
 }
