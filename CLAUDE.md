@@ -322,6 +322,9 @@ Zehntel; zeigt auch Spitzen-km/h). Jeder gespeicherte Lauf = Satz (`seconds`, `m
 Fortschritt: Fitness → Fortschritt (beste Zeit pro Woche über die häufigste Strecke) und `metric_daily` „Sprint N m“ (niedriger = besser).
 Nennt Joshua Zeiten im Chat: `set_logs` mit `seconds = 8.12, meters = 60` in einer D-Session.
 
+**Laufendes Training** (heute begonnen, nicht abgeschlossen): Fitness-Reiter und Startseiten-Kachel springen direkt hinein;
+nach „‹“ bleibt man in der Übersicht (bis zum nächsten Öffnen). „Start“ beim selben Plan öffnet das laufende statt ein zweites.
+
 Pause 120 s (`rest_seconds`); `superset_group` = Supersatz (Timer erst nach der letzten Übung der Gruppe); `optional` = eingeklappt.
 `exercises.metric`: `weight_reps` · `weight_distance` (Farmers Walk) · `weight_time`.
 ```sql

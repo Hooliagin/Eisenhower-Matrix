@@ -35,6 +35,28 @@ export default function Fitness() {
     location.hash = v.kind === "home" ? "fitness" : v.kind === "session" ? `fitness/session/${v.id}` : `fitness/${v.kind}`;
   };
 
+  // A workout from today is still running → open it directly. Only skipped right after leaving it via "‹".
+  const running = sessions.find((s) => !s.finished_at && s.session_date === isoDate());
+  useEffect(() => {
+    if (view.kind !== "home" || !running) return;
+    let left: string | null = null;
+    try {
+      left = sessionStorage.getItem("fitness-left-session");
+    } catch {
+      /* storage unavailable */
+    }
+    if (left !== running.id) location.replace(`#fitness/session/${running.id}`);
+  }, [view.kind, running?.id]);
+
+  function leaveSession(id: string) {
+    try {
+      sessionStorage.setItem("fitness-left-session", id);
+    } catch {
+      /* storage unavailable */
+    }
+    nav({ kind: "home" });
+  }
+
   async function start(templateId: string) {
     // An unfinished session of this plan from today → just continue it instead of starting a second one.
     const open = sessions.find((s) => !s.finished_at && s.template_id === templateId && s.session_date === isoDate());
@@ -46,7 +68,10 @@ export default function Fitness() {
     nav({ kind: "session", id: data.id });
   }
 
-  if (view.kind === "session") return <SessionView id={view.id} templates={templates} back={() => nav({ kind: "home" })} />;
+  if (view.kind === "session") {
+    const id = view.id;
+    return <SessionView id={id} templates={templates} back={() => leaveSession(id)} />;
+  }
   if (view.kind === "progress") return <Progress back={() => nav({ kind: "home" })} />;
   if (view.kind === "body") return <BodyValues back={() => nav({ kind: "home" })} />;
   if (view.kind === "plan") return <Plan templates={templates} back={() => nav({ kind: "home" })} />;

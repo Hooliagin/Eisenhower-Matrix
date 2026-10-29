@@ -55,7 +55,7 @@ export default function Home() {
     .sort((a, b) => a.follow_up_on!.localeCompare(b.follow_up_on!))[0];
   const openShopping = shopping.filter((i) => !i.done);
   const { next: nextWorkout, weekly } = suggestTemplate(templates, sessions);
-  const trainedToday = sessions.find((s) => s.session_date === today);
+  const trainedToday = sessions.find((s) => s.session_date === today && !s.finished_at) ?? sessions.find((s) => s.session_date === today);
 
   const readMin = minutesThisWeek(reading.log);
   const currentBooks = reading.books.filter((b) => b.status === "reading");
@@ -145,11 +145,11 @@ export default function Home() {
           <span className="truncate text-xs text-slate-500">{openShopping.length ? openShopping.map((i) => i.name).join(", ") : "Liste leer"}</span>
         </Tile>
 
-        <Tile icon="🏋️" title="Training" onClick={() => go("fitness")}>
+        <Tile icon="🏋️" title="Training" onClick={() => go(trainedToday && !trainedToday.finished_at ? `fitness/session/${trainedToday.id}` : "fitness")}>
           {trainedToday?.finished_at ? (
             <span className="text-sm text-emerald-400">✓ Heute erledigt</span>
           ) : (
-            <span className="truncate text-sm">{trainedToday ? "Läuft gerade" : nextWorkout?.name}</span>
+            <span className="truncate text-sm">{trainedToday ? "▶ Läuft gerade – weiter" : nextWorkout?.name}</span>
           )}
           <span className="text-xs text-slate-500">{weekly.filter((w) => w.t.times_per_week || w.thisWeek).map((w) => (w.t.times_per_week ? `${w.t.code} ${w.thisWeek}/${w.t.times_per_week}` : `${w.t.code} ${w.thisWeek}×`)).join(" · ")}</span>
         </Tile>
