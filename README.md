@@ -1,0 +1,9 @@
+# Daily Tracker
+
+Eisenhower-Matrix, Habit-Tracking und Fitness-Log in einer kleinen Web-App – gesteuert per Chat mit Claude.
+
+- **Matrix:** Aufgaben tippen oder per 🎙 diktieren, wischen → erledigt, wischen ← löschen, gedrückt halten & ziehen zum Verschieben.
+- **Habits:** Tages-Check, Wochenraster, Streaks, 12-Wochen-Verlauf.
+- **Fitness:** Split A/B/C, Sätze loggen, nach jedem Satz startet automatisch 2:00 Pause, „letztes Mal“-Werte, Fortschritt pro Woche.
+
+Details zu Datenmodell und Chat-Workflow: [`CLAUDE.md`](CLAUDE.md).
