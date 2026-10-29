@@ -9,12 +9,16 @@ interface Props {
   onClose: () => void;
   /** Called with the workout length in minutes when the user saves a finished session. */
   onComplete?: (minutes: number) => void;
+  /** Seconds already done in an earlier, interrupted session (counted after the prep countdown). */
+  initialSeconds?: number;
+  /** Save progress to continue later; called with seconds done (after prep). */
+  onSaveProgress?: (seconds: number) => void;
 }
 
 type WakeLock = { release: () => Promise<void> };
 
 /** Full-screen round timer with boxing-style signals; time is derived from timestamps so it survives tab throttling. */
-export default function IntervalTimer({ title, config, onClose, onComplete }: Props) {
+export default function IntervalTimer({ title, config, onClose, onComplete, initialSeconds = 0, onSaveProgress }: Props) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [pausedTotal, setPausedTotal] = useState(0);
@@ -86,10 +90,29 @@ export default function IntervalTimer({ title, config, onClose, onComplete }: Pr
     };
   }, [startedAt, st.kind]);
 
+  const prep = config.prep ?? 0;
+  const resuming = initialSeconds > 0;
+
   function start() {
     unlockAudio();
-    setStartedAt(Date.now());
+    // Resuming skips the prep countdown and starts where the last session stopped.
+    const offset = resuming ? (prep + initialSeconds) * 1000 : 0;
+    setStartedAt(Date.now() - offset);
     setNow(Date.now());
+  }
+
+  /** Seconds of actual work done so far (prep excluded). */
+  const doneSeconds = Math.max(0, Math.floor(elapsed - prep));
+
+  function saveForLater() {
+    onSaveProgress?.(doneSeconds);
+    onClose();
+  }
+
+  function close() {
+    // Leaving a running session keeps what was done instead of throwing it away.
+    if (startedAt && st.kind !== "done" && doneSeconds >= 30 && onSaveProgress) onSaveProgress(doneSeconds);
+    onClose();
   }
 
   function togglePause() {
@@ -116,13 +139,14 @@ export default function IntervalTimer({ title, config, onClose, onComplete }: Pr
     <div className={`fixed inset-0 z-50 flex flex-col items-center justify-between p-6 pt-safe pb-safe transition-colors ${bg}`}>
       <div className="flex w-full items-center justify-between">
         <span className="text-sm text-slate-400">{title}</span>
-        <button className="btn-ghost px-3" onClick={onClose}>✕</button>
+        <button className="btn-ghost px-3" onClick={close}>✕</button>
       </div>
 
       <div className="flex flex-col items-center gap-4">
         <p className={`text-xl font-semibold ${plain ? "text-teal-200" : calm ? "text-indigo-200" : st.kind === "work" ? "text-red-300" : st.kind === "rest" ? "text-emerald-300" : "text-slate-200"}`}>{label}</p>
+        {!startedAt && resuming && <p className="text-sm text-slate-300">Weiter bei {fmtSeconds(initialSeconds)} – noch {fmtSeconds(Math.max(0, Math.round(total - prep - initialSeconds)))}</p>}
         <p className="font-mono text-8xl font-bold tabular-nums">
-          {!startedAt ? fmtSeconds(config.prep ?? config.work) : st.kind === "done" ? fmtSeconds(Math.round(total)) : fmtSeconds(st.remaining)}
+          {!startedAt ? (resuming ? fmtSeconds(stateAt(config, prep + initialSeconds).remaining) : fmtSeconds(config.prep ?? config.work)) : st.kind === "done" ? fmtSeconds(Math.round(total)) : fmtSeconds(st.remaining)}
         </p>
         <div className={`flex gap-2 ${config.rounds < 2 ? "hidden" : ""}`}>
           {Array.from({ length: config.rounds }, (_, i) => {
@@ -145,13 +169,20 @@ export default function IntervalTimer({ title, config, onClose, onComplete }: Pr
       <div className="flex w-full max-w-sm flex-col gap-2">
         {!startedAt && (
           <button className="btn-primary py-4 text-lg" onClick={start}>
-            ▶ Start
+            {resuming ? "▶ Weitermachen" : "▶ Start"}
           </button>
         )}
         {startedAt && st.kind !== "done" && (
-          <button className="btn-ghost py-4 text-lg" onClick={togglePause}>
-            {pausedAt ? "▶ Weiter" : "⏸ Pause"}
-          </button>
+          <>
+            <button className="btn-ghost py-4 text-lg" onClick={togglePause}>
+              {pausedAt ? "▶ Weiter" : "⏸ Pause"}
+            </button>
+            {onSaveProgress && (
+              <button className="btn-ghost py-3 text-sm" onClick={saveForLater}>
+                💾 Später weitermachen ({fmtSeconds(doneSeconds)} gespeichert)
+              </button>
+            )}
+          </>
         )}
         {st.kind === "done" && startedAt && (
           <>

@@ -42,6 +42,7 @@ Diese Tabelle entspricht den Views `xp_events`, `element_events` und `nutrition_
 | Lesezeit (`reading_log`) | Intellekt (Min.) – Bücher mit Feld **Religion** → Spiritualität | 💨 Luft – Religion → 💧 Wasser | – |
 | Erledigte Aufgabe mit `attribute` | jeweiliger Wert, Dauer = `actual_minutes` → Schätzung → 20 | `tasks.element`, sonst aus `attribute` abgeleitet | nur `attribute='koerper'`: +8 kcal/min |
 | Erledigte Aufgabe nur mit `element` | – | jeweiliges Element | – |
+| **Unterbrochene** Timer-Aufgabe (`progress_seconds ≥ 30`, noch nicht erledigt) | bisherige Minuten, am Tag des Speicherns | ebenso | Körper-Aufgaben: 8 kcal/min |
 | Detox-Fenster geschafft (`detox_sessions.result='success'`) | – | 🌍 Erde (30/60 min) | – |
 | Cappuccino (`drink_log.kind='coffee'`) | – | – | Aufnahme: +100 kcal, +5 g Protein, 75 mg Koffein |
 | Mahlzeit (`meals`) | – | – | Aufnahme: kcal, Protein × `protein_quality` |
@@ -96,6 +97,10 @@ Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig
   Rundenende, 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong. Abschluss speichert
   die Aufgabe als erledigt mit Dauer (ohne Vorlauf). `"style":"plain"` → einfacher Countdown (Startton, Endsignal,
 Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „🥊 Timer“.
+- **Später weitermachen:** Bricht Joshua einen Timer ab (Button „💾 Später weitermachen“ oder ✕ nach ≥ 30 s), wird der Stand in
+  `tasks.progress_seconds` gespeichert (Sekunden nach dem Vorlauf). Der Daily-Button zeigt dann z. B. „6/10 min“; beim nächsten Öffnen
+  geht es dort weiter („▶ Weitermachen“). Sagt er im Chat „hab 6 min mit Pouchi gemacht, abgebrochen“:
+  `update tasks set progress_seconds = 360 where title = 'Tricks mit Pouchi (10 min)' and due_date = <heute> and not done;`
 
 | Routine | Wann | Wo | attribute / element |
 |---|---|---|---|

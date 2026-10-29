@@ -183,6 +183,8 @@ export default function DayPlan({ tasks, doneToday, events, patch }: Props) {
           title={timerTask.title}
           config={timerTask.timer}
           onClose={() => setTimerTask(null)}
+          initialSeconds={timerTask.progress_seconds ?? 0}
+          onSaveProgress={(seconds) => save(timerTask, { progress_seconds: seconds })}
           onComplete={(minutes) => {
             save(timerTask, { done: true, done_at: new Date().toISOString(), actual_minutes: minutes });
             setTimerTask(null);

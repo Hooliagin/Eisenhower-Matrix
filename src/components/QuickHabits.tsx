@@ -34,6 +34,11 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
     void updateTask(t.id, p);
   }
 
+  function saveProgress(t: Task, seconds: number) {
+    patch(t.id, { progress_seconds: seconds });
+    void updateTask(t.id, { progress_seconds: seconds });
+  }
+
   function undo(t: Task) {
     patch(t.id, { done: false, done_at: null });
     void updateTask(t.id, { done: false, actual_minutes: null });
@@ -60,6 +65,11 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
           >
             <span className="text-xl">{t.done ? "✓" : icon(t)}</span>
             <span className="text-[10px] leading-tight">{label(t)}</span>
+            {!t.done && (t.progress_seconds ?? 0) > 0 && t.timer && (
+              <span className="text-[9px] text-amber-300">
+                {Math.round((t.progress_seconds ?? 0) / 60)}/{Math.round((t.timer.rounds * t.timer.work + (t.timer.rounds - 1) * t.timer.rest) / 60)} min
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -68,6 +78,8 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
           title={running.title}
           config={running.timer}
           onClose={() => setRunning(null)}
+          initialSeconds={running.progress_seconds ?? 0}
+          onSaveProgress={(seconds) => saveProgress(running, seconds)}
           onComplete={(minutes) => {
             complete(running, minutes);
             setRunning(null);
