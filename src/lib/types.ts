@@ -107,6 +107,7 @@ export interface Project {
   description: string | null;
   position: number;
   archived: boolean;
+  parent_id: string | null;
 }
 
 export interface Followup {

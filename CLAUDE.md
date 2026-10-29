@@ -38,8 +38,14 @@ select title from tasks where done and done_at::date = (now() at time zone 'Euro
 Vor Änderungen per Titel-Match erst `select` ausführen und bei Mehrdeutigkeit nachfragen.
 
 ### Projekte & Nachfassen (`projects`, `followups`, `tasks.project_id`)
-Projekt-Ordner (aktuell: Partei, Pluma Media, Baumklettern). Projekt-Aufgaben sind normale `tasks` mit `project_id`
-(Quadrant meist `schedule`; mit `due_date` = Projekt-Deadline).
+Projekt-Ordner (aktuell: Partei, Pluma Media, Baumklettern, Lesen). Unterordner über `projects.parent_id`
+(Lesen → „Lese ich gerade“, „Will ich lesen“, „Muss ich besorgen“; Buch = Eintrag im passenden Unterordner, verschieben = `project_id` ändern).
+Einträge sind normale `tasks` mit `project_id` (Quadrant `schedule`; mit `due_date` = Projekt-Deadline).
+In der Matrix erscheinen Projekt-Einträge nur, wenn sie ein `due_date` haben.
+```sql
+insert into tasks (title, quadrant, project_id, source)
+select 'Der Prozess – Kafka', 'schedule', id, 'claude' from projects where name = 'Will ich lesen';
+```
 
 `followups` = Leute, denen der Nutzer hinterher sein muss:
 - `status = 'todo'`: Nutzer muss schreiben → `draft` = von Claude vorformulierte Nachricht zum Kopieren

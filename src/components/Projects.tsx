@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createTasks, isDue, resolvedPatch, sentPatch, updateFollowup, useProjects } from "../lib/data";
 import { isoDate, parseDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
-import type { Followup, Project, Task } from "../lib/types";
+import type { Followup, Project } from "../lib/types";
 import { countdown } from "./Calendar";
 import { UndoToast, useTaskActions } from "./Matrix";
 import TaskCard from "./TaskCard";
@@ -89,8 +89,47 @@ export function FollowupCard({ f, project, onPatch }: { f: Followup; project?: P
   );
 }
 
+type ProjectData = ReturnType<typeof useProjects>["data"];
+
+/** The project and all its subfolders (any depth). */
+function subtreeIds(projects: Project[], rootId: string): Set<string> {
+  const ids = new Set([rootId]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const p of projects) if (p.parent_id && ids.has(p.parent_id) && !ids.has(p.id)) (ids.add(p.id), (grew = true));
+  }
+  return ids;
+}
+
+function FolderCard({ p, data }: { p: Project; data: ProjectData }) {
+  const today = isoDate();
+  const ids = subtreeIds(data.projects, p.id);
+  const fu = data.followups.filter((f) => f.project_id && ids.has(f.project_id) && f.status !== "done");
+  const ts = data.tasks.filter((t) => t.project_id && ids.has(t.project_id) && !t.done);
+  const next = ts.filter((t) => t.due_date).sort((a, b) => a.due_date!.localeCompare(b.due_date!))[0];
+  const dueCount = fu.filter((f) => isDue(f, today)).length;
+  const subCount = ids.size - 1;
+  const parts = [subCount && `${subCount} Ordner`, fu.length && `${fu.length} Leute`, `${ts.length} Einträge`].filter(Boolean);
+  return (
+    <button onClick={() => (location.hash = `projects/${p.id}`)} className="card p-3 text-left">
+      <div className="flex items-baseline justify-between">
+        <span className="font-semibold">{p.emoji} {p.name}</span>
+        {dueCount > 0 && <span className="rounded-full bg-amber-500/20 px-2 text-[11px] text-amber-300">{dueCount} fällig</span>}
+      </div>
+      <p className="mt-1 text-xs text-slate-500">
+        {parts.join(" · ")}
+        {next && <span className="text-red-300"> · Deadline {countdown(next.due_date!)}</span>}
+      </p>
+    </button>
+  );
+}
+
 function ProjectDetail({ project, back }: { project: Project; back: () => void }) {
   const { data, setData, refresh } = useProjects();
+  const children = data.projects.filter((p) => p.parent_id === project.id);
+  const parent = data.projects.find((p) => p.id === project.parent_id);
+  const [folder, setFolder] = useState("");
   const tasks = data.tasks.filter((t) => t.project_id === project.id);
   const followups = data.followups.filter((f) => f.project_id === project.id);
   const actions = useTaskActions(tasks, (next) => setData({ ...data, tasks: [...data.tasks.filter((t) => t.project_id !== project.id), ...next] }));
@@ -121,6 +160,13 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
     void refresh();
   }
 
+  async function addFolder() {
+    if (!folder.trim()) return;
+    await supabase.from("projects").insert({ name: folder.trim(), parent_id: project.id, position: children.length + 1 });
+    setFolder("");
+    void refresh();
+  }
+
   const open = followups.filter((f) => f.status !== "done");
   const done = followups.filter((f) => f.status === "done");
   const openTasks = tasks.filter((t) => !t.done).sort((a, b) => (a.due_date ?? "9").localeCompare(b.due_date ?? "9"));
@@ -130,11 +176,26 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
       <header className="flex items-center gap-2">
         <button className="btn-ghost px-2" onClick={back}>‹</button>
         <div>
+          {parent && <p className="text-xs text-slate-500">{parent.emoji} {parent.name} /</p>}
           <h1 className="text-xl font-semibold">{project.emoji} {project.name}</h1>
           {project.description && <p className="text-xs text-slate-500">{project.description}</p>}
         </div>
       </header>
 
+      {(children.length > 0 || !project.parent_id) && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold text-slate-300">Unterordner</h2>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {children.map((c) => <FolderCard key={c.id} p={c} data={data} />)}
+          </div>
+          <div className="flex gap-2">
+            <input className="min-w-0 flex-1 py-1.5 text-sm" placeholder="Neuer Unterordner…" value={folder} onChange={(e) => setFolder(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addFolder()} />
+            <button className="btn-ghost" onClick={addFolder}>+</button>
+          </div>
+        </section>
+      )}
+
+      {(!project.parent_id || followups.length > 0) && (
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold text-slate-300">Leute & Nachfassen · {open.length}</h2>
         {open.map((f) => <FollowupCard key={f.id} f={f} onPatch={patch} />)}
@@ -151,9 +212,10 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
         )}
         {showDone && done.map((f) => <FollowupCard key={f.id} f={f} onPatch={patch} />)}
       </section>
+      )}
 
       <section className="flex flex-col gap-1.5">
-        <h2 className="text-sm font-semibold text-slate-300">Aufgaben · {openTasks.length}</h2>
+        <h2 className="text-sm font-semibold text-slate-300">Einträge · {openTasks.length}</h2>
         {openTasks.map((t) => (
           <div key={t.id} className="flex items-center gap-2">
             <div className="flex-1"><TaskCard task={t} {...actions} draggable={false} /></div>
@@ -161,7 +223,7 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
           </div>
         ))}
         <div className="flex gap-2">
-          <input className="min-w-0 flex-1 py-1.5 text-sm" placeholder="Neue Aufgabe…" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTask()} />
+          <input className="min-w-0 flex-1 py-1.5 text-sm" placeholder="Neuer Eintrag…" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTask()} />
           <input type="date" className="w-36 py-1.5 text-sm" value={due} onChange={(e) => setDue(e.target.value)} title="Deadline (optional)" />
           <button className="btn-ghost" onClick={addTask}>+</button>
         </div>
@@ -189,7 +251,8 @@ export default function Projects() {
   }, []);
 
   const project = data.projects.find((p) => p.id === openId);
-  if (openId && project) return <ProjectDetail project={project} back={() => (location.hash = "projects")} />;
+  if (openId && project)
+    return <ProjectDetail key={project.id} project={project} back={() => (location.hash = project.parent_id ? `projects/${project.parent_id}` : "projects")} />;
 
   const patch = (f: Followup, p: Partial<Followup>) => {
     setData({ ...data, followups: data.followups.map((x) => (x.id === f.id ? { ...x, ...p } : x)) });
@@ -205,13 +268,6 @@ export default function Projects() {
 
   const due = data.followups.filter((f) => isDue(f, today));
 
-  const stats = (p: Project) => {
-    const fu = data.followups.filter((f) => f.project_id === p.id && f.status !== "done");
-    const ts: Task[] = data.tasks.filter((t) => t.project_id === p.id && !t.done);
-    const next = ts.filter((t) => t.due_date).sort((a, b) => a.due_date!.localeCompare(b.due_date!))[0];
-    return { fu, ts, next, dueCount: fu.filter((f) => isDue(f, today)).length };
-  };
-
   return (
     <div className="flex flex-col gap-4 pt-4">
       <h1 className="text-2xl font-semibold">Projekte</h1>
@@ -226,21 +282,7 @@ export default function Projects() {
       )}
 
       <section className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {data.projects.map((p) => {
-          const s = stats(p);
-          return (
-            <button key={p.id} onClick={() => (location.hash = `projects/${p.id}`)} className="card p-3 text-left">
-              <div className="flex items-baseline justify-between">
-                <span className="font-semibold">{p.emoji} {p.name}</span>
-                {s.dueCount > 0 && <span className="rounded-full bg-amber-500/20 px-2 text-[11px] text-amber-300">{s.dueCount} fällig</span>}
-              </div>
-              <p className="mt-1 text-xs text-slate-500">
-                {s.fu.length} Leute · {s.ts.length} Aufgaben
-                {s.next && <span className="text-red-300"> · Deadline {countdown(s.next.due_date!)}</span>}
-              </p>
-            </button>
-          );
-        })}
+        {data.projects.filter((p) => !p.parent_id).map((p) => <FolderCard key={p.id} p={p} data={data} />)}
       </section>
 
       <div className="flex gap-2">
