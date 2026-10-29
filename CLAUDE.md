@@ -305,7 +305,8 @@ Anzeige: Minuten dieser Woche vs. Schnitt der 4 Wochen davor, schwächstes Eleme
 
 ## Fitness (`exercises`, `workout_templates`, `template_exercises`, `workout_sessions`, `set_logs`)
 
-Split: **A** Schulter & Rücken (2×/Woche) · **B** Brust & Arme (2×/Woche, Butterflies am Ende) · **C** Beine & Bauch (1×/Woche) ·
+Split: **A** Schulter & Rücken (2×/Woche) · **B** Brust & Arme (2×/Woche: Curls+Pushdowns als Supersatz · Dips · Overhead Trizepsdrücken (Kabel) · Preacher · Hammer ·
+Einarmige Trizeps-Extensions · Butterflies am Ende) · **C** Beine & Bauch (1×/Woche) ·
 **D** Sprint (**mindestens 1×/Woche**; `Sprints` = Zeit pro Sprint in s, Strecke gleich halten) · **E** Unterarme (**bei Bedarf**,
 `times_per_week = 0` → wird nie „empfohlen“, zählt aber normal; zuletzt Mi 28.10.2026). Übungen in D/E sind Vorschläge – Joshua passt sie an.
 Festgelegt von Joshua:
