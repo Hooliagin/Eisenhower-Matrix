@@ -5,10 +5,20 @@ import type { Task } from "../lib/types";
 import IntervalTimer from "./IntervalTimer";
 
 function icon(t: Task) {
+  if (/pouchi/i.test(t.title) && /trick/i.test(t.title)) return "🐕";
+  if (/wasserschüssel|napf/i.test(t.title)) return "🥣";
   if (t.timer?.style === "calm") return "🧘";
   if (t.timer) return "🥊";
   if (/lüft/i.test(t.title)) return "🌬️";
   return "✓";
+}
+
+/** Short button caption: drop "(10 min)" etc. and anything after a colon/ampersand. */
+function label(t: Task) {
+  return t.title
+    .replace(/\s*\(.*\)$/, "")
+    .replace(/^Wohnung /, "")
+    .replace(/^Pouchi: (.*?)( abwaschen)?( &.*)?$/, "Pouchi: $1");
 }
 
 /** Today's "anytime" routines as one-tap buttons: timers start right away, the rest just gets ticked off. */
@@ -49,7 +59,7 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
             }`}
           >
             <span className="text-xl">{t.done ? "✓" : icon(t)}</span>
-            <span className="text-[10px] leading-tight">{t.title.replace(/\s*\(.*\)$/, "").replace(/^Wohnung /, "")}</span>
+            <span className="text-[10px] leading-tight">{label(t)}</span>
           </button>
         ))}
       </div>

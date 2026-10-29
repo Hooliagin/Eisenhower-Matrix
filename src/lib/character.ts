@@ -7,7 +7,7 @@ export const ATTRS: Record<Attribute, { label: string; emoji: string; color: str
   charisma: { label: "Charisma", emoji: "✨", color: "#fbbf24", how: "Impro-Übungen, Gespräche führen, vor Leuten sprechen", weeklyTarget: 60 },
   spirit: { label: "Spiritualität", emoji: "🕊️", color: "#a78bfa", how: "Beten, Meditieren, Stille, religiöse Lektüre", weeklyTarget: 70 },
   kreativ: { label: "Kreativität", emoji: "🎨", color: "#f472b6", how: "Videos schneiden, Websites bauen, Schreiben, Gestalten", weeklyTarget: 180 },
-  verbunden: { label: "Verbundenheit", emoji: "🤝", color: "#34d399", how: "Zeit mit Freunden & Familie, Putschi, Geburtstage", weeklyTarget: 180 },
+  verbunden: { label: "Verbundenheit", emoji: "🤝", color: "#34d399", how: "Zeit mit Freunden & Familie, Pouchi, Geburtstage", weeklyTarget: 180 },
 };
 
 export const ATTR_ORDER: Attribute[] = ["koerper", "intellekt", "charisma", "spirit", "kreativ", "verbunden"];
@@ -24,7 +24,7 @@ export const ELEMENTS: Record<Element, { label: string; emoji: string; color: st
     label: "Wasser",
     emoji: "💧",
     color: "#38bdf8",
-    stands: "Gefühl, Verbindung, Spiritualität – Freunde, Familie, Gebet, Meditation, Natur mit Putschi",
+    stands: "Gefühl, Verbindung, Spiritualität – Freunde, Familie, Gebet, Meditation, Natur mit Pouchi",
     ideas: "jemanden anrufen, meditieren oder beten, bewusst Zeit mit Freunden verbringen",
   },
   erde: {

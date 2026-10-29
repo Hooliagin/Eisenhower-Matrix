@@ -34,10 +34,20 @@ export default function IntervalTimer({ title, config, onClose, onComplete }: Pr
 
   // Signals on phase changes and countdowns
   const calm = config.style === "calm";
+  const plain = config.style === "plain";
 
   useEffect(() => {
     if (!startedAt) return;
     const prev = last.current;
+    if (plain) {
+      if (st.index !== prev.index && st.kind === "work") SOUNDS.roundStart();
+      else if (st.index !== prev.index && st.kind === "done") {
+        SOUNDS.finished();
+        navigator.vibrate?.([300, 100, 300]);
+      } else if (st.remaining !== prev.remaining && st.kind === "prep" && st.remaining <= 3) SOUNDS.softTick();
+      last.current = { index: st.index, remaining: st.remaining };
+      return;
+    }
     if (calm) {
       if (st.index !== prev.index && (st.kind === "work" || st.kind === "done")) {
         SOUNDS.gong();
@@ -90,10 +100,14 @@ export default function IntervalTimer({ title, config, onClose, onComplete }: Pr
     } else setPausedAt(Date.now());
   }
 
-  const bg = calm
+  const bg = plain
+    ? "bg-teal-950"
+    : calm
     ? "bg-indigo-950"
     : st.kind === "work" ? "bg-red-950" : st.kind === "rest" ? "bg-emerald-950" : st.kind === "done" ? "bg-slate-900" : "bg-slate-950";
-  const label = calm
+  const label = plain
+    ? !startedAt ? "Bereit?" : st.kind === "prep" ? "Gleich geht's los" : st.kind === "work" ? (pausedAt ? "Pausiert" : "Läuft") : "Fertig! 🎉"
+    : calm
     ? !startedAt ? "Bereit?" : st.kind === "prep" ? "Ankommen …" : st.kind === "work" ? "Atmen 🧘" : "Fertig 🧘"
     : !startedAt ? "Bereit?" : st.kind === "prep" ? "Gleich geht's los" : st.kind === "work" ? `Runde ${st.round} / ${config.rounds}` : st.kind === "rest" ? `Pause – gleich Runde ${st.round}` : "Fertig! 🥊";
   const phasePct = st.phaseSeconds ? 1 - st.remaining / st.phaseSeconds : 1;
@@ -106,7 +120,7 @@ export default function IntervalTimer({ title, config, onClose, onComplete }: Pr
       </div>
 
       <div className="flex flex-col items-center gap-4">
-        <p className={`text-xl font-semibold ${calm ? "text-indigo-200" : st.kind === "work" ? "text-red-300" : st.kind === "rest" ? "text-emerald-300" : "text-slate-200"}`}>{label}</p>
+        <p className={`text-xl font-semibold ${plain ? "text-teal-200" : calm ? "text-indigo-200" : st.kind === "work" ? "text-red-300" : st.kind === "rest" ? "text-emerald-300" : "text-slate-200"}`}>{label}</p>
         <p className="font-mono text-8xl font-bold tabular-nums">
           {!startedAt ? fmtSeconds(config.prep ?? config.work) : st.kind === "done" ? fmtSeconds(Math.round(total)) : fmtSeconds(st.remaining)}
         </p>
@@ -120,7 +134,7 @@ export default function IntervalTimer({ title, config, onClose, onComplete }: Pr
         </div>
         {startedAt && st.kind !== "done" && (
           <div className="h-1.5 w-64 overflow-hidden rounded-full bg-slate-800">
-            <div className={`h-full ${calm ? "bg-indigo-400" : st.kind === "work" ? "bg-red-500" : "bg-emerald-500"}`} style={{ width: `${phasePct * 100}%` }} />
+            <div className={`h-full ${plain ? "bg-teal-400" : calm ? "bg-indigo-400" : st.kind === "work" ? "bg-red-500" : "bg-emerald-500"}`} style={{ width: `${phasePct * 100}%` }} />
           </div>
         )}
         <p className="text-xs text-slate-500">
@@ -149,7 +163,7 @@ export default function IntervalTimer({ title, config, onClose, onComplete }: Pr
             <button className="btn-ghost py-3" onClick={onClose}>Schließen</button>
           </>
         )}
-        <p className={`text-center text-[11px] text-slate-500 ${calm ? "hidden" : ""}`}>
+        <p className={`text-center text-[11px] text-slate-500 ${calm || plain ? "hidden" : ""}`}>
           Signale: langer Ton = Runde startet · Glocke = Runde vorbei · zwei Klicks = noch 10 Sekunden · Ticken = Pause endet
         </p>
       </div>

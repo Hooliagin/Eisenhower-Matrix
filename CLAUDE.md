@@ -1,6 +1,6 @@
 # Daily Tracker – Arbeitsanleitung für Claude
 
-Persönliche App (nur ein Nutzer: Joshua) für Tagesplanung, Projekte & Nachfassen, Kalender, Fitness, Ernährung und
+Persönliche App (nur ein Nutzer: Joshua; sein Hund heißt **Pouchi** – genau so geschrieben) für Tagesplanung, Projekte & Nachfassen, Kalender, Fitness, Ernährung und
 einen gamifizierten Charakter. **Joshua steuert alles per Chat mit Claude**; die Website ist zum Anschauen, Abhaken,
 Timer-Starten und Workout-Loggen.
 
@@ -52,7 +52,7 @@ Grundverbrauch zusätzlich immer: Grundumsatz 1834 × PAL 1,4 ≈ 2568 kcal/Tag.
 **Regeln beim Anlegen:**
 - **Jede neue Aufgabe bekommt ein `element`** und ein `attribute`, wenn sie einen Charakterwert trainiert
   (Sport außerhalb der Sessions → koerper · Recherche/Lernen → intellekt · Impro/Gespräche → charisma · Beten/Meditation →
-  spirit · Videos/Websites/Schreiben → kreativ · Freunde/Familie/Putschi → verbunden). Haushalt/Finanzen/Behörden → nur `element='erde'`.
+  spirit · Videos/Websites/Schreiben → kreativ · Freunde/Familie/Pouchi → verbunden). Haushalt/Finanzen/Behörden → nur `element='erde'`.
 - **Nicht doppelt zählen:** Plan-Erinnerungen „Training: …“ bekommen weder `element` noch `attribute` (die Session zählt).
   Radfahrten zum Dienst nicht zusätzlich als Aufgabe eintragen (zählen über das Dienst-Event).
 - **Weitere Radfahrten** (nicht zum Dienst) → erledigte Aufgabe, `attribute='koerper'`, `element='feuer'`, `actual_minutes` ≈ 3 min/km.
@@ -94,7 +94,8 @@ Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig
 - `anytime = true` → nicht im Tagesplan, sondern als **⚡ Daily**-Button auf der Startseite (zwischendurch abhaken).
 - `timer` (jsonb, Sekunden): `{"rounds":3,"work":180,"rest":30,"prep":10}` → 🥊 Vollbild-Rundentimer (langer Ton = Start, Glocke =
   Rundenende, 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong. Abschluss speichert
-  die Aufgabe als erledigt mit Dauer (ohne Vorlauf). Freier Boxtimer auch unter Fitness → „🥊 Timer“.
+  die Aufgabe als erledigt mit Dauer (ohne Vorlauf). `"style":"plain"` → einfacher Countdown (Startton, Endsignal,
+Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „🥊 Timer“.
 
 | Routine | Wann | Wo | attribute / element |
 |---|---|---|---|
@@ -103,6 +104,8 @@ Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig
 | Wohnung 10 min lüften | täglich | ⚡ Daily | – / erde |
 | Schattenboxen (3 × 3 min, 30 s Pause) | täglich | ⚡ Daily, Rundentimer | koerper / feuer |
 | Meditieren (10 min) | täglich | ⚡ Daily, Gong-Timer | spirit / wasser |
+| Tricks mit Pouchi (10 min) | täglich | ⚡ Daily, einfacher Timer mit Pause | verbunden / wasser |
+| Pouchi: Wasserschüssel abwaschen & frisches Wasser | täglich | ⚡ Daily (abhaken) | – / erde |
 | Blumen gießen | sonntags (zuletzt So 25.10.2026) | Tagesplan | – / erde |
 ```sql
 insert into routines (title, estimate_minutes, position, attribute, element, anytime) values ('Beten', 10, 7, 'spirit', 'wasser', true);
@@ -233,7 +236,7 @@ on conflict (attribute, name) do update set rating = excluded.rating, note = exc
 ## Elemente (Reiter „Elemente“, View `element_events`)
 
 🔥 **Feuer** = Antrieb (Training, Rad, Projekte vorantreiben, Erschaffen) · 💧 **Wasser** = Gefühl & Verbindung (Freunde, Familie,
-Gebet, Meditation, Natur mit Putschi, religiöse Lektüre) · 🌍 **Erde** = Basis & Ordnung (Haushalt, Finanzen, Behörden, Routinen,
+Gebet, Meditation, Natur mit Pouchi, religiöse Lektüre) · 🌍 **Erde** = Basis & Ordnung (Haushalt, Finanzen, Behörden, Routinen,
 Schlaf, Detox) · 💨 **Luft** = Geist & Kommunikation (Lesen, Lernen, Recherche, Gespräche, Impro).
 Anzeige: Minuten dieser Woche vs. Schnitt der 4 Wochen davor, schwächstes Element mit Ideen. Quellen: siehe „Querverbindungen“.
 
