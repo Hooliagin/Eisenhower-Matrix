@@ -3,7 +3,7 @@
 Persönliche App (nur ein Nutzer) für **Eisenhower-Matrix**, **Habits** und **Fitness-Tracking**.
 Der Nutzer steuert alles per Chat mit Claude; die Website ist zum Anschauen, Abhaken und Workout-Loggen.
 
-- Frontend: Vite + React + TypeScript + Tailwind, gehostet auf Vercel (Projekt `daily-tracker`, Team `hooliagins-projects`).
+- Frontend: Vite + React + TypeScript + Tailwind, gehostet auf Vercel (Projekt `eisenhower-matrix`, Team `hooliagins-projects`): https://eisenhower-matrix-bay.vercel.app/
 - Backend: Supabase-Projekt **`daily-tracker`**, ID **`mnwjojtntgihfwotvshl`** (eu-central-1).
 - Schema: `supabase/migrations/`. Alle Tabellen haben RLS „nur Owner“ (`public.allowed_users`).
 
