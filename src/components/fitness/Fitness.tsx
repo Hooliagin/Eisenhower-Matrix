@@ -36,6 +36,9 @@ export default function Fitness() {
   };
 
   async function start(templateId: string) {
+    // An unfinished session of this plan from today → just continue it instead of starting a second one.
+    const open = sessions.find((s) => !s.finished_at && s.template_id === templateId && s.session_date === isoDate());
+    if (open) return nav({ kind: "session", id: open.id });
     const { data, error } = await supabase.from("workout_sessions").insert({ template_id: templateId, session_date: isoDate() }).select().single();
     if (error) return alert(error.message);
     if ("Notification" in window && Notification.permission === "default") void Notification.requestPermission();
@@ -87,7 +90,7 @@ export default function Fitness() {
                   {isNext && <span className="ml-1 text-sky-400">· empfohlen</span>}
                 </div>
               </div>
-              <button className={isNext ? "btn-primary" : "btn-ghost"} onClick={() => start(t.id)} disabled={!!active}>
+              <button className={isNext ? "btn-primary" : "btn-ghost"} onClick={() => start(t.id)}>
                 Start
               </button>
             </div>
