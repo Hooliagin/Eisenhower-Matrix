@@ -191,6 +191,8 @@ select title, estimate_minutes, actual_minutes from tasks where done and actual_
 Split: **A** Schulter & Rücken (2×/Woche), **B** Brust & Arme (2×/Woche), **C** Beine & Bauch (1×/Woche).
 Festgelegt vom Nutzer: **kein zusätzliches Beintraining vorschlagen.** Er fährt ~4×/Woche ca. 20 km Rad (Beine bekommen
 genug Ausdauer-Last, mehr Beintraining verträgt der Körper nicht). Beine sind kraftmäßig stark (Squat 160, Kreuzheben 210).
+Kreuzheben (210 kg) ist nur Orientierungswert und kommt **nicht** in den Plan – der untere Rücken ist bereits sehr stark.
+**Aktueller Trainingsfokus: Schulterdrücken** (Bestwert 60 kg, nächstes Ziel ≈ 80 kg). Fortschritt dort besonders beachten.
 Standardpause 120 s (`rest_seconds`). `superset_group` gleicher Wert = Supersatz (Timer startet erst nach der letzten Übung der Gruppe).
 `optional = true` = wird eingeklappt angezeigt (z. B. Jefferson Curl).
 `exercises.metric`: `weight_reps` (kg × Wdh), `weight_distance` (kg × Meter, z. B. Farmers Walk), `weight_time` (kg × Sek.).
