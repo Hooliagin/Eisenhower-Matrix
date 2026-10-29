@@ -43,6 +43,7 @@ Diese Tabelle entspricht den Views `xp_events`, `element_events` und `nutrition_
 | Erledigte Aufgabe mit `attribute` | jeweiliger Wert, Dauer = `actual_minutes` → Schätzung → 20 | `tasks.element`, sonst aus `attribute` abgeleitet | nur `attribute='koerper'`: +8 kcal/min |
 | Erledigte Aufgabe nur mit `element` | – | jeweiliges Element | – |
 | **Unterbrochene** Timer-Aufgabe (`progress_seconds ≥ 30`, noch nicht erledigt) | bisherige Minuten, am Tag des Speicherns | ebenso | Körper-Aufgaben: 8 kcal/min |
+| Atemübung gespeichert (Aufgabe „Atemübung: …“) | 🕊️ Spiritualität (Minuten) | 💧 Wasser | – |
 | Detox-Fenster geschafft (`detox_sessions.result='success'`) | – | 🌍 Erde (30/60 min) | – |
 | Cappuccino (`drink_log.kind='coffee'`) | – | – | Aufnahme: +100 kcal, +5 g Protein, 75 mg Koffein |
 | Mahlzeit (`meals`) | – | – | Aufnahme: kcal, Protein × `protein_quality` |
@@ -94,7 +95,8 @@ Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig
   (gestrige tägliche verschwindet, das Blumengießen vom Sonntag wartet).
 - `anytime = true` → nicht im Tagesplan, sondern als **⚡ Daily**-Button auf der Startseite (zwischendurch abhaken).
 - `timer` (jsonb, Sekunden): `{"rounds":3,"work":180,"rest":30,"prep":10}` → 🥊 Vollbild-Rundentimer (langer Ton = Start, Glocke =
-  Rundenende, 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong und **Hintergrundrauschen** (Stille/Weiß/Rosa/Braun +
+  Rundenende, 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong, optionalem **🫁 Atem-Guide** (Kreis + leises Atemgeräusch im
+Resonanz-Tempo 5,5 s ein / 5,5 s aus ≈ 5,5 Atemzüge/min) und **Hintergrundrauschen** (Stille/Weiß/Rosa/Braun/Regen/Brummen +
 Lautstärke, im Browser erzeugt – keine Audiodateien; Wahl wird pro Gerät gemerkt, Standard Braun; läuft nur während der
 Meditation, stoppt bei Pause/Ende; Schleife 30 s mit Equal-Power-Überblendung, damit es nicht periodisch leiser wird).
 **🌑 Bildschirm dunkel** (alle Timer, pro Gerät gemerkt): Bildschirm wird schwarz, bleibt technisch an (Wake Lock), damit
@@ -121,6 +123,22 @@ Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „�
 insert into routines (title, estimate_minutes, position, attribute, element, anytime) values ('Beten', 10, 7, 'spirit', 'wasser', true);
 select public.spawn_routine_tasks((now() at time zone 'Europe/Berlin')::date);
 ```
+
+## 🫁 Atemübungen (Button in der ⚡-Daily-Karte, `src/lib/breath.ts`)
+
+Geführte Übungen mit wachsendem/schrumpfendem Kreis, Ansage und synthetischem Atemgeräusch. Nach dem Ende „Speichern“ →
+erledigte Aufgabe „Atemübung: <Name>“ (`attribute='spirit'`, `element='wasser'`, Dauer; bei Wim Hof die Haltezeiten in `notes`).
+
+| Übung | Ablauf | Wofür |
+|---|---|---|
+| Resonanz-Atmung | 5,5 s ein / 5,5 s aus, 5 min | Ruhe, HRV (häufigste Resonanzrate 5,5/min) |
+| Zyklisches Seufzen | 2 s ein + 1 s nachziehen, 6 s aus, 5 min | Stimmung (Balban et al. 2023: besser als Meditation) |
+| Box Breathing | 4-4-4-4, 5 min | Fokus, Stress |
+| 4-7-8 | 4 ein, 7 halten, 8 aus, 4 Durchgänge | Einschlafen |
+| Wim Hof | 3 Runden: 30 tiefe Atemzüge → aus & halten (offen, Tippen) → ein & 15 s halten | Energie (⚠️ nur sitzend/liegend, nie im Wasser/beim Fahren) |
+| Feueratem (Kapalabhati) | 3 × 30 s aktive Ausstöße (~1/s), dazwischen 30 s ruhig | Wach werden (⚠️ nicht bei Schwangerschaft, Bluthochdruck, Herz, Epilepsie) |
+
+Neue Übungen: Eintrag in `EXERCISES` (Schritte `in`/`out`/`hold`/`free`, `open` = endet per Tippen).
 
 ## Detox-Fenster (`detox_sessions`) – Selbst-Accountability, keine Sperre
 

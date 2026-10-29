@@ -45,7 +45,7 @@ export const SOUNDS = {
   finished: () => tones([[523, 0, 0.2], [659, 0.2, 0.2], [784, 0.4, 0.2], [1046, 0.6, 0.6]], 0.4),
 };
 
-export type NoiseKind = "white" | "pink" | "brown";
+export type NoiseKind = "white" | "pink" | "brown" | "rain" | "drone";
 
 /**
  * Seamlessly looping noise generated in the browser (no audio files).
@@ -77,12 +77,36 @@ export function startNoise(kind: NoiseKind, volume: number): { stop: () => void;
       raw[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
       b6 = w * 0.115926;
     }
+  } else if (kind === "rain") {
+    // Soft pink-ish bed plus thousands of tiny droplet ticks (short, bright, quickly decaying bursts)
+    let b0 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < raw.length; i++) {
+      const w = Math.random() * 2 - 1;
+      b0 = 0.99765 * b0 + w * 0.099046;
+      b1 = 0.963 * b1 + w * 0.2965164;
+      b2 = 0.57 * b2 + w * 1.0526913;
+      raw[i] = (b0 + b1 + b2 + w * 0.1848) * 0.045;
+    }
+    const drops = Math.floor((raw.length / ctx.sampleRate) * 60);
+    for (let d = 0; d < drops; d++) {
+      const at = Math.floor(Math.random() * (raw.length - 2000));
+      const amp = 0.05 + Math.random() * 0.25;
+      const len = 200 + Math.floor(Math.random() * 1200);
+      let prev = 0;
+      for (let i = 0; i < len; i++) {
+        const w = Math.random() * 2 - 1;
+        const hp = w - prev; // crude high-pass for a crisp tick
+        prev = w;
+        raw[at + i] += hp * amp * Math.exp((-6 * i) / len);
+      }
+    }
+    for (let i = 0; i < raw.length; i++) raw[i] *= 2.2; // level to RMS ≈ 0.2 like the other noises
   } else {
-    // Brown noise: leaky integration of white noise
+    // Brown noise: leaky integration of white noise (also the bed under the drone)
     let last = 0;
     for (let i = 0; i < raw.length; i++) {
       last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
-      raw[i] = last * 3.5;
+      raw[i] = last * (kind === "drone" ? 1.8 : 3.5);
     }
   }
 
@@ -94,6 +118,18 @@ export function startNoise(kind: NoiseKind, volume: number): { stop: () => void;
   for (let i = 0; i < fade; i++) {
     const k = (i / fade) * (Math.PI / 2);
     data[i] = raw[i] * Math.sin(k) + raw[n + i] * Math.cos(k);
+  }
+
+  if (kind === "drone") {
+    // Deep hum: low partials whose frequencies complete whole cycles in the buffer, so they loop seamlessly
+    // (added after the cross-fade). 55 Hz vs 55.1 Hz beats slowly, once every 10 s.
+    const partials: [number, number][] = [[55, 0.17], [55.1, 0.14], [110, 0.08], [82.5, 0.055], [165, 0.025]];
+    for (let i = 0; i < n; i++) {
+      const t = i / ctx.sampleRate;
+      let v = 0;
+      for (const [f, a] of partials) v += a * Math.sin(2 * Math.PI * f * t);
+      data[i] += v;
+    }
   }
 
   const src = ctx.createBufferSource();
@@ -115,4 +151,35 @@ export function startNoise(kind: NoiseKind, volume: number): { stop: () => void;
     },
     setVolume: (v: number) => gain.gain.setTargetAtTime(v, ctx.currentTime, 0.1),
   };
+}
+
+/** A synthetic breath: filtered noise that swells on the inhale and falls away on the exhale. */
+export function breathSound(direction: "in" | "out", seconds: number, volume = 0.25) {
+  if (!audio || seconds <= 0) return;
+  const ctx = audio;
+  const len = Math.max(1, Math.floor(ctx.sampleRate * seconds));
+  const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buffer.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.Q.value = 0.8;
+  const gain = ctx.createGain();
+  const t = ctx.currentTime;
+  const [f0, f1] = direction === "in" ? [500, 1400] : [1200, 400];
+  filter.frequency.setValueAtTime(f0, t);
+  filter.frequency.exponentialRampToValueAtTime(f1, t + seconds);
+  gain.gain.setValueAtTime(0.0001, t);
+  if (direction === "in") {
+    gain.gain.exponentialRampToValueAtTime(volume, t + seconds * 0.8);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+  } else {
+    gain.gain.exponentialRampToValueAtTime(volume, t + Math.min(0.3, seconds * 0.2));
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+  }
+  src.connect(filter).connect(gain).connect(ctx.destination);
+  src.start(t);
+  src.stop(t + seconds + 0.05);
 }

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { stateAt, totalSeconds, type IntervalConfig } from "../lib/interval";
 import { fmtSeconds } from "../lib/timer";
-import { SOUNDS, startNoise, unlockAudio, type NoiseKind } from "../lib/sound";
+import { breathSound, SOUNDS, startNoise, unlockAudio, type NoiseKind } from "../lib/sound";
+import { RESONANCE } from "../lib/breath";
+import BreathCircle from "./BreathCircle";
 
 interface Props {
   title: string;
@@ -56,6 +58,30 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
     }
   });
   const noiseRef = useRef<ReturnType<typeof startNoise> | null>(null);
+
+  // Breath guide for meditation: resonance pace (5.5 s in / 5.5 s out) with a soft breath sound.
+  const [guide, setGuide] = useState(() => {
+    try {
+      return localStorage.getItem("breath-guide") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("breath-guide", guide ? "1" : "0");
+    } catch {
+      /* storage unavailable */
+    }
+  }, [guide]);
+  const cycle = RESONANCE.in + RESONANCE.out;
+  const workElapsed = Math.max(0, elapsed - (config.prep ?? 0));
+  const guideOn = calm && guide && !!startedAt && !pausedAt && st.kind === "work";
+  const guideStep = Math.floor(workElapsed / (cycle / 2)); // counts half-cycles
+  const guideKind = workElapsed % cycle < RESONANCE.in ? "in" : "out";
+  useEffect(() => {
+    if (guideOn) breathSound(guideKind, guideKind === "in" ? RESONANCE.in : RESONANCE.out, 0.08);
+  }, [guideOn, guideStep]); // a new half-cycle starts
 
   // Dark mode: black screen while running (screen stays technically on so sound keeps playing); tap reveals controls.
   const [dark, setDark] = useState(() => {
@@ -219,7 +245,13 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
       <div className="flex flex-col items-center gap-4">
         <p className={`text-xl font-semibold ${plain ? "text-teal-200" : calm ? "text-indigo-200" : st.kind === "work" ? "text-red-300" : st.kind === "rest" ? "text-emerald-300" : "text-slate-200"}`}>{label}</p>
         {!startedAt && resuming && <p className="text-sm text-slate-300">Weiter bei {fmtSeconds(initialSeconds)} – noch {fmtSeconds(Math.max(0, Math.round(total - prep - initialSeconds)))}</p>}
-        <p className="font-mono text-8xl font-bold tabular-nums">
+        {guideOn && (
+          <div className="flex flex-col items-center gap-1">
+            <BreathCircle kind={guideKind} seconds={guideKind === "in" ? RESONANCE.in : RESONANCE.out} stepKey={guideStep} size={170} />
+            <span className="text-sm text-indigo-200">{guideKind === "in" ? "Einatmen" : "Ausatmen"}</span>
+          </div>
+        )}
+        <p className={`font-mono font-bold tabular-nums ${guideOn ? "text-5xl" : "text-8xl"}`}>
           {!startedAt ? (resuming ? fmtSeconds(stateAt(config, prep + initialSeconds).remaining) : fmtSeconds(config.prep ?? config.work)) : st.kind === "done" ? fmtSeconds(Math.round(total)) : fmtSeconds(st.remaining)}
         </p>
         <div className={`flex gap-2 ${config.rounds < 2 ? "hidden" : ""}`}>
@@ -237,13 +269,15 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
         )}
         {calm && (
           <div className="flex flex-col items-center gap-2">
-            <div className="flex gap-1">
+            <div className="flex flex-wrap justify-center gap-1">
               {(
                 [
                   ["off", "Stille"],
                   ["white", "Weiß"],
                   ["pink", "Rosa"],
                   ["brown", "Braun"],
+                  ["rain", "Regen"],
+                  ["drone", "Brummen"],
                 ] as const
               ).map(([k, l]) => (
                 <button
@@ -258,6 +292,15 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
                 </button>
               ))}
             </div>
+            <button
+              className={`rounded-full px-3 py-1 text-xs ${guide ? "bg-indigo-300 text-indigo-950" : "bg-indigo-900/60 text-indigo-200"}`}
+              onClick={() => {
+                unlockAudio();
+                setGuide(!guide);
+              }}
+            >
+              🫁 Atem-Guide 5,5/min {guide ? "an" : "aus"}
+            </button>
             {noise !== "off" && (
               <label className="flex items-center gap-2 text-[11px] text-indigo-300">
                 🔈

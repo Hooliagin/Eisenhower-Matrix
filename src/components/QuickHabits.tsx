@@ -2,6 +2,7 @@ import { useState } from "react";
 import { updateTask } from "../lib/data";
 import { isoDate } from "../lib/dates";
 import type { Task } from "../lib/types";
+import BreathSession from "./BreathSession";
 import IntervalTimer from "./IntervalTimer";
 
 function icon(t: Task) {
@@ -24,6 +25,7 @@ function label(t: Task) {
 /** Today's "anytime" routines as one-tap buttons: timers start right away, the rest just gets ticked off. */
 export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (id: string, p: Partial<Task>) => void }) {
   const [running, setRunning] = useState<Task | null>(null);
+  const [breathing, setBreathing] = useState(false);
   const today = isoDate();
   const items = tasks.filter((t) => t.anytime && t.due_date === today);
   if (!items.length) return null;
@@ -50,7 +52,10 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
     <section className="card p-2">
       <div className="mb-1.5 flex items-baseline justify-between px-1">
         <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">⚡ Daily</span>
-        <span className="text-[11px] text-slate-500">
+        <span className="flex items-center gap-2 text-[11px] text-slate-500">
+          <button className="rounded-full bg-indigo-900/60 px-2 py-0.5 text-indigo-200" onClick={() => setBreathing(true)}>
+            🫁 Atemübungen
+          </button>
           {doneCount}/{items.length}
         </span>
       </div>
@@ -73,6 +78,7 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
           </button>
         ))}
       </div>
+      {breathing && <BreathSession onClose={() => setBreathing(false)} />}
       {running?.timer && (
         <IntervalTimer
           title={running.title}
