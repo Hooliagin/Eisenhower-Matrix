@@ -113,7 +113,8 @@ Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „�
 
 | Routine | Wann | Wo | attribute / element |
 |---|---|---|---|
-| Morgenlicht: 10 min Tageslicht in die Augen (sonst Lampe) | täglich, direkt nach dem Aufstehen (Rhythmus, gegen Winterdepression) | Tagesplan | – / erde |
+| Morgenlicht: 10 min Tageslicht in die Augen | täglich, direkt nach dem Aufstehen (Rhythmus), Position 0 | Tagesplan | – / erde |
+| Tageslichtlampe: 10 min helles Licht | täglich, Anfang des Tages (gegen Winterdepression) – **zusätzlich**, nicht statt Morgenlicht | Tagesplan | – / erde |
 | Starke Mitte: 10 min Reels anderer Parteien schauen & gute an Michael schicken | täglich | Tagesplan | intellekt / luft |
 | Wohnung 10 min lüften | täglich | ⚡ Daily | – / erde |
 | Schattenboxen (3 × 3 min, 30 s Pause) | täglich | ⚡ Daily, Rundentimer | koerper / feuer |
@@ -286,7 +287,8 @@ Sagt er „bin nach dem Essen gegangen“ → bei der passenden Hauptmahlzeit se
 Mahlzeit abhakbar, Karte zeigt „🚶 x/y“ (Mahlzeiten ab 250 kcal). Zählt laut „Querverbindungen“; Kennzahl `post_meal_walks` in
 `metric_daily`. Nutzen ehrlich: 10–15 min Gehen nach dem Essen senkt den Blutzuckeranstieg und hilft der Verdauung; „bessere
 Nährstoffaufnahme“ ist nicht belegt.
-**🌅 Morgenlicht** = Routine im Tagesplan; sagt er „heute Morgenlicht gehabt“ → die heutige Aufgabe als erledigt markieren.
+**🌅 Morgenlicht** und **Tageslichtlampe** sind zwei getrennte Routinen (beide täglich); sagt er „Morgenlicht gehabt“ / „Lampe gemacht“ →
+die jeweilige heutige Aufgabe als erledigt markieren.
 
 **Verbrauch** (Schätzung, Werte in `nutrition_settings`, bei neuen Messungen aktualisieren): Grundumsatz Katch-McArdle
 370 + 21,6 × fettfreie Masse (67,8 kg → 1834 kcal) × Alltags-PAL 1,4 + Aktivitäten laut Tabelle „Querverbindungen“.
