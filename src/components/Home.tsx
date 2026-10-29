@@ -4,6 +4,7 @@ import { addDays, formatLong, isoDate, parseDate } from "../lib/dates";
 import { buildSchedule, fmtMinutes, hhmm } from "../lib/schedule";
 import { supabase } from "../lib/supabase";
 import AddTask from "./AddTask";
+import { CharacterCard, CharacterView } from "./Character";
 import { countdown } from "./Calendar";
 import { todayTasks } from "./PlanView";
 
@@ -59,8 +60,16 @@ export default function Home() {
   const readingProject = proj.projects.find((p) => p.kind === "books");
 
   const go = (hash: string) => (location.hash = hash);
+  const [sub, setSub] = useState(() => location.hash.replace("#", "").split("/")[1]);
+  useEffect(() => {
+    const on = () => setSub(location.hash.replace("#", "").split("/")[1]);
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
   const hour = now.getHours();
   const greeting = hour < 11 ? "Guten Morgen" : hour < 17 ? "Hi" : "Guten Abend";
+
+  if (sub === "character") return <CharacterView />;
 
   return (
     <div className="flex flex-col gap-3 pt-4">
@@ -71,6 +80,8 @@ export default function Home() {
         </div>
         <button className="text-xs text-slate-600" onClick={() => supabase.auth.signOut()}>Abmelden</button>
       </header>
+
+      <CharacterCard />
 
       <AddTask defaultQuadrant="do" compact />
 

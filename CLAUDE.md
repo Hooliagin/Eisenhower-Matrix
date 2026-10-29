@@ -55,6 +55,26 @@ update books set status = 'done', progress_pct = 100, finished_at = (now() at ti
 select sum(minutes) from reading_log where log_date >= date_trunc('week', now() at time zone 'Europe/Berlin')::date;
 ```
 
+### Charakter / Gamification (`character_summary`, `character_stats`, `measurements`, `tasks.attribute`)
+Avatar auf der Startseite mit drei Attributen: **Körper**, **Intellekt**, **Charisma**. 1 XP ≈ 1 investierte Minute:
+Training (abgeschlossene Session) = 75 XP Körper, Lesezeit = Minuten → Intellekt, erledigte Aufgaben mit `attribute`
+= ihre Dauer (`actual_minutes`, sonst Schätzung, sonst 20). Level n ab 30·(n−1)² XP. Trend = XP letzte 14 Tage vs. 14 davor.
+**Aufgaben passend taggen**, wenn sie trainieren: Impro/soziale Übungen → `charisma`, Recherche/Lernen → `intellekt`,
+Sport außerhalb der Trainings-Sessions → `koerper` (Trainings-Sessions nicht doppelt taggen).
+
+Fitnesswerte, die der Nutzer schickt: roh in `measurements` speichern und daraus realistische Teilwerte (0–100) in
+`character_stats` setzen (z. B. Körper → Oberkörperkraft, Beinkraft, Rumpf, Ausdauer, Beweglichkeit, Körperkomposition).
+Einordnung ehrlich an gängigen Kraftstandards relativ zum Körpergewicht (Untrainiert ≈ 15, Anfänger ≈ 30,
+Fortgeschritten ≈ 50, Erfahren ≈ 70, Sehr stark ≈ 85, Elite ≈ 95+) und in `note` kurz begründen (Wert + Kategorie).
+Nicht schönrechnen – der Nutzer will sehen, was stark und was schwach ist. Bei neuen Messungen Werte aktualisieren.
+```sql
+insert into measurements (metric, value, unit) values ('Körpergewicht', 82, 'kg'), ('Shoulder Press 1RM', 60, 'kg');
+insert into character_stats (attribute, name, rating, note, position) values
+  ('koerper', 'Oberkörperkraft', 55, 'Shoulder Press 60 kg bei 82 kg KG ≈ fortgeschritten', 1)
+on conflict (attribute, name) do update set rating = excluded.rating, note = excluded.note;
+select * from character_summary;
+```
+
 ### Tägliche Routinen (`routines`)
 Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig pro Tag) und steht ganz vorne im Tagesplan
 (`position` = Reihenfolge am Morgen). Erzeugt beim App-Start per `spawn_routine_tasks(datum)`; Claude kann die Funktion

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 import type { Book, CalendarEvent, Followup, Project, Quadrant, ReadingLog, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
+import type { AttrSummary, CharacterStat } from "./character";
 import { addDays, isoDate, weekStart } from "./dates";
 
 /** Refetch on mount, when the tab regains focus, and on realtime changes to `tables`. */
@@ -127,6 +128,22 @@ export function resolvedPatch(f: Followup): Partial<Followup> {
   return f.repeat_days
     ? { status: "todo", last_contact: isoDate(today), follow_up_on: isoDate(addDays(today, f.repeat_days)) }
     : { status: "done", last_contact: isoDate(today) };
+}
+
+// ---------- Character ----------
+
+export function useCharacter() {
+  return useLive<{ summary: AttrSummary[]; stats: CharacterStat[] }>(
+    async () => {
+      const [s, c] = await Promise.all([
+        supabase.from("character_summary").select("*"),
+        supabase.from("character_stats").select("*").order("attribute").order("position"),
+      ]);
+      return { summary: must(s), stats: must(c) };
+    },
+    ["tasks", "reading_log", "workout_sessions", "character_stats"],
+    { summary: [], stats: [] },
+  );
 }
 
 // ---------- Reading ----------
