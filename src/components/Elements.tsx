@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ELEMENT_ORDER, ELEMENTS, type Element } from "../lib/character";
-import { useElements } from "../lib/data";
+import { balance, ELEMENT_ORDER, ELEMENTS, type Element } from "../lib/character";
+import { BalancePanel } from "./Character";
+import { useCharacter, useElements } from "../lib/data";
 import { isoDate, weekStart } from "../lib/dates";
 import { fmtMinutes } from "../lib/schedule";
 
@@ -31,6 +32,7 @@ function Diamond({ values, avg }: { values: Record<Element, number>; avg: Record
 
 export default function Elements() {
   const { data: events } = useElements();
+  const { data: character } = useCharacter();
   const [open, setOpen] = useState<Element | null>(null);
   const ws = isoDate(weekStart());
 
@@ -56,6 +58,8 @@ export default function Elements() {
         <h1 className="text-2xl font-semibold">Elemente</h1>
         <p className="text-xs text-slate-500">Wo deine Zeit diese Woche hinfließt – und was gerade zu kurz kommt.</p>
       </header>
+
+      <BalancePanel b={balance(character.elements7)} bonusTotal={character.harmonyWeeks.reduce((x, w) => x + w.bonus_xp, 0)} thisWeek={character.harmonyWeeks.find((w) => !w.complete)?.harmony} />
 
       <section className="card p-3">
         <Diamond values={week} avg={avg} />

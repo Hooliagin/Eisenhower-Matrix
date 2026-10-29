@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 import type { Book, CalendarEvent, Followup, Project, Quadrant, ReadingLog, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
-import type { Achievement, AttrSummary, CharacterMeta, CharacterStat, Skill } from "./character";
+import type { Achievement, AttrSummary, CharacterMeta, CharacterStat, Element, Skill } from "./character";
 import { addDays, isoDate, weekStart } from "./dates";
 
 /** Refetch on mount, when the tab regains focus, and on realtime changes to `tables`. */
@@ -132,20 +132,52 @@ export function resolvedPatch(f: Followup): Partial<Followup> {
 
 // ---------- Character ----------
 
+export interface HarmonyWeek {
+  week_start: string;
+  feuer: number;
+  wasser: number;
+  erde: number;
+  luft: number;
+  total: number;
+  harmony: number;
+  complete: boolean;
+  bonus_xp: number;
+}
+
 export function useCharacter() {
-  return useLive<{ summary: AttrSummary[]; stats: CharacterStat[]; skills: Skill[]; achievements: Achievement[]; meta: CharacterMeta | null }>(
+  return useLive<{
+    summary: AttrSummary[];
+    stats: CharacterStat[];
+    skills: Skill[];
+    achievements: Achievement[];
+    meta: CharacterMeta | null;
+    elements7: Partial<Record<Element, number>>;
+    harmonyWeeks: HarmonyWeek[];
+  }>(
     async () => {
-      const [s, c, k, a, m] = await Promise.all([
+      const [s, c, k, a, m, e, h] = await Promise.all([
         supabase.from("character_summary").select("*"),
         supabase.from("character_stats").select("*").order("attribute").order("position"),
         supabase.from("skills").select("*").order("attribute").order("position"),
         supabase.from("achievements").select("*").order("position"),
         supabase.from("character_meta").select("*").maybeSingle(),
+        supabase.from("element_events").select("element, minutes").gt("day", isoDate(addDays(new Date(), -7))),
+        supabase.from("harmony_weeks").select("*").order("week_start", { ascending: false }),
       ]);
-      return { summary: must(s), stats: must(c), skills: must(k), achievements: must(a), meta: m.data as CharacterMeta | null };
+      const elements7: Partial<Record<Element, number>> = {};
+      for (const r of must(e) as { element: Element; minutes: number }[]) elements7[r.element] = (elements7[r.element] ?? 0) + Number(r.minutes);
+      return {
+        summary: must(s),
+        stats: must(c),
+        skills: must(k),
+        achievements: must(a),
+        meta: m.data as CharacterMeta | null,
+        elements7,
+        harmonyWeeks: (h.data ?? []) as HarmonyWeek[],
+      };
     },
-    ["tasks", "reading_log", "workout_sessions", "character_stats", "events", "skills", "achievements", "character_meta", "poem_attempts", "poems"],
-    { summary: [], stats: [], skills: [], achievements: [], meta: null },
+    ["tasks", "reading_log", "workout_sessions", "character_stats", "events", "skills", "achievements", "character_meta", "poem_attempts", "poems", "detox_sessions"],
+    { summary: [], stats: [], skills: [], achievements: [], meta: null, elements7: {}, harmonyWeeks: [] },
   );
 }
 

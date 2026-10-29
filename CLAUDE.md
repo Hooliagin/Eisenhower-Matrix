@@ -308,6 +308,15 @@ Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen:
 - **₵ Credits** (`character_meta.credits` 0–100: Pleite/Knapp/Stabil/Polster/Wohlhabend/Frei, `credits_note`, `credits_next`) = Finanzen;
   aktuell 20 „Knapp“. Bei Infos zu Einkommen/Rücklagen anpassen. `class_title` = Klasse unter dem Namen („Kämpfer · Stratege“).
 - **Pixel-Avatar** (`PixelAvatar.tsx`): blond, athletisch, Tanktop mit Neon, Handbandagen; Leuchtfarbe = stärkster Wert.
+- **☯ Balance-Mechanik (Elemente ↔ Spiel):** aus den Element-Minuten der **letzten 7 Tage** (`element_events`):
+  **Harmonie** 0–100 (normierte Entropie der vier Anteile, 100 = gleich verteilt). Anteil ≥ 22 % → **Buff**, < 10 % → **Debuff**
+  (erst ab 60 min gesamt). Wirkung auf die **Form**: eigenes Element ±15 % auf die verknüpften Werte (🔥 Körper & Kreativität,
+  💧 Spiritualität & Verbundenheit, 💨 Intellekt & Charisma), 🌍 Erde = Fundament: alle Werte +5 % / −10 %. Effekt-Namen: Entfacht /
+  Glut erlischt · Im Fluss / Ausgetrocknet · Fester Stand / Wackliger Boden · Klarer Kopf / Dicke Luft. Ein Debuff ersetzt die Quest des
+  Tages durch eine **Element-Quest**. View **`harmony_weeks`** (pro Kalenderwoche Minuten, `harmony`, `bonus_xp`): abgeschlossene Woche
+  ab 300 min und Harmonie ≥ 70 → +50, ≥ 85 → +100 **Harmonie-Bonus-XP** auf das Charakter-Level. Anzeige: Element-Kugeln unter dem
+  Avatar, ☯-Leiste auf der Karte, „☯ Balance“-Panel im Charakter (Werte) und im Reiter Elemente. Logik: `balance()`/`formMultiplier()`
+  in `character.ts`. Claude erwähnt im Chat aktive Debuffs mit einer konkreten Idee, wenn es passt.
 - Ausdauer-Skill vorläufig (Ruhepuls/5 km folgen).
 ```sql
 update skills set tier = 4, note = '…', next_step = '…', updated_at = now() where name = 'Kraft';
@@ -341,7 +350,8 @@ on conflict (attribute, name) do update set rating = excluded.rating, note = exc
 🔥 **Feuer** = Antrieb (Training, Rad, Projekte vorantreiben, Erschaffen) · 💧 **Wasser** = Gefühl & Verbindung (Freunde, Familie,
 Gebet, Meditation, Natur mit Pouchi, religiöse Lektüre) · 🌍 **Erde** = Basis & Ordnung (Haushalt, Finanzen, Behörden, Routinen,
 Schlaf, Detox) · 💨 **Luft** = Geist & Kommunikation (Lesen, Lernen, Recherche, Gespräche, Impro).
-Anzeige: Minuten dieser Woche vs. Schnitt der 4 Wochen davor, schwächstes Element mit Ideen. Quellen: siehe „Querverbindungen“.
+Anzeige: Minuten dieser Woche vs. Schnitt der 4 Wochen davor, schwächstes Element mit Ideen, oben das ☯-Balance-Panel (Spielwirkung,
+siehe RPG-Schicht). Quellen: siehe „Querverbindungen“.
 
 ## Fitness (`exercises`, `workout_templates`, `template_exercises`, `workout_sessions`, `set_logs`)
 

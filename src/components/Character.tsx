@@ -7,7 +7,15 @@ import {
   ATTR_ORDER,
   ATTRS,
   backgroundXp,
+  balance,
   characterLevel,
+  EFFECT_NAMES,
+  effectiveForm,
+  ELEMENT_LINKS,
+  ELEMENT_ORDER,
+  ELEMENTS,
+  formMultiplier,
+  type Balance,
   creditTier,
   form,
   levelProgress,
@@ -65,6 +73,74 @@ function TierPips({ tier, color }: { tier: number; color: string }) {
         </span>
       ))}
     </span>
+  );
+}
+
+/** The four elements as orbs: fill = share of the last 7 days, ring = buff (gold) / debuff (red). */
+function ElementOrbs({ b, size = 22 }: { b: Balance; size?: number }) {
+  return (
+    <div className="flex gap-1.5">
+      {ELEMENT_ORDER.map((e) => {
+        const eff = b.effects[e];
+        const fill = Math.min(1, b.shares[e] / 0.4);
+        return (
+          <span
+            key={e}
+            title={`${ELEMENTS[e].label} ${Math.round(b.shares[e] * 100)} %`}
+            className="relative grid place-items-center overflow-hidden rounded-full"
+            style={{
+              width: size,
+              height: size,
+              background: "#0f172a",
+              boxShadow: `0 0 0 2px ${eff === "buff" ? "#fbbf24" : eff === "debuff" ? "#ef4444" : "#334155"}`,
+            }}
+          >
+            <span className="absolute inset-x-0 bottom-0" style={{ height: `${fill * 100}%`, background: ELEMENTS[e].color, opacity: 0.55 }} />
+            <span className="relative text-[11px] leading-none">{ELEMENTS[e].emoji}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Balance details: harmony, the active buffs/debuffs and what they do. Shared by the character view and the Elements tab. */
+export function BalancePanel({ b, bonusTotal, thisWeek }: { b: Balance; bonusTotal: number; thisWeek?: number }) {
+  return (
+    <section className="pixel-frame bg-slate-900/80 p-3" style={{ ["--glow" as string]: "#a78bfa44" }}>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">☯ Balance</h2>
+        <ElementOrbs b={b} size={26} />
+      </div>
+      <div className="mt-2 flex items-center gap-2 text-[11px]">
+        <span className="w-20 font-pixel text-violet-300">Harmonie {b.harmony}</span>
+        <div className="flex-1">
+          <PixelBar pct={b.harmony / 100} color="#a78bfa" segments={20} />
+        </div>
+      </div>
+      <ul className="mt-2 flex flex-col gap-1 text-[11px]">
+        {ELEMENT_ORDER.filter((e) => b.effects[e] !== "neutral").map((e) => {
+          const buff = b.effects[e] === "buff";
+          const targets = ELEMENT_LINKS[e].length ? ELEMENT_LINKS[e].map((a) => ATTRS[a].label).join(" & ") : "alle Werte";
+          return (
+            <li key={e} className={buff ? "text-amber-200" : "text-red-300"}>
+              {ELEMENTS[e].emoji} <b className="font-pixel">{buff ? "▲" : "▼"} {EFFECT_NAMES[e][buff ? "buff" : "debuff"]}</b>{" "}
+              <span className="text-slate-400">
+                ({Math.round(b.shares[e] * 100)} %) · Form {targets} {buff ? (e === "erde" ? "+5 %" : "+15 %") : e === "erde" ? "−10 %" : "−15 %"}
+              </span>
+            </li>
+          );
+        })}
+        {ELEMENT_ORDER.every((e) => b.effects[e] === "neutral") && (
+          <li className="text-slate-500">{b.total < 60 ? "Noch zu wenig Aktivität in den letzten 7 Tagen." : "Keine Effekte aktiv – alles im Mittelfeld."}</li>
+        )}
+      </ul>
+      <p className="mt-2 text-[10px] leading-snug text-slate-500">
+        Letzte 7 Tage. Ab 22 % Anteil wird ein Element zum Buff, unter 10 % zum Debuff. Erde ist dein Fundament und wirkt auf alles.
+        Abgeschlossene Wochen mit Harmonie ≥ 70 (ab 300 min) bringen Bonus-XP: +50, ab 85 +100.
+        {thisWeek != null && ` Diese Woche bisher: Harmonie ${thisWeek}.`} {bonusTotal > 0 && `Bisher verdient: ${bonusTotal} Bonus-XP.`}
+      </p>
+    </section>
   );
 }
 
@@ -155,10 +231,17 @@ function Progress() {
 export function CharacterCard() {
   const { data, loading } = useCharacter();
   const L = levels(data.summary, data.skills);
-  const totalXp = ATTR_ORDER.reduce((s, a) => s + L[a].xp, 0);
+  const B = balance(data.elements7);
+  const bonus = data.harmonyWeeks.reduce((s, w) => s + w.bonus_xp, 0);
+  const totalXp = ATTR_ORDER.reduce((s, a) => s + L[a].xp, 0) + bonus;
   const C = characterLevel(totalXp);
   const top = [...ATTR_ORDER].sort((a, b) => L[b].xp - L[a].xp)[0];
-  const quest = questOfDay(data.skills);
+  // A starving element beats the skill quest: the balance mechanic asks for it first.
+  const debuffed = ELEMENT_ORDER.find((e) => B.effects[e] === "debuff");
+  const skillQuest = questOfDay(data.skills);
+  const quest = debuffed
+    ? { label: `${ELEMENTS[debuffed].emoji} ${EFFECT_NAMES[debuffed].debuff}`, text: `${ELEMENTS[debuffed].label} stärken: ${ELEMENTS[debuffed].ideas.split(",")[0]}` }
+    : skillQuest && { label: "QUEST", text: skillQuest.next_step };
   const credits = data.meta?.credits ?? 0;
   const ups = useLevelUps(
     { char: C.level, ...Object.fromEntries(ATTR_ORDER.map((a) => [a, L[a].level])) },
@@ -187,6 +270,9 @@ export function CharacterCard() {
       <div className="mt-2 flex gap-3">
         <div className="flex shrink-0 flex-col items-center justify-end">
           <PixelAvatar size={112} glow={ATTRS[top].color} />
+          <div className="mt-1.5">
+            <ElementOrbs b={B} size={20} />
+          </div>
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
           {ATTR_ORDER.map((a) => {
@@ -219,6 +305,17 @@ export function CharacterCard() {
           <span className="font-pixel text-slate-400">{C.toNext} → LV {C.level + 1}</span>
         </div>
         <div className="flex items-center gap-2 text-[10px]">
+          <span className="w-12 font-pixel text-violet-300">☯ {B.harmony}</span>
+          <div className="flex-1">
+            <PixelBar pct={B.harmony / 100} color="#a78bfa" segments={20} />
+          </div>
+          <span className="font-pixel text-slate-400">
+            {ELEMENT_ORDER.filter((e) => B.effects[e] !== "neutral")
+              .map((e) => `${B.effects[e] === "buff" ? "▲" : "▼"}${ELEMENTS[e].emoji}`)
+              .join(" ") || "Harmonie"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-[10px]">
           <span className="w-12 font-pixel text-emerald-300">₵ {credits}</span>
           <div className="flex-1">
             <PixelBar pct={credits / 100} color="#34d399" segments={20} />
@@ -229,7 +326,7 @@ export function CharacterCard() {
 
       {quest && (
         <div className="mt-2 truncate rounded-sm border border-slate-800 bg-slate-950/60 px-2 py-1 text-[11px]">
-          <span className="font-pixel text-amber-300">▶ QUEST</span> <span className="text-slate-300">{quest.next_step}</span>
+          <span className={`font-pixel ${debuffed ? "text-red-300" : "text-amber-300"}`}>▶ {quest.label}</span> <span className="text-slate-300">{quest.text}</span>
         </div>
       )}
       <TodayRecords />
@@ -297,7 +394,9 @@ type Tab = "werte" | "skills" | "erfolge" | "fortschritt";
 export function CharacterView() {
   const { data } = useCharacter();
   const L = levels(data.summary, data.skills);
-  const totalXp = ATTR_ORDER.reduce((s, a) => s + L[a].xp, 0);
+  const B = balance(data.elements7);
+  const bonus = data.harmonyWeeks.reduce((s, w) => s + w.bonus_xp, 0);
+  const totalXp = ATTR_ORDER.reduce((s, a) => s + L[a].xp, 0) + bonus;
   const C = characterLevel(totalXp);
   const top = [...ATTR_ORDER].sort((a, b) => L[b].xp - L[a].xp)[0];
   const [tab, setTab] = useState<Tab>("werte");
@@ -318,7 +417,7 @@ export function CharacterView() {
           <span className="font-pixel text-3xl text-amber-300">LV {C.level}</span>
           <PixelBar pct={C.pct} color="#fbbf24" segments={14} />
           <span className="text-[10px] text-slate-500">
-            {totalXp.toLocaleString("de-DE")} XP · noch {C.toNext} bis LV {C.level + 1}
+            {totalXp.toLocaleString("de-DE")} XP{bonus ? ` (inkl. ${bonus} Harmonie-Bonus)` : ""} · noch {C.toNext} bis LV {C.level + 1}
           </span>
           <span className="mt-1 font-pixel text-xs text-emerald-300">
             ₵ {credits} · {creditTier(credits)}
@@ -344,6 +443,7 @@ export function CharacterView() {
 
       {tab === "werte" && (
         <>
+          <BalancePanel b={B} bonusTotal={bonus} thisWeek={data.harmonyWeeks.find((w) => !w.complete)?.harmony} />
           <p className="text-[11px] text-slate-500">
             <b>Level</b> = alles, was du aufgebaut hast (fällt nie), inklusive Vorgeschichte aus deinen Skills. Alle 5 Level ein neuer <b>Rang</b>.
             <b> Form</b> = letzte 14 Tage gegen dein Wochenziel – sinkt, wenn du einen Bereich vernachlässigst.
@@ -368,10 +468,21 @@ export function CharacterView() {
                 </p>
                 <div className="flex items-center gap-2 text-[11px] text-slate-400">
                   <span className="w-10">Form</span>
-                  <Bar pct={form(s) / 100} color={ATTRS[a].color} />
-                  <span className="w-10 whitespace-nowrap text-right">{form(s)} %</span>
+                  <Bar pct={effectiveForm(s, B.effects) / 100} color={ATTRS[a].color} />
+                  <span className="w-10 whitespace-nowrap text-right">{effectiveForm(s, B.effects)} %</span>
                   <span className={`text-[10px] ${t === "up" ? "text-emerald-400" : t === "down" ? "text-red-400" : "text-slate-500"}`}>{TREND_ICON[t]}</span>
                 </div>
+                {formMultiplier(a, B.effects).sources.length > 0 && (
+                  <p className="text-[10px]">
+                    {formMultiplier(a, B.effects).sources.map((x) => (
+                      <span key={x.element} className={`mr-2 ${x.pct > 0 ? "text-amber-300" : "text-red-300"}`}>
+                        {ELEMENTS[x.element].emoji} {x.pct > 0 ? "+" : ""}
+                        {x.pct} % {EFFECT_NAMES[x.element][x.pct > 0 ? "buff" : "debuff"]}
+                      </span>
+                    ))}
+                    <span className="text-slate-600">(Grund-Form {form(s)} %)</span>
+                  </p>
+                )}
                 <p className="text-[10px] text-slate-600">
                   {s.xp_14} XP in 14 Tagen · Ziel {ATTRS[a].weeklyTarget} XP/Woche · XP durch {ATTRS[a].how}
                 </p>

@@ -160,3 +160,59 @@ export function characterLevel(totalXp: number) {
 
 export const CREDIT_TIERS = ["Pleite", "Knapp", "Stabil", "Polster", "Wohlhabend", "Frei"] as const;
 export const creditTier = (credits: number) => CREDIT_TIERS[Math.min(5, Math.floor(credits / 20))];
+
+// ---------- Balance mechanic: the four elements as buffs/debuffs ----------
+
+/** Which attributes an element feeds. Erde is the foundation and affects everything a little. */
+export const ELEMENT_LINKS: Record<Element, Attribute[]> = {
+  feuer: ["koerper", "kreativ"],
+  wasser: ["spirit", "verbunden"],
+  luft: ["intellekt", "charisma"],
+  erde: [],
+};
+
+export type Effect = "buff" | "debuff" | "neutral";
+
+export const EFFECT_NAMES: Record<Element, { buff: string; debuff: string }> = {
+  feuer: { buff: "Entfacht", debuff: "Glut erlischt" },
+  wasser: { buff: "Im Fluss", debuff: "Ausgetrocknet" },
+  erde: { buff: "Fester Stand", debuff: "Wackliger Boden" },
+  luft: { buff: "Klarer Kopf", debuff: "Dicke Luft" },
+};
+
+export interface Balance {
+  total: number;
+  shares: Record<Element, number>;
+  harmony: number; // 0–100, normalized entropy of the four shares
+  effects: Record<Element, Effect>;
+  weakest: Element;
+}
+
+/** Last 7 days of element minutes → harmony score and a status effect per element (≥ 22 % buff, < 10 % debuff). */
+export function balance(minutes: Partial<Record<Element, number>>): Balance {
+  const m = Object.fromEntries(ELEMENT_ORDER.map((e) => [e, Math.max(0, minutes[e] ?? 0)])) as Record<Element, number>;
+  const total = ELEMENT_ORDER.reduce((s, e) => s + m[e], 0);
+  const shares = Object.fromEntries(ELEMENT_ORDER.map((e) => [e, total ? m[e] / total : 0])) as Record<Element, number>;
+  const h = -ELEMENT_ORDER.reduce((s, e) => s + (shares[e] > 0 ? shares[e] * Math.log(shares[e]) : 0), 0) / Math.log(4);
+  const enough = total >= 60;
+  const effects = Object.fromEntries(
+    ELEMENT_ORDER.map((e) => [e, !enough ? "neutral" : shares[e] >= 0.22 ? "buff" : shares[e] < 0.1 ? "debuff" : "neutral"]),
+  ) as Record<Element, Effect>;
+  const weakest = [...ELEMENT_ORDER].sort((a, b) => shares[a] - shares[b])[0];
+  return { total, shares, harmony: Math.round(h * 100), effects, weakest };
+}
+
+/** Form multiplier for an attribute from the element effects: own element ±15 %, Erde (foundation) ±5/10 % for all. */
+export function formMultiplier(a: Attribute, effects: Record<Element, Effect>): { mult: number; sources: { element: Element; pct: number }[] } {
+  const sources: { element: Element; pct: number }[] = [];
+  for (const e of ELEMENT_ORDER) {
+    const linked = ELEMENT_LINKS[e].includes(a);
+    if (!linked && e !== "erde") continue;
+    const pct = effects[e] === "buff" ? (linked ? 15 : 5) : effects[e] === "debuff" ? (linked ? -15 : -10) : 0;
+    if (pct) sources.push({ element: e, pct });
+  }
+  return { mult: 1 + sources.reduce((s, x) => s + x.pct, 0) / 100, sources };
+}
+
+export const effectiveForm = (s: AttrSummary, effects: Record<Element, Effect>) =>
+  Math.max(0, Math.min(100, Math.round(form(s) * formMultiplier(s.attribute, effects).mult)));
