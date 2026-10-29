@@ -38,7 +38,9 @@ select title from tasks where done and done_at::date = (now() at time zone 'Euro
 Vor Änderungen per Titel-Match erst `select` ausführen und bei Mehrdeutigkeit nachfragen.
 
 ### Projekte & Nachfassen (`projects`, `followups`, `tasks.project_id`)
-Projekt-Ordner (aktuell: Starke Mitte = die Partei, Pluma Media, Baumklettern, Lesen). Unterordner über `projects.parent_id`
+Projekt-Ordner (aktuell: Starke Mitte = die Partei, Pluma Media, Baumklettern, Lesen, Michael Rentsch Consulting Website).
+**Michael Rentsch** taucht in zwei Projekten auf – nicht verwechseln: Partei-Videos/Instagram-Reels → **Starke Mitte**
+(er nimmt Videos für die Partei auf); seine Consulting-Website (Link, Prototyp, Fotos, Brainstorming) → **Michael Rentsch Consulting Website**. Unterordner über `projects.parent_id`
 Einträge sind normale `tasks` mit `project_id` (Quadrant `schedule`; mit `due_date` = Projekt-Deadline).
 In der Matrix erscheinen Projekt-Einträge nur, wenn sie ein `due_date` haben.
 
@@ -98,7 +100,7 @@ Eine verpasste Routine bleibt im Plan, bis eine neuere derselben Routine existie
 das Blumengießen vom Sonntag wartet bis es erledigt ist). In der Matrix erscheinen Routinen nie.
 Routinen können `attribute`/`element` tragen (wird an die Tagesaufgabe vererbt).
 Aktuell: „Tageslichtlampe: 10 min helles Licht“ (täglich, gegen Winterdepression, Anfang des Tages),
-„Starke Mitte: 10 min Reels anderer Parteien schauen“ (täglich), „Wohnung 10 min lüften“ (täglich),
+„Starke Mitte: 10 min Reels anderer Parteien schauen & gute an Michael schicken“ (täglich), „Wohnung 10 min lüften“ (täglich),
 „Blumen gießen“ (sonntags; zuletzt gegossen So 25.10.2026),
 „Schattenboxen (3 × 3 min)“ (täglich, Körper/Feuer, mit Rundentimer).
 `routines.timer` (jsonb, z. B. `{"rounds":3,"work":180,"rest":30,"prep":10}` in Sekunden) → die Tagesaufgabe bekommt
