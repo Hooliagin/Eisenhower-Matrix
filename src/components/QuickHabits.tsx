@@ -73,7 +73,7 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
         {items.map((t) => (
           <button
             key={t.id}
-            onClick={() => (t.done ? undo(t) : t.timer ? setRunning(t) : complete(t))}
+            onClick={() => (t.done ? confirm(`„${label(t)}“ wieder als offen markieren?`) && undo(t) : t.timer ? setRunning(t) : complete(t))}
             className={`flex flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-center transition ${
               t.done ? "bg-emerald-600/20 text-emerald-300" : "bg-slate-800 active:scale-95"
             }`}
