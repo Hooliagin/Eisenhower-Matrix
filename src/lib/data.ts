@@ -285,6 +285,7 @@ export interface Meal {
   protein_g: number;
   protein_quality: number;
   notes: string | null;
+  walk_minutes: number | null; // walked after this meal
 }
 
 export type DrinkKind = "water_glass" | "water_bottle" | "coffee";
@@ -295,7 +296,7 @@ export function useNutrition() {
       const today = isoDate();
       const [n, m, s] = await Promise.all([
         supabase.from("nutrition_daily").select("*").eq("day", today).maybeSingle(),
-        supabase.from("meals").select("id, meal, description, kcal, protein_g, protein_quality, notes").eq("day", today).order("created_at"),
+        supabase.from("meals").select("id, meal, description, kcal, protein_g, protein_quality, notes, walk_minutes").eq("day", today).order("created_at"),
         supabase.from("nutrition_settings").select("glass_ml, bottle_ml, coffee_ml").maybeSingle(),
       ]);
       const st = must(s) as { glass_ml: number; bottle_ml: number; coffee_ml: number } | null;

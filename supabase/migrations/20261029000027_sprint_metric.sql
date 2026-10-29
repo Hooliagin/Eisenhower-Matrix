@@ -35,6 +35,10 @@ join public.exercises e on e.id = l.exercise_id
 where e.metric = 'sprint' and l.seconds > 0 and l.meters > 0
 group by l.meters, s.session_date
 union all
+-- meals followed by a walk (count per day)
+select 'post_meal_walks', 'Gehen nach dem Essen', 'x', true, m.day, count(*) filter (where m.walk_minutes > 0)::numeric
+from public.meals m group by m.day
+union all
 select 'reading_min', 'Lesen', 'min', true, r.log_date, sum(r.minutes)::numeric
 from public.reading_log r group by r.log_date
 union all

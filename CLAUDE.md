@@ -45,6 +45,7 @@ Diese Tabelle entspricht den Views `xp_events`, `element_events` und `nutrition_
 | **Unterbrochene** Timer-Aufgabe (`progress_seconds ≥ 30`, noch nicht erledigt) | bisherige Minuten, am Tag des Speicherns | ebenso | Körper-Aufgaben: 8 kcal/min |
 | Atemübung gespeichert (Aufgabe „Atemübung: …“) | 🕊️ Spiritualität (Minuten) | 💧 Wasser | – |
 | Gedicht geübt (`poem_attempts.seconds`) | 🧠 Intellekt (Minuten) · gemeistert (`poems.mastered_on`) +60 | 💨 Luft | – |
+| Gehen nach dem Essen (`meals.walk_minutes`) | 💪 Körper (Minuten) | 🌍 Erde | +4 kcal/min |
 | Detox-Fenster geschafft (`detox_sessions.result='success'`) | – | 🌍 Erde (30/60 min) | – |
 | Cappuccino (`drink_log.kind='coffee'`) | – | – | Aufnahme: +100 kcal, +5 g Protein, 75 mg Koffein |
 | Mahlzeit (`meals`) | – | – | Aufnahme: kcal, Protein × `protein_quality` |
@@ -112,7 +113,7 @@ Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „�
 
 | Routine | Wann | Wo | attribute / element |
 |---|---|---|---|
-| Tageslichtlampe: 10 min helles Licht | täglich, Anfang des Tages (gegen Winterdepression) | Tagesplan | – / erde |
+| Morgenlicht: 10 min Tageslicht in die Augen (sonst Lampe) | täglich, direkt nach dem Aufstehen (Rhythmus, gegen Winterdepression) | Tagesplan | – / erde |
 | Starke Mitte: 10 min Reels anderer Parteien schauen & gute an Michael schicken | täglich | Tagesplan | intellekt / luft |
 | Wohnung 10 min lüften | täglich | ⚡ Daily | – / erde |
 | Schattenboxen (3 × 3 min, 30 s Pause) | täglich | ⚡ Daily, Rundentimer | koerper / feuer |
@@ -280,6 +281,13 @@ values ('Mittag', '3 Rühreier mit Brot', 520, 27, 0.85, 30, 30, 3, '3 Eier (19 
 insert into drink_log (kind, ml) values ('water_bottle', 1000);
 select * from nutrition_daily where day = (now() at time zone 'Europe/Berlin')::date;
 ```
+**🚶 Gehen nach dem Essen** (Joshua will das trainieren, am liebsten mit Pouchi): pro Mahlzeit `meals.walk_minutes` (Standard 10).
+Sagt er „bin nach dem Essen gegangen“ → bei der passenden Hauptmahlzeit setzen (Dauer, falls genannt); in der App per 🚶 an der
+Mahlzeit abhakbar, Karte zeigt „🚶 x/y“ (Mahlzeiten ab 250 kcal). Zählt laut „Querverbindungen“; Kennzahl `post_meal_walks` in
+`metric_daily`. Nutzen ehrlich: 10–15 min Gehen nach dem Essen senkt den Blutzuckeranstieg und hilft der Verdauung; „bessere
+Nährstoffaufnahme“ ist nicht belegt.
+**🌅 Morgenlicht** = Routine im Tagesplan; sagt er „heute Morgenlicht gehabt“ → die heutige Aufgabe als erledigt markieren.
+
 **Verbrauch** (Schätzung, Werte in `nutrition_settings`, bei neuen Messungen aktualisieren): Grundumsatz Katch-McArdle
 370 + 21,6 × fettfreie Masse (67,8 kg → 1834 kcal) × Alltags-PAL 1,4 + Aktivitäten laut Tabelle „Querverbindungen“.
 **Kalorienziel** = Verbrauch + `nutrition_settings.kcal_surplus`. **Aktuell Muskelaufbau: +300 kcal** (lean bulk ≈ +10 %,

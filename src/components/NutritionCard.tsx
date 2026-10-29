@@ -64,7 +64,14 @@ export default function NutritionCard() {
     void refresh();
   }
 
+  async function toggleWalk(id: string, walked: boolean) {
+    await supabase.from("meals").update({ walk_minutes: walked ? null : 10 }).eq("id", id);
+    void refresh();
+  }
+
   if (!n) return null;
+  const mainMeals = data.meals.filter((m) => m.kcal >= 250);
+  const walked = mainMeals.filter((m) => m.walk_minutes).length;
   const burn = n.burn_base + n.burn_activity;
   const surplus = n.kcal_surplus ?? 0;
   const target = burn + surplus;
@@ -143,6 +150,12 @@ export default function NutritionCard() {
           </div>
           <Bar value={n.protein_effective_g} max={n.protein_target_g} color="#f87171" />
         </div>
+        {mainMeals.length > 0 && (
+          <div className="text-[11px] text-slate-400">
+            🚶 Nach dem Essen gegangen: <b className={walked === mainMeals.length ? "text-emerald-400" : "text-slate-200"}>{walked}/{mainMeals.length}</b>
+            <span className="text-slate-600"> · antippen zum Abhaken</span>
+          </div>
+        )}
       </button>
 
       {showMeals && (
@@ -154,8 +167,15 @@ export default function NutritionCard() {
                   {m.meal && <span className="text-slate-500">{m.meal}: </span>}
                   {m.description}
                 </span>
-                <span className="whitespace-nowrap text-slate-400">
+                <span className="flex items-center gap-1.5 whitespace-nowrap text-slate-400">
                   {m.kcal} kcal · {Math.round(m.protein_g)} g P
+                  <button
+                    onClick={() => void toggleWalk(m.id, !!m.walk_minutes)}
+                    className={`rounded-full px-1.5 py-0.5 text-[11px] ${m.walk_minutes ? "bg-emerald-600/30 text-emerald-200" : "bg-slate-800 text-slate-500"}`}
+                    aria-label="Nach dem Essen gegangen"
+                  >
+                    🚶{m.walk_minutes ? ` ${m.walk_minutes}′` : ""}
+                  </button>
                 </span>
               </div>
               {m.notes && <p className="text-[10px] text-slate-600">{m.notes}</p>}
