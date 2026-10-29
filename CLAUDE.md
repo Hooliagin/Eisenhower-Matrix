@@ -94,7 +94,9 @@ Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig
   (gestrige tägliche verschwindet, das Blumengießen vom Sonntag wartet).
 - `anytime = true` → nicht im Tagesplan, sondern als **⚡ Daily**-Button auf der Startseite (zwischendurch abhaken).
 - `timer` (jsonb, Sekunden): `{"rounds":3,"work":180,"rest":30,"prep":10}` → 🥊 Vollbild-Rundentimer (langer Ton = Start, Glocke =
-  Rundenende, 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong. Abschluss speichert
+  Rundenende, 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong und **Hintergrundrauschen** (Stille/Weiß/Rosa/Braun +
+Lautstärke, im Browser erzeugt – keine Audiodateien; Wahl wird pro Gerät gemerkt, Standard Braun; läuft nur während der
+Meditation, stoppt bei Pause/Ende). Abschluss speichert
   die Aufgabe als erledigt mit Dauer (ohne Vorlauf). `"style":"plain"` → einfacher Countdown (Startton, Endsignal,
 Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „🥊 Timer“.
 - **Später weitermachen:** Bricht Joshua einen Timer ab (Button „💾 Später weitermachen“ oder ✕ nach ≥ 30 s), wird der Stand in

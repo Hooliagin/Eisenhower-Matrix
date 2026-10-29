@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { stateAt, totalSeconds, type IntervalConfig } from "../lib/interval";
 import { fmtSeconds } from "../lib/timer";
-import { SOUNDS, unlockAudio } from "../lib/sound";
+import { SOUNDS, startNoise, unlockAudio, type NoiseKind } from "../lib/sound";
 
 interface Props {
   title: string;
@@ -39,6 +39,46 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
   // Signals on phase changes and countdowns
   const calm = config.style === "calm";
   const plain = config.style === "plain";
+
+  // Background noise for meditation; choice and volume remembered on this device.
+  const [noise, setNoise] = useState<NoiseKind | "off">(() => {
+    try {
+      return (localStorage.getItem("noise-kind") as NoiseKind | "off" | null) ?? "brown";
+    } catch {
+      return "brown";
+    }
+  });
+  const [noiseVol, setNoiseVol] = useState(() => {
+    try {
+      return Number(localStorage.getItem("noise-volume") ?? "0.35");
+    } catch {
+      return 0.35;
+    }
+  });
+  const noiseRef = useRef<ReturnType<typeof startNoise> | null>(null);
+  const noiseOn = calm && noise !== "off" && !!startedAt && !pausedAt && st.kind === "work";
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("noise-kind", noise);
+      localStorage.setItem("noise-volume", String(noiseVol));
+    } catch {
+      /* storage unavailable */
+    }
+  }, [noise, noiseVol]);
+
+  useEffect(() => {
+    if (!noiseOn) return;
+    const n = startNoise(noise, noiseVol);
+    noiseRef.current = n;
+    return () => {
+      n.stop();
+      noiseRef.current = null;
+    };
+    // volume changes are applied live below, without restarting the noise
+  }, [noiseOn, noise]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => noiseRef.current?.setVolume(noiseVol), [noiseVol]);
 
   useEffect(() => {
     if (!startedAt) return;
@@ -159,6 +199,39 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
         {startedAt && st.kind !== "done" && (
           <div className="h-1.5 w-64 overflow-hidden rounded-full bg-slate-800">
             <div className={`h-full ${plain ? "bg-teal-400" : calm ? "bg-indigo-400" : st.kind === "work" ? "bg-red-500" : "bg-emerald-500"}`} style={{ width: `${phasePct * 100}%` }} />
+          </div>
+        )}
+        {calm && (
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex gap-1">
+              {(
+                [
+                  ["off", "Stille"],
+                  ["white", "Weiß"],
+                  ["pink", "Rosa"],
+                  ["brown", "Braun"],
+                ] as const
+              ).map(([k, l]) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    unlockAudio();
+                    setNoise(k);
+                  }}
+                  className={`rounded-full px-3 py-1 text-xs ${noise === k ? "bg-indigo-300 text-indigo-950" : "bg-indigo-900/60 text-indigo-200"}`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            {noise !== "off" && (
+              <label className="flex items-center gap-2 text-[11px] text-indigo-300">
+                🔈
+                <input type="range" min={0.05} max={1} step={0.05} value={noiseVol} onChange={(e) => setNoiseVol(Number(e.target.value))} className="w-40 accent-indigo-300" />
+                🔊
+              </label>
+            )}
+            <p className="text-[10px] text-indigo-300/70">Rauschen läuft während der Meditation · iPhone: Stummschalter aus</p>
           </div>
         )}
         <p className="text-xs text-slate-500">
