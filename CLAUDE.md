@@ -85,7 +85,7 @@ Selbsteinschätzung, wo die Zeit hinfließt: 🔥 **Feuer** (Antrieb: Training, 
 💧 **Wasser** (Gefühl & Verbindung: Freunde, Familie, Gebet, Meditation, Natur mit Putschi),
 🌍 **Erde** (Basis & Ordnung: Haushalt, Finanzen, Behördliches, Routinen, Schlaf, Ernährung),
 💨 **Luft** (Geist & Kommunikation: Lesen, Lernen, Recherche, Gespräche, Impro).
-Quelle: Trainings-Sessions → Feuer (75 min), Lesezeit → Luft, erledigte Aufgaben → `tasks.element`, sonst aus `attribute`
+Quelle: Trainings-Sessions → Feuer (75 min), Lesezeit → Luft (Bücher mit Feld „Religion“ → Wasser bzw. Spiritualität), erledigte Aufgaben → `tasks.element`, sonst aus `attribute`
 abgeleitet (`element_of()`: koerper/kreativ → feuer, spirit/verbunden → wasser, intellekt/charisma → luft).
 **Jede neue Aufgabe mit `element` anlegen** (und `attribute`, wenn sie einen Charakterwert trainiert).
 Plan-Erinnerungen fürs Training („Training: …“) bekommen weder `element` noch `attribute` – die Session zählt schon.
