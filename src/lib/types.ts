@@ -28,7 +28,7 @@ export interface Task {
   estimate_factor?: number;
 }
 
-export type Metric = "weight_reps" | "weight_time" | "weight_distance";
+export type Metric = "weight_reps" | "weight_time" | "weight_distance" | "sprint";
 
 export interface Exercise {
   id: string;

@@ -176,6 +176,7 @@ export function fmtMetric(value: number | null, unit: string): string {
   if (value == null) return "–";
   const v = Number(value);
   if (unit === "s") return `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`;
+  if (unit === "sek") return `${v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} s`;
   if (unit === "ml") return `${(v / 1000).toLocaleString("de-DE", { maximumFractionDigits: 2 })} L`;
   return `${Number(v.toFixed(1)).toLocaleString("de-DE")} ${unit}`;
 }

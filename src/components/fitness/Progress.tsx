@@ -15,6 +15,12 @@ interface WeekStat {
   sets: number;
 }
 
+function mostCommon(xs: number[]): number {
+  const c = new Map<number, number>();
+  xs.forEach((x) => c.set(x, (c.get(x) ?? 0) + 1));
+  return [...c.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0;
+}
+
 function Sparkline({ values }: { values: number[] }) {
   if (values.length < 2) return null;
   const min = Math.min(...values);
@@ -58,19 +64,23 @@ export default function Progress({ back }: { back: () => void }) {
   const ex = exercises.find((e) => e.id === selected);
   const metric = ex?.metric ?? "weight_reps";
 
+  const sprint = metric === "sprint";
+  // Sprints: compare only runs over the most common distance
+  const dist = sprint ? mostCommon(rows.map((r) => r.meters ?? 0)) : 0;
   const weeks = new Map<string, WeekStat>();
   for (const r of rows) {
+    if (sprint && r.meters !== dist) continue;
     const d = parseDate(r.workout_sessions.session_date);
     const ws = weekStart(d);
     const key = ws.toISOString();
-    const score = metric === "weight_reps" ? e1rm(r.weight, r.reps) : Number(r.weight ?? 0);
+    const score = metric === "weight_reps" ? e1rm(r.weight, r.reps) : sprint ? Number(r.seconds ?? 0) : Number(r.weight ?? 0);
     const vol = Number(r.weight ?? 0) * (r.reps ?? r.meters ?? r.seconds ?? 0);
     const cur = weeks.get(key);
     if (!cur) weeks.set(key, { key, label: `KW ${isoWeek(d)}`, top: r, best: score, volume: vol, sets: 1 });
     else {
       cur.sets++;
       cur.volume += vol;
-      if (score > cur.best) {
+      if (sprint ? score < cur.best : score > cur.best) {
         cur.best = score;
         cur.top = r;
       }
@@ -95,7 +105,7 @@ export default function Progress({ back }: { back: () => void }) {
       ) : (
         <>
           <div className="card p-3">
-            <p className="text-xs text-slate-400">{metric === "weight_reps" ? "Geschätztes 1RM pro Woche" : "Top-Gewicht pro Woche"}</p>
+            <p className="text-xs text-slate-400">{metric === "weight_reps" ? "Geschätztes 1RM pro Woche" : sprint ? `Beste Zeit über ${dist} m pro Woche (niedriger = besser)` : "Top-Gewicht pro Woche"}</p>
             <Sparkline values={list.map((w) => w.best)} />
           </div>
           <div className="card overflow-hidden">
@@ -104,7 +114,7 @@ export default function Progress({ back }: { back: () => void }) {
                 <tr>
                   <th className="px-3 py-2 text-left font-normal">Woche</th>
                   <th className="px-2 text-left font-normal">Top-Satz</th>
-                  <th className="px-2 text-right font-normal">{metric === "weight_reps" ? "e1RM" : "Max kg"}</th>
+                  <th className="px-2 text-right font-normal">{metric === "weight_reps" ? "e1RM" : sprint ? "Beste s" : "Max kg"}</th>
                   <th className="px-2 text-right font-normal">Sätze</th>
                   <th className="px-3 text-right font-normal">Volumen</th>
                 </tr>
@@ -119,7 +129,7 @@ export default function Progress({ back }: { back: () => void }) {
                       <td className="px-2 font-mono text-xs">{fmtSet(w.top, metric)}</td>
                       <td className="px-2 text-right">
                         {w.best}
-                        {delta !== 0 && <span className={`ml-1 text-[10px] ${delta > 0 ? "text-emerald-400" : "text-red-400"}`}>{delta > 0 ? "▲" : "▼"}</span>}
+                        {delta !== 0 && <span className={`ml-1 text-[10px] ${delta > 0 !== sprint ? "text-emerald-400" : "text-red-400"}`}>{delta > 0 ? "▲" : "▼"}</span>}
                       </td>
                       <td className="px-2 text-right text-slate-400">{w.sets}</td>
                       <td className="px-3 text-right text-slate-400">{Math.round(w.volume)}</td>

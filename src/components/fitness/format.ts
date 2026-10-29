@@ -1,6 +1,7 @@
 import type { Metric, SetLog } from "../../lib/types";
 
 export function fmtSet(s: Pick<SetLog, "weight" | "reps" | "seconds" | "meters">, metric: Metric): string {
+  if (metric === "sprint") return `${Number(s.seconds ?? 0).toLocaleString("de-DE", { minimumFractionDigits: 2 })} s/${s.meters ?? "?"} m`;
   const w = s.weight != null ? `${Number(s.weight)}` : "BW";
   if (metric === "weight_distance") return `${w}×${s.meters ?? "?"}m`;
   if (metric === "weight_time") return `${w}×${s.seconds ?? "?"}s`;
@@ -11,6 +12,7 @@ export const SECOND_FIELD: Record<Metric, { key: "reps" | "seconds" | "meters"; 
   weight_reps: { key: "reps", label: "Wdh" },
   weight_time: { key: "seconds", label: "Sek" },
   weight_distance: { key: "meters", label: "Meter" },
+  sprint: { key: "seconds", label: "Sek" },
 };
 
 /** Epley estimate; bodyweight sets count reps only. */

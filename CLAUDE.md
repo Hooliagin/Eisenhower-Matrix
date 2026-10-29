@@ -307,12 +307,20 @@ Anzeige: Minuten dieser Woche vs. Schnitt der 4 Wochen davor, schwächstes Eleme
 
 Split: **A** Schulter & Rücken (2×/Woche) · **B** Brust & Arme (2×/Woche: Curls+Pushdowns als Supersatz · Dips · Overhead Trizepsdrücken (Kabel) · Preacher · Hammer ·
 Einarmige Trizeps-Extensions · Butterflies am Ende) · **C** Beine & Bauch (1×/Woche) ·
-**D** Sprint (**mindestens 1×/Woche**; `Sprints` = Zeit pro Sprint in s, Strecke gleich halten) · **E** Unterarme (**bei Bedarf**,
+**D** Sprint (**mindestens 1×/Woche**; Übung `Sprints`, `metric='sprint'`: `seconds` (2 Nachkommastellen) + `meters`) · **E** Unterarme (**bei Bedarf**,
 `times_per_week = 0` → wird nie „empfohlen“, zählt aber normal; zuletzt Mi 28.10.2026). Übungen in D/E sind Vorschläge – Joshua passt sie an.
 Festgelegt von Joshua:
 - **Kein zusätzliches Beintraining vorschlagen** (~80 km Rad pro Woche; Beine kraftmäßig stark: Squat 160, Kreuzheben 210).
 - **Kreuzheben** nur Orientierungswert, **nicht** in den Plan (unterer Rücken bereits sehr stark).
 - **Trainingsfokus: Schulterdrücken** (Bestwert 60 kg, nächstes Ziel ≈ 80 kg).
+
+**⏱️ Sprint-Timer** (`SprintTimer.tsx`, `src/lib/sprint.ts`; im Training bei „Sprints“): Strecke 30/40/60/100 m. Start entweder
+🔊 **Startsignal** (Sprachansage „Auf die Plätze … Fertig“, Piep nach 1–3 s Zufall; Uhr läuft ab Piep, Bewegungssensor misst
+Reaktionszeit und erkennt Fehlstart) oder 🏃 **Selbststart** (Uhr startet beim ersten Schritt, Sensor lernt vorher die Ruhe).
+Stopp: Tipp irgendwo im Ziel oder automatisch per **GPS** bei der Zielstrecke (zwischen GPS-Punkten interpoliert, ± ein paar
+Zehntel; zeigt auch Spitzen-km/h). Jeder gespeicherte Lauf = Satz (`seconds`, `meters`), danach 2:30 Pause-Anzeige.
+Fortschritt: Fitness → Fortschritt (beste Zeit pro Woche über die häufigste Strecke) und `metric_daily` „Sprint N m“ (niedriger = besser).
+Nennt Joshua Zeiten im Chat: `set_logs` mit `seconds = 8.12, meters = 60` in einer D-Session.
 
 Pause 120 s (`rest_seconds`); `superset_group` = Supersatz (Timer erst nach der letzten Übung der Gruppe); `optional` = eingeklappt.
 `exercises.metric`: `weight_reps` · `weight_distance` (Farmers Walk) · `weight_time`.

@@ -4,6 +4,7 @@ import { formatLong, parseDate } from "../../lib/dates";
 import { useRestTimer } from "../../lib/timer";
 import type { Exercise, SetLog, TemplateExercise, WorkoutSession, WorkoutTemplate } from "../../lib/types";
 import { fmtSet, SECOND_FIELD } from "./format";
+import SprintTimer from "./SprintTimer";
 
 type Prev = { date: string; sets: SetLog[] };
 
@@ -208,6 +209,10 @@ function ExerciseBlock({ te, logs, prev, restAfter, onLog, onRemove }: BlockProp
   const [weight, setWeight] = useState<string>(ref?.weight != null ? String(Number(ref.weight)) : "");
   const [value, setValue] = useState<string>(ref?.[second.key] != null ? String(ref[second.key]) : "");
   const complete = te.target_sets > 0 && logs.length >= te.target_sets;
+  const sprint = metric === "sprint";
+  const [timer, setTimer] = useState(false);
+  // Sprints: first field is the distance instead of kg
+  const [meters, setMeters] = useState<string>(String(ref?.meters ?? (parseInt(te.target_reps ?? "") || 60)));
 
   // Prefill once "letztes Mal" data arrives.
   useEffect(() => {
@@ -218,8 +223,9 @@ function ExerciseBlock({ te, logs, prev, restAfter, onLog, onRemove }: BlockProp
   }, [prev]);
 
   function submit() {
-    const v = Number(value);
+    const v = Number(value.replace(",", "."));
     if (!v) return;
+    if (sprint) return onLog({ seconds: v, meters: Number(meters) || null }, restAfter);
     onLog({ weight: weight === "" ? null : Number(weight.replace(",", ".")), [second.key]: v }, restAfter);
   }
 
@@ -253,13 +259,37 @@ function ExerciseBlock({ te, logs, prev, restAfter, onLog, onRemove }: BlockProp
         </div>
       )}
 
+      {sprint && (
+        <button className="btn-primary mt-2 w-full py-3" onClick={() => setTimer(true)}>
+          ⏱️ Sprint-Timer starten
+        </button>
+      )}
+      {timer && (
+        <SprintTimer
+          distance={Number(meters) || 60}
+          onRun={(sec, m) => {
+            setMeters(String(m));
+            onLog({ seconds: sec, meters: m }, false);
+          }}
+          onClose={() => setTimer(false)}
+        />
+      )}
       <div className="mt-2 flex items-center gap-2">
         <label className="flex flex-1 items-center gap-1">
-          <input inputMode="decimal" className="w-full py-2 text-center" placeholder="kg" value={weight} onChange={(e) => setWeight(e.target.value)} />
-          <span className="text-xs text-slate-500">kg</span>
+          {sprint ? (
+            <>
+              <input inputMode="numeric" className="w-full py-2 text-center" placeholder="m" value={meters} onChange={(e) => setMeters(e.target.value)} />
+              <span className="text-xs text-slate-500">m</span>
+            </>
+          ) : (
+            <>
+              <input inputMode="decimal" className="w-full py-2 text-center" placeholder="kg" value={weight} onChange={(e) => setWeight(e.target.value)} />
+              <span className="text-xs text-slate-500">kg</span>
+            </>
+          )}
         </label>
         <label className="flex flex-1 items-center gap-1">
-          <input inputMode="numeric" className="w-full py-2 text-center" placeholder={second.label} value={value} onChange={(e) => setValue(e.target.value)} />
+          <input inputMode={sprint ? "decimal" : "numeric"} className="w-full py-2 text-center" placeholder={second.label} value={value} onChange={(e) => setValue(e.target.value)} />
           <span className="text-xs text-slate-500">{second.label}</span>
         </label>
         <button className="btn-primary px-4 py-2.5" onClick={submit}>
