@@ -51,9 +51,32 @@ update shopping_items set done = true where name ilike '%milch%';
 delete from shopping_items where done;
 ```
 
-### Tagesreihenfolge
-Die Startseite sortiert „Fokus heute“ nach `tasks.position` (aufsteigend). Wenn der Nutzer eine Reihenfolge nennt,
-`position` entsprechend durchnummerieren (z. B. `extract(epoch from now()) + rang`).
+### Tagesplan & Zeit-Lernen
+Die Startseite zeigt einen **Tagesplan**: alle offenen Aufgaben mit `due_date <= heute` oder Quadrant `do`,
+in Reihenfolge von `tasks.position`, ab der aktuellen Uhrzeit hintereinander gelegt.
+Wenn der Nutzer eine Reihenfolge nennt, `position` durchnummerieren (`extract(epoch from now()) + rang`).
+
+Felder auf `tasks`:
+- `estimate_minutes`: Schätzung (vom Nutzer genannt oder von Claude vorgeschlagen und so benannt)
+- `planned_start`: feste Uhrzeit (z. B. `'18:00'` für Training am Abend), sonst `null` = flexibel
+- `started_at`: läuft gerade (▶ in der App)
+- `actual_minutes`: tatsächliche Dauer; per Stoppuhr in der App oder wenn der Nutzer im Chat sagt „hat 80 min gedauert“
+
+Lesen immer über den View **`tasks_planned`**. Er liefert `planned_minutes` (gelernte Dauer):
+1. dieselbe Aufgabe (gleicher normalisierter Titel, `title_key()`) schon erledigt → Median der letzten 5 echten Dauern
+2. sonst Schätzung × persönlicher Korrekturfaktor (`estimate_factor` = Median echt/geschätzt, ab 3 Datenpunkten, 0,5–3)
+3. sonst 30 min
+
+Damit das Lernen funktioniert: wiederkehrende Aufgaben **immer gleich benennen** (z. B. „Wohnung aufräumen“),
+und wenn der Nutzer Dauern nennt, `actual_minutes` bzw. `estimate_minutes` setzen.
+```sql
+update tasks set done = true, done_at = now(), actual_minutes = 80 where title = 'Wohnung aufräumen' and not done;
+select title, estimate_minutes, planned_minutes, history_samples, estimate_factor, planned_start
+from tasks_planned where not done and (due_date <= (now() at time zone 'Europe/Berlin')::date or quadrant = 'do')
+order by position;
+-- Lernstand: wie gut sind die Schätzungen?
+select title, estimate_minutes, actual_minutes from tasks where done and actual_minutes is not null order by done_at desc limit 20;
+```
 
 ### Trainingsplan (`exercises`, `workout_templates`, `template_exercises`)
 Split: **A** Schulter & Rücken (2×/Woche), **B** Brust & Arme (2×/Woche), **C** Beine & Bauch (1×/Woche).

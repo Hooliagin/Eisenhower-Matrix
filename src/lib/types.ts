@@ -11,6 +11,14 @@ export interface Task {
   done_at: string | null;
   source: "app" | "voice" | "claude";
   created_at: string;
+  estimate_minutes: number | null;
+  actual_minutes: number | null;
+  started_at: string | null;
+  planned_start: string | null;
+  // Computed by the tasks_planned view (learning)
+  planned_minutes?: number;
+  history_samples?: number | null;
+  estimate_factor?: number;
 }
 
 export interface Habit {

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { createTasks } from "../lib/data";
-import { createRecognition, guessQuadrant, parseDictation, speechSupported, type ParsedTask } from "../lib/speech";
+import { createRecognition, extractDuration, guessQuadrant, parseDictation, speechSupported, type ParsedTask } from "../lib/speech";
 import { QUADRANTS, type Quadrant } from "../lib/types";
 
 const Q_OPTIONS: { id: Quadrant; label: string }[] = [
@@ -21,7 +21,8 @@ export default function AddTask({ defaultQuadrant = "inbox" }: { defaultQuadrant
     const t = text.trim();
     if (!t) return;
     setText("");
-    await createTasks([{ title: t, quadrant: quadrant === "inbox" ? guessQuadrant(t) : quadrant }]);
+    const { rest, minutes } = extractDuration(t);
+    await createTasks([{ title: rest || t, quadrant: quadrant === "inbox" ? guessQuadrant(t) : quadrant, estimate_minutes: minutes }]);
   }
 
   function toggleMic() {
@@ -66,7 +67,7 @@ export default function AddTask({ defaultQuadrant = "inbox" }: { defaultQuadrant
       <div className="flex gap-2">
         <input
           className="min-w-0 flex-1"
-          placeholder="Neue Aufgabe…"
+          placeholder="Neue Aufgabe… (z. B. „Aufräumen 1 h“)"
           value={listening ? interim : text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addTyped()}
@@ -106,6 +107,13 @@ export default function AddTask({ defaultQuadrant = "inbox" }: { defaultQuadrant
                 className="min-w-0 flex-1 py-1 text-sm"
                 value={p.title}
                 onChange={(e) => setPreview(preview.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
+              />
+              <input
+                className="w-16 py-1 text-center text-xs"
+                inputMode="numeric"
+                placeholder="min"
+                value={p.estimate_minutes ?? ""}
+                onChange={(e) => setPreview(preview.map((x, j) => (j === i ? { ...x, estimate_minutes: Number(e.target.value) || null } : x)))}
               />
               <select
                 className="py-1 text-xs"

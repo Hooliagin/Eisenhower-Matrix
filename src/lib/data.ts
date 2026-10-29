@@ -51,7 +51,7 @@ export function useTasks() {
       const since = addDays(new Date(), -7).toISOString();
       return must(
         await supabase
-          .from("tasks")
+          .from("tasks_planned")
           .select("*")
           .or(`done.eq.false,done_at.gte.${since}`)
           .order("position"),
@@ -62,7 +62,9 @@ export function useTasks() {
   );
 }
 
-export async function createTasks(rows: { title: string; quadrant: Quadrant; source?: Task["source"] }[]) {
+export async function createTasks(
+  rows: { title: string; quadrant: Quadrant; source?: Task["source"]; estimate_minutes?: number | null }[],
+) {
   const base = Date.now() / 1000;
   must(await supabase.from("tasks").insert(rows.map((r, i) => ({ ...r, position: base + i }))));
 }

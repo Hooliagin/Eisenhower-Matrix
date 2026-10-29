@@ -3,6 +3,7 @@ import { suggestTemplate, useSessions, useTasks, useTemplates } from "../lib/dat
 import { formatLong, isoDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 import AddTask from "./AddTask";
+import DayPlan from "./DayPlan";
 import { HabitToday, useHabitToggle } from "./Habits";
 import ShoppingList from "./ShoppingList";
 import { UndoToast, useTaskActions } from "./Matrix";
@@ -24,6 +25,7 @@ export default function Today({ go }: { go: (t: Tab) => void }) {
   const trainedToday = sessions.find((s) => s.session_date === today);
   const card = (t: (typeof tasks)[number]) => <TaskCard key={t.id} task={t} {...actions} draggable={false} />;
 
+
   return (
     <div className="flex flex-col gap-4 pt-4">
       <header className="flex items-start justify-between">
@@ -36,13 +38,7 @@ export default function Today({ go }: { go: (t: Tab) => void }) {
 
       <AddTask defaultQuadrant="do" />
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-red-400">Fokus heute · {focus.length}</h2>
-        <div className="flex flex-col gap-1.5">
-          {focus.length ? focus.map(card) : <p className="text-sm text-slate-500">Nichts Dringendes – stark. Arbeite an „Einplanen“.</p>}
-        </div>
-        {doneToday.length > 0 && <p className="mt-2 text-xs text-emerald-400">✓ {doneToday.length} heute erledigt</p>}
-      </section>
+      <DayPlan tasks={focus} doneToday={doneToday} patch={(id, p) => setTasks(tasks.map((t) => (t.id === id ? { ...t, ...p } : t)))} />
 
       <ShoppingList />
 

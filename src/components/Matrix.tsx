@@ -42,9 +42,11 @@ export function useTaskActions(tasks: Task[], setTasks: (t: Task[]) => void) {
     },
     restore: async () => {
       if (!undo) return;
-      const { id, title, notes, quadrant, position, due_date, done, done_at, source, created_at } = undo;
+      const { id, title, notes, quadrant, position, due_date, done, done_at, source, created_at, estimate_minutes, actual_minutes, started_at, planned_start } = undo;
       setUndo(null);
-      await supabase.from("tasks").insert({ id, title, notes, quadrant, position, due_date, done, done_at, source, created_at });
+      await supabase
+        .from("tasks")
+        .insert({ id, title, notes, quadrant, position, due_date, done, done_at, source, created_at, estimate_minutes, actual_minutes, started_at, planned_start });
     },
   };
 }
