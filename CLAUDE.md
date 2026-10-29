@@ -283,11 +283,11 @@ nebeneinander). Charakter-Detail zeigt nur Kernwerte + Link. Damit Verläufe fun
 Messdatum. Bessere Richtung „niedriger“ steht in `LOWER_IS_BETTER` (BodyValues.tsx) – neue solche Werte dort ergänzen.
 **Check-up-Fotos:** Joshua schickt Fotos/Screenshots (Kieser seca mBCA) → **alle Werte ablesen und in `measurements` eintragen**
 (Fotos selbst nicht ablegen). Auch Verlaufsgrafiken auswerten (frühere Messtage, als „aus Grafik abgelesen (± …)“ in `note`).
-Check-ups bisher: 31.12.2023 (Papierbericht), 27.07.2026 (nur aus Grafiken), 19.09.2026 (App).
+Check-ups bisher: 31.12.2023 (Papierbericht), 27.07.2026 (nur aus Grafiken), 19.09.2026 (App), 29.10.2026 (App).
 
 **Messwerte** (Joshua schickt Check-ups, Kieser/seca): roh in `measurements`, daraus ehrliche Teilwerte 0–100 in `character_stats`
 mit Begründung in `note` (Untrainiert ≈ 15, Anfänger ≈ 30, Fortgeschritten ≈ 50, Erfahren ≈ 70, Sehr stark ≈ 85, Elite ≈ 95+).
-Nicht schönrechnen. Stand 19.09.2026: 80,1 kg, 182,3 cm, 15,4 % Fett, Skelettmuskelmasse 33,9 kg, Phasenwinkel 6,8°.
+Nicht schönrechnen. Stand 29.10.2026: 80,05 kg, 182,3 cm, 15,3 % Fett, Skelettmuskelmasse 34,22 kg, Phasenwinkel 7,0°, TRU 115.
 Teilwerte: Muskelmasse, Körperfett, Zellqualität, Rumpf, Arme, Beine, Kraft Unterkörper, Kraft Oberkörper, Beweglichkeit,
 Ausdauer (vorläufig – Ruhepuls und 5-km-Zeit liefert Joshua noch nach).
 ```sql
