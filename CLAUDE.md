@@ -39,12 +39,30 @@ Vor Änderungen per Titel-Match erst `select` ausführen und bei Mehrdeutigkeit 
 
 ### Projekte & Nachfassen (`projects`, `followups`, `tasks.project_id`)
 Projekt-Ordner (aktuell: Starke Mitte = die Partei, Pluma Media, Baumklettern, Lesen). Unterordner über `projects.parent_id`
-(Lesen → „Lese ich gerade“, „Will ich lesen“, „Muss ich besorgen“; Buch = Eintrag im passenden Unterordner, verschieben = `project_id` ändern).
 Einträge sind normale `tasks` mit `project_id` (Quadrant `schedule`; mit `due_date` = Projekt-Deadline).
 In der Matrix erscheinen Projekt-Einträge nur, wenn sie ein `due_date` haben.
+
+### Lesen (`books`, `reading_log`) – Projekt „Lesen“ hat `kind = 'books'` und zeigt die Bücherliste
+- `books.field`: Fiction, „Non-Fiction: Elitentheorie“, Life Skills, Religion (frei erweiterbar)
+- `books.status`: `reading` (lese ich), `to_buy` (besorgen), `want` (habe ich, will lesen), `idea` (Vorschlag von Claude), `done`
+- `progress_pct` 0–100. Nennt der Nutzer Seiten („S. 120 von 300“), in Prozent umrechnen.
+- Lesezeit: „heute 40 min gelesen“ → `reading_log`. Startseite zeigt die Summe der Woche (Accountability!).
+- Übungen aus Büchern (z. B. Impro: Statustransaktionen) als `tasks` im Projekt Lesen.
 ```sql
-insert into tasks (title, quadrant, project_id, source)
-select 'Der Prozess – Kafka', 'schedule', id, 'claude' from projects where name = 'Will ich lesen';
+insert into reading_log (minutes, book_id) select 40, id from books where title = 'Neuromancer';
+update books set progress_pct = 60 where title = 'Enemies of the Leviathan';
+update books set status = 'done', progress_pct = 100, finished_at = (now() at time zone 'Europe/Berlin')::date where title = '…';
+select sum(minutes) from reading_log where log_date >= date_trunc('week', now() at time zone 'Europe/Berlin')::date;
+```
+
+### Tägliche Routinen (`routines`)
+Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig pro Tag) und steht ganz vorne im Tagesplan
+(`position` = Reihenfolge am Morgen). Erzeugt beim App-Start per `spawn_routine_tasks(datum)`; Claude kann die Funktion
+selbst aufrufen. Verpasste Routinen stapeln sich nicht (alte werden im Plan ausgeblendet), in der Matrix erscheinen sie nie.
+Aktuell: „Tageslichtlampe: 10 min helles Licht“ (gegen Winterdepression, Anfang des Tages).
+```sql
+insert into routines (title, estimate_minutes, position, planned_start) values ('Dehnen', 10, 2, null);
+select public.spawn_routine_tasks((now() at time zone 'Europe/Berlin')::date);
 ```
 
 `followups` = Leute, denen der Nutzer hinterher sein muss:

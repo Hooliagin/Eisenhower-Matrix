@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { isDue, suggestTemplate, useCalendar, useProjects, useSessions, useShopping, useTasks, useTemplates } from "../lib/data";
+import { isDue, minutesThisWeek, suggestTemplate, useBooks, useCalendar, useProjects, useSessions, useShopping, useTasks, useTemplates } from "../lib/data";
 import { addDays, formatLong, isoDate, parseDate } from "../lib/dates";
-import { buildSchedule, hhmm } from "../lib/schedule";
+import { buildSchedule, fmtMinutes, hhmm } from "../lib/schedule";
 import { supabase } from "../lib/supabase";
 import AddTask from "./AddTask";
 import { countdown } from "./Calendar";
@@ -25,6 +25,7 @@ export default function Home() {
   const { data: proj } = useProjects();
   const { data: templates } = useTemplates();
   const { data: sessions } = useSessions();
+  const { data: reading } = useBooks();
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
@@ -52,6 +53,10 @@ export default function Home() {
   const openShopping = shopping.filter((i) => !i.done);
   const { next: nextWorkout, weekly } = suggestTemplate(templates, sessions);
   const trainedToday = sessions.find((s) => s.session_date === today);
+
+  const readMin = minutesThisWeek(reading.log);
+  const currentBooks = reading.books.filter((b) => b.status === "reading");
+  const readingProject = proj.projects.find((p) => p.kind === "books");
 
   const go = (hash: string) => (location.hash = hash);
   const hour = now.getHours();
@@ -130,6 +135,13 @@ export default function Home() {
             <span className="truncate text-sm">{trainedToday ? "Läuft gerade" : nextWorkout?.name}</span>
           )}
           <span className="text-xs text-slate-500">{weekly.map((w) => `${w.t.code} ${w.thisWeek}/${w.t.times_per_week}`).join(" · ")}</span>
+        </Tile>
+
+        <Tile icon="📚" title="Lesen" onClick={() => go(readingProject ? `projects/${readingProject.id}` : "projects")}>
+          <span className="text-lg font-semibold">{readMin ? fmtMinutes(readMin) : "0 min"}</span>
+          <span className="truncate text-xs text-slate-500">
+            diese Woche{currentBooks[0] && ` · ${currentBooks[0].title}${currentBooks[0].progress_pct != null ? ` ${currentBooks[0].progress_pct} %` : ""}`}
+          </span>
         </Tile>
       </div>
       <p className="text-center text-[11px] text-slate-600">

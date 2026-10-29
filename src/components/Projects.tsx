@@ -3,6 +3,7 @@ import { createTasks, isDue, resolvedPatch, sentPatch, updateFollowup, useProjec
 import { isoDate, parseDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 import type { Followup, Project } from "../lib/types";
+import BooksPanel from "./Books";
 import { countdown } from "./Calendar";
 import { UndoToast, useTaskActions } from "./Matrix";
 import TaskCard from "./TaskCard";
@@ -192,7 +193,9 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
         </div>
       </header>
 
-      {(children.length > 0 || !project.parent_id) && (
+      {project.kind === "books" && <BooksPanel />}
+
+      {project.kind !== "books" && (children.length > 0 || !project.parent_id) && (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold text-slate-300">Unterordner</h2>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -205,7 +208,7 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
         </section>
       )}
 
-      {(!project.parent_id || followups.length > 0) && (
+      {project.kind !== "books" && (!project.parent_id || followups.length > 0) && (
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold text-slate-300">Leute & Nachfassen · {open.length}</h2>
         {open.map((f) => <FollowupCard key={f.id} f={f} onPatch={patch} />)}
@@ -225,7 +228,7 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
       )}
 
       <section className="flex flex-col gap-1.5">
-        <h2 className="text-sm font-semibold text-slate-300">Einträge · {openTasks.length}</h2>
+        <h2 className="text-sm font-semibold text-slate-300">{project.kind === "books" ? "Üben & Aufgaben" : "Einträge"} · {openTasks.length}</h2>
         {openTasks.map((t) => (
           <div key={t.id} className="flex items-center gap-2">
             <div className="flex-1"><TaskCard task={t} {...actions} draggable={false} /></div>

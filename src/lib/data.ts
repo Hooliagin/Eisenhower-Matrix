@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
-import type { CalendarEvent, Followup, Project, Quadrant, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
+import type { Book, CalendarEvent, Followup, Project, Quadrant, ReadingLog, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
 import { addDays, isoDate, weekStart } from "./dates";
 
 /** Refetch on mount, when the tab regains focus, and on realtime changes to `tables`. */
@@ -127,6 +127,40 @@ export function resolvedPatch(f: Followup): Partial<Followup> {
   return f.repeat_days
     ? { status: "todo", last_contact: isoDate(today), follow_up_on: isoDate(addDays(today, f.repeat_days)) }
     : { status: "done", last_contact: isoDate(today) };
+}
+
+// ---------- Reading ----------
+
+export function useBooks() {
+  return useLive<{ books: Book[]; log: ReadingLog[] }>(
+    async () => {
+      const from = isoDate(addDays(weekStart(), -7 * 7));
+      const [b, l] = await Promise.all([
+        supabase.from("books").select("*").order("field").order("position"),
+        supabase.from("reading_log").select("id, log_date, minutes, book_id").gte("log_date", from).order("log_date"),
+      ]);
+      return { books: must(b), log: must(l) };
+    },
+    ["books", "reading_log"],
+    { books: [], log: [] },
+  );
+}
+
+export function minutesThisWeek(log: ReadingLog[]): number {
+  const ws = isoDate(weekStart());
+  return log.filter((l) => l.log_date >= ws).reduce((sum, l) => sum + l.minutes, 0);
+}
+
+export async function logReading(minutes: number, bookId: string | null) {
+  must(await supabase.from("reading_log").insert({ minutes, book_id: bookId, log_date: isoDate() }));
+}
+
+export async function updateBook(id: string, patch: Partial<Book>) {
+  if (patch.status === "done") {
+    patch.progress_pct = 100;
+    patch.finished_at = isoDate();
+  }
+  must(await supabase.from("books").update(patch).eq("id", id));
 }
 
 // ---------- Calendar ----------

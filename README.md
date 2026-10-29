@@ -2,6 +2,8 @@
 
 Eisenhower-Matrix, Tagesplan, Kalender und Fitness-Log in einer kleinen Web-App – gesteuert per Chat mit Claude.
 
+- **Lesen:** Bücher nach Feld & Status, Fortschrittsbalken, Lesezeit pro Woche.
+- **Routinen:** tägliche Aufgaben (z. B. Tageslichtlampe) stehen automatisch vorne im Tagesplan.
 - **Projekte:** Ordner pro Projekt, Leute zum Nachfassen mit vorformulierten Nachrichten (Kopieren-Button) und Erinnerungen.
 - **Matrix:** Aufgaben tippen oder per 🎙 diktieren, wischen → erledigt, wischen ← löschen, gedrückt halten & ziehen zum Verschieben.
 - **Kalender:** Deadlines und Termine im Monatsraster, Countdown, Termine fließen in den Tagesplan.

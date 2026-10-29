@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { isoDate } from "./lib/dates";
 import { supabase } from "./lib/supabase";
 import { RestTimerProvider } from "./lib/timer";
 import Login from "./components/Login";
@@ -48,7 +49,11 @@ export default function App() {
       .select("user_id")
       .eq("user_id", session.user.id)
       .maybeSingle()
-      .then(({ data }) => setOwner(!!data));
+      .then(({ data }) => {
+        setOwner(!!data);
+        // Today's routine tasks (idempotent on the server).
+        if (data) void supabase.rpc("spawn_routine_tasks", { d: isoDate() });
+      });
   }, [session]);
 
   const go = (t: Tab) => {

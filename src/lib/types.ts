@@ -16,6 +16,7 @@ export interface Task {
   started_at: string | null;
   planned_start: string | null;
   project_id?: string | null;
+  routine_id?: string | null;
   // Computed by the tasks_planned view (learning)
   planned_minutes?: number;
   history_samples?: number | null;
@@ -108,6 +109,7 @@ export interface Project {
   position: number;
   archived: boolean;
   parent_id: string | null;
+  kind: "default" | "books";
 }
 
 export interface Followup {
@@ -125,4 +127,25 @@ export interface Followup {
   notes: string | null;
   source: "app" | "claude";
   updated_at: string;
+}
+
+export type BookStatus = "reading" | "want" | "to_buy" | "idea" | "done";
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string | null;
+  field: string;
+  status: BookStatus;
+  progress_pct: number | null;
+  notes: string | null;
+  position: number;
+  finished_at: string | null;
+}
+
+export interface ReadingLog {
+  id: string;
+  log_date: string;
+  minutes: number;
+  book_id: string | null;
 }

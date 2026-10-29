@@ -75,7 +75,8 @@ export default function Matrix() {
   );
 
   // Project entries (e.g. a reading list) live in their folder; only ones with a deadline join the matrix.
-  const open = tasks.filter((t) => !t.done && (!t.project_id || t.due_date));
+  // Daily routines only live in the day plan.
+  const open = tasks.filter((t) => !t.done && !t.routine_id && (!t.project_id || t.due_date));
   const done = tasks.filter((t) => t.done).sort((a, b) => (b.done_at ?? "").localeCompare(a.done_at ?? ""));
   const inbox = open.filter((t) => t.quadrant === "inbox");
 
