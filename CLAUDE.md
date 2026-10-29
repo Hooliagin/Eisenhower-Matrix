@@ -189,7 +189,8 @@ from detox_sessions where started_at > now() - interval '30 days' group by kind;
 ```
 
 ### Ernährung & Getränke (`meals`, `drink_log`, `nutrition_settings`, View `nutrition_daily`)
-Startseite, Karte „Körper heute“: Getränke per Tipp (🥛 Glas 250 ml, 🍶 Flasche 1 L, ☕ Kaffee = 1 Glas 250 ml ≈ 100 mg Koffein),
+Startseite, Karte „Körper heute“: Getränke per Tipp (🥛 Glas 250 ml, 🍶 Flasche 1 L, ☕ Kaffee = **Cappuccino**: 1 Espresso ≈ 75 mg Koffein
++ ~150 ml Vollmilch ≈ 100 kcal & 5 g Protein, wird automatisch zu kcal/Protein gezählt, 200 ml Flüssigkeit),
 dazu gegessene vs. verbrauchte kcal und **verwertbares** Protein. Kaffee zählt zur Trinkmenge (Ziel 2,5 L), Warnung ab 400 mg Koffein
 (EFSA-Grenze für Erwachsene).
 
@@ -209,7 +210,8 @@ select * from nutrition_daily where day = (now() at time zone 'Europe/Berlin')::
 ```
 **Verbrauch** (alles geschätzt, in `nutrition_settings`, bei neuen Messwerten aktualisieren):
 Grundumsatz = Katch-McArdle 370 + 21,6 × fettfreie Masse (67,8 kg → 1834 kcal) × Alltags-PAL 1,4,
-plus Krafttraining +300 kcal/Session (netto), Rad 25 kcal/km (Diensttage 26 km), Körper-Aufgaben (z. B. Schattenboxen) 8 kcal/min.
+plus Krafttraining +300 kcal/Session (netto), Rad 25 kcal/km (Diensttage 26 km), Körper-Aufgaben (z. B. Schattenboxen) 8 kcal/min,
+plus **Dienst** 120 kcal/h (Beruf: **Pflegehelfer, 30 h/Woche**, ständig auf den Beinen) – aus `events.kind = 'dienst'` (Ende − Beginn).
 **Protein-Ziel** 1,8 g/kg (ISSN: 1,4–2,0 g/kg für Trainierende; in einer Diät eher 2,3–3,1 g/kg) = 144 g verwertbar.
 Quellen: ISSN Position Stand 2017 (Jäger et al., PMC5477153), DIAAS-Übersicht (FAO/WHO, PMC6445816).
 
