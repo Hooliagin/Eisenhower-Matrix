@@ -1,5 +1,5 @@
 /**
- * Pixel-art Joshua: blond, athletic, black tank top with neon trim, MMA gloves, Master cap, tea towel & badge from care work.
+ * Pixel-art Joshua: blond, athletic, green sweater (what he often wears), MMA gloves, Master cap, tea towel & badge from care work.
  * Drawn from a character map so it stays crisp at any size; an outline is added automatically.
  */
 const SPRITE = [
@@ -14,13 +14,13 @@ const SPRITE = [
   "......SSSmmSSS......",
   ".......SSSSSS.......",
   "........ssss........",
-  "....TTTTTTTTTTTT....",
-  "..SSDDTTTTNNTTTTSS..",
-  "..SSDdTTTTTTTTTTSS..",
-  "..SsDDTTTTBTTTTTsS..",
-  "..SS.dDTTTTTTTT.SS..",
-  "..SS..TTTTTTTT..SS..",
-  "..GG..NNNNNNNN..GG..",
+  "....TTTTRRRRTTTT....",
+  "..TTDDTTTTTTTTTTTT..",
+  "..TTDdTTTTtTTTTTTT..",
+  "..TtDDTTTTBTTTTTtT..",
+  "..TT.dDTTTtTTTT.TT..",
+  "..RR..TTTTTTTT..RR..",
+  "..GG..RRRRRRRR..GG..",
   ".GGgG.PPPPPPPP.GgGG.",
   ".GgGG.PPPPPPPP.GGgG.",
   ".....PPPPPPPPPP.....",
@@ -45,11 +45,12 @@ const PALETTE: Record<string, string> = {
   s: "#d89c74",
   m: "#b9735a", // mouth
   E: "#1e3a8a", // eyes
-  T: "#111827", // tank top
-  N: "#22d3ee", // neon trim
+  T: "#2f7a46", // green sweater
+  t: "#24603a", // knit shading
+  R: "#1d4d2f", // ribbed collar, cuffs & hem
   D: "#e2e8f0", // tea towel
   d: "#60a5fa", // towel stripe
-  B: "#86efac", // name badge
+  B: "#f8fafc", // name badge
   G: "#dc2626", // MMA gloves
   g: "#0f172a",
   P: "#334155", // pants
