@@ -21,14 +21,13 @@ const STATUS_LABEL: Record<BookStatus, string> = {
   done: "Gelesen",
 };
 
-/** eBay.de search in "Bücher" – from there "Suche speichern" notifies when a copy is listed. */
-function ebayUrl(book: Book) {
-  const lastName = book.author?.split(" ").pop() ?? "";
-  const q = `${book.title_de ?? book.title} ${lastName}`.trim();
-  return `https://www.ebay.de/sch/267/i.html?_nkw=${encodeURIComponent(q)}`;
+/** Kleinanzeigen search in "Bücher & Zeitschriften" – from there "Suchauftrag speichern" notifies when a copy is listed. */
+function kleinanzeigenUrl(book: Book) {
+  const words = (book.title_de ?? book.title).replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ");
+  return `https://www.kleinanzeigen.de/s-buecher-zeitschriften/${words.map(encodeURIComponent).join("-")}/k0c76`;
 }
 
-/** German title with copy + eBay buttons (or a note that there is none). */
+/** German title with copy + Kleinanzeigen buttons (or a note that there is none). */
 function GermanTitle({ book }: { book: Book }) {
   const [copied, setCopied] = useState(false);
   if (!book.title_de && !book.no_de_edition) return null;
@@ -55,8 +54,8 @@ function GermanTitle({ book }: { book: Book }) {
       ) : (
         <span className="flex-1 text-slate-500">🇩🇪 keine deutsche Ausgabe</span>
       )}
-      <a className="rounded-full bg-sky-900/50 px-2 py-0.5 text-sky-200" href={ebayUrl(book)} target="_blank" rel="noreferrer">
-        🔎 eBay
+      <a className="rounded-full bg-sky-900/50 px-2 py-0.5 text-sky-200" href={kleinanzeigenUrl(book)} target="_blank" rel="noreferrer">
+        🔎 Kleinanzeigen
       </a>
     </div>
   );
@@ -64,7 +63,7 @@ function GermanTitle({ book }: { book: Book }) {
 
 function BookCard({ book, onPatch, onLog }: { book: Book; onPatch: (b: Book, p: Partial<Book>) => void; onLog: (b: Book) => void }) {
   const [open, setOpen] = useState(false);
-  const showDe = open || book.status === "to_buy"; // to buy: copy / eBay right away
+  const showDe = open || book.status === "to_buy"; // to buy: copy / Kleinanzeigen right away
 
   function setProgress() {
     const raw = prompt(`Fortschritt für „${book.title}“ in % (0–100):`, String(book.progress_pct ?? ""));
