@@ -151,6 +151,7 @@ export interface Book {
   finished_at: string | null;
   title_de: string | null; // German title, for copying / eBay search
   no_de_edition: boolean; // researched: no German edition exists
+  buy_tip: string | null; // new vs. used, price, where – researched by Claude
 }
 
 export interface ReadingLog {

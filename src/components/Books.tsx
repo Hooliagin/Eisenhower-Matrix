@@ -21,49 +21,52 @@ const STATUS_LABEL: Record<BookStatus, string> = {
   done: "Gelesen",
 };
 
-/** Kleinanzeigen search in "Bücher & Zeitschriften" – from there "Suchauftrag speichern" notifies when a copy is listed. */
-function kleinanzeigenUrl(book: Book) {
-  const words = (book.title_de ?? book.title).replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ");
-  return `https://www.kleinanzeigen.de/s-buecher-zeitschriften/${words.map(encodeURIComponent).join("-")}/k0c76`;
+/** Used-book searches (German new prices are fixed by law, so "new" is the same everywhere). */
+function searchLinks(book: Book) {
+  const title = book.title_de ?? book.title;
+  const author = book.author?.split(" ").pop() ?? "";
+  return [
+    { label: "♻️ booklooker", href: `https://www.booklooker.de/B%C3%BCcher/Angebote/titel=${encodeURIComponent(title)}${author ? `;autor=${encodeURIComponent(author)}` : ""}` },
+    { label: "📚 ZVAB", href: `https://www.zvab.com/servlet/SearchResults?tn=${encodeURIComponent(title)}&an=${encodeURIComponent(author)}` },
+  ];
 }
 
-/** German title with copy + Kleinanzeigen buttons (or a note that there is none). */
+/** German title with copy button, buying tip and used-book searches. */
 function GermanTitle({ book }: { book: Book }) {
   const [copied, setCopied] = useState(false);
-  if (!book.title_de && !book.no_de_edition) return null;
+  if (!book.title_de && !book.no_de_edition && !book.buy_tip) return null;
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(book.title_de ?? "");
+      await navigator.clipboard.writeText(book.title_de ?? book.title);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      prompt("Zum Kopieren:", book.title_de ?? "");
+      prompt("Zum Kopieren:", book.title_de ?? book.title);
     }
   }
 
   return (
-    <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
-      {book.title_de ? (
-        <>
-          <span className="min-w-0 flex-1 truncate text-slate-300">🇩🇪 {book.title_de}</span>
-          <button className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300" onClick={() => void copy()}>
-            {copied ? "✓ kopiert" : "📋 Kopieren"}
-          </button>
-        </>
-      ) : (
-        <span className="flex-1 text-slate-500">🇩🇪 keine deutsche Ausgabe</span>
-      )}
-      <a className="rounded-full bg-sky-900/50 px-2 py-0.5 text-sky-200" href={kleinanzeigenUrl(book)} target="_blank" rel="noreferrer">
-        🔎 Kleinanzeigen
-      </a>
+    <div className="mt-1.5 flex flex-col gap-1 text-[11px]">
+      {book.buy_tip && <p className="rounded-md bg-slate-800/70 px-2 py-1 text-slate-300">{book.buy_tip}</p>}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {book.no_de_edition && <span className="text-slate-500">🇩🇪 keine deutsche Ausgabe</span>}
+        <button className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300" onClick={() => void copy()}>
+          {copied ? "✓ kopiert" : "📋 Titel kopieren"}
+        </button>
+        {searchLinks(book).map((l) => (
+          <a key={l.label} className="rounded-full bg-sky-900/50 px-2 py-0.5 text-sky-200" href={l.href} target="_blank" rel="noreferrer">
+            {l.label}
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
 
 function BookCard({ book, onPatch, onLog }: { book: Book; onPatch: (b: Book, p: Partial<Book>) => void; onLog: (b: Book) => void }) {
   const [open, setOpen] = useState(false);
-  const showDe = open || book.status === "to_buy"; // to buy: copy / Kleinanzeigen right away
+  const showDe = open || book.status === "to_buy" || book.status === "idea"; // buying info right away
 
   function setProgress() {
     const raw = prompt(`Fortschritt für „${book.title}“ in % (0–100):`, String(book.progress_pct ?? ""));
@@ -76,12 +79,12 @@ function BookCard({ book, onPatch, onLog }: { book: Book; onPatch: (b: Book, p: 
     <div className="card p-3">
       <div className="flex items-start gap-2">
         <button className="min-w-0 flex-1 text-left" onClick={() => setOpen(!open)}>
-          <div className="text-sm font-medium leading-snug">{book.title}</div>
+          <div className="text-sm font-medium leading-snug">{book.title_de ?? book.title}</div>
           <div className="text-[11px] text-slate-500">
             {book.author && `${book.author} · `}
             {book.field}
           </div>
-          {!showDe && book.title_de && book.title_de !== book.title && <div className="text-[11px] text-slate-400">🇩🇪 {book.title_de}</div>}
+          {book.title_de && book.title_de !== book.title && <div className="text-[11px] text-slate-500">Original: {book.title}</div>}
         </button>
         {book.status === "reading" && (
           <button className="btn-ghost px-2 py-1 text-xs" onClick={() => onLog(book)}>

@@ -266,9 +266,12 @@ insert into voice_samples (text, context, followup_id) values ('<Rohdiktat>', 'N
 
 - `field`: Fiction · „Non-Fiction: Elitentheorie“ · Life Skills · Religion (frei erweiterbar)
 - `status`: `reading` · `to_buy` · `want` (habe ich) · `idea` (Vorschlag von Claude) · `done`; `progress_pct` 0–100 (Seiten → %)
-- **Deutscher Titel** (`title_de`; `no_de_edition = true` = recherchiert, keine deutsche Ausgabe): Joshua sucht Bücher auf Deutsch
-  (Kleinanzeigen). Bei **jedem neuen Buch** deutschen Titel recherchieren (Verlag/DNB, nicht raten) und mit eintragen. App zeigt 🇩🇪-Titel mit
-  📋 Kopieren und 🔎 Kleinanzeigen (Suche in „Bücher & Zeitschriften“ nach dem deutschen Titel, dort „Suchauftrag speichern“ = Benachrichtigung); bei „Besorgen“ immer sichtbar, sonst nach Antippen.
+- **Deutscher Titel** (`title_de`; `no_de_edition = true` = recherchiert, keine deutsche Ausgabe) – App zeigt ihn als Haupttitel
+  („Original: …“ darunter). Bei **jedem neuen Buch** deutschen Titel recherchieren (Verlag/DNB, nicht raten).
+- **Kauf-Tipp** (`buy_tip`): Joshua kauft neu, wenn gebraucht kaum billiger ist; sonst gebraucht. Kleinanzeigen bringt nichts (meist nicht
+  verfügbar). Neupreise sind wegen Buchpreisbindung überall gleich → nur Neupreis vs. Gebrauchtpreis (booklooker, ZVAB, medimops)
+  vergleichen, Ergebnis kurz mit 🆕/♻️/⚖️ in `buy_tip`. App zeigt Tipp + 📋 Titel kopieren + ♻️ booklooker + 📚 ZVAB (bei „Besorgen“
+  und „Vorschläge“ immer sichtbar, sonst nach Antippen).
 - Lesezeit „heute 40 min“ → `reading_log` (Startseiten-Kachel zeigt Wochensumme). Religion-Bücher zählen für Spiritualität/Wasser.
 - Übungen aus Büchern (Impro: Statustransaktionen) als `tasks` im Projekt Lesen mit `attribute='charisma'`.
 ```sql
