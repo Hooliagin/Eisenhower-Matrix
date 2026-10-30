@@ -414,7 +414,8 @@ siehe RPG-Schicht). Quellen: siehe „Querverbindungen“.
 Split: **A** Schulter & Rücken (2×/Woche) · **B** Brust & Arme (2×/Woche: Curls+Pushdowns als Supersatz · Dips · Overhead Trizepsdrücken (Kabel) · Preacher · Hammer ·
 Einarmige Trizeps-Extensions · Butterflies am Ende) · **C** Beine & Bauch (1×/Woche) ·
 **D** Sprint (**mindestens 1×/Woche**; Übung `Sprints`, `metric='sprint'`: `seconds` (2 Nachkommastellen) + `meters`) · **E** Unterarme (**bei Bedarf**,
-`times_per_week = 0` → wird nie „empfohlen“, zählt aber normal; zuletzt Mi 28.10.2026). Übungen in D/E sind Vorschläge – Joshua passt sie an.
+`times_per_week = 0` → wird nie „empfohlen“, zählt aber normal; zuletzt Mi 28.10.2026). · **F** Beine Home (Variante von C für zu Hause, `times_per_week = 0`: Belt Squats · Sissy Squats ·
+Waiter's Walk (einarmiger Overhead Carry) · Tibialis Raises · Donkey Calf Raises · Reverse Nordic Curls · Seated Good Mornings). Übungen in D/E sind Vorschläge – Joshua passt sie an.
 Festgelegt von Joshua:
 - **Kein zusätzliches Beintraining vorschlagen** (~80 km Rad pro Woche; Beine kraftmäßig stark: Squat 160, Kreuzheben 210).
 - **Kreuzheben** nur Orientierungswert, **nicht** in den Plan (unterer Rücken bereits sehr stark).
