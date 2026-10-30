@@ -21,39 +21,45 @@ const STATUS_LABEL: Record<BookStatus, string> = {
   done: "Gelesen",
 };
 
-/** Used-book searches (German new prices are fixed by law, so "new" is the same everywhere). */
+/** Used-book searches by title only – titles differ between editions, so Joshua narrows by author on the site himself.
+ *  (German new prices are fixed by law, so "new" is the same everywhere.) */
 function searchLinks(book: Book) {
-  const title = book.title_de ?? book.title;
-  const author = book.author?.split(" ").pop() ?? "";
+  // main title only: "Propaganda. Die Kunst der Public Relations" → "Propaganda"
+  const q = encodeURIComponent((book.title_de ?? book.title).split(/[.:]/)[0].trim());
   return [
-    { label: "♻️ booklooker", href: `https://www.booklooker.de/B%C3%BCcher/Angebote/titel=${encodeURIComponent(title)}${author ? `;autor=${encodeURIComponent(author)}` : ""}` },
-    { label: "📚 ZVAB", href: `https://www.zvab.com/servlet/SearchResults?tn=${encodeURIComponent(title)}&an=${encodeURIComponent(author)}` },
+    { label: "♻️ booklooker", href: `https://www.booklooker.de/B%C3%BCcher/Angebote/titel=${q}` },
+    { label: "📚 ZVAB", href: `https://www.zvab.com/servlet/SearchResults?tn=${q}` },
   ];
 }
 
-/** German title with copy button, buying tip and used-book searches. */
-function GermanTitle({ book }: { book: Book }) {
+function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
-  if (!book.title_de && !book.no_de_edition && !book.buy_tip) return null;
-
   async function copy() {
     try {
-      await navigator.clipboard.writeText(book.title_de ?? book.title);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      prompt("Zum Kopieren:", book.title_de ?? book.title);
+      prompt("Zum Kopieren:", text);
     }
   }
+  return (
+    <button className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300" onClick={() => void copy()}>
+      {copied ? "✓ kopiert" : `📋 ${label}`}
+    </button>
+  );
+}
 
+/** Buying tip, copy buttons for title and full author name, and used-book searches by title. */
+function GermanTitle({ book }: { book: Book }) {
+  if (!book.title_de && !book.no_de_edition && !book.buy_tip) return null;
   return (
     <div className="mt-1.5 flex flex-col gap-1 text-[11px]">
       {book.buy_tip && <p className="rounded-md bg-slate-800/70 px-2 py-1 text-slate-300">{book.buy_tip}</p>}
       <div className="flex flex-wrap items-center gap-1.5">
         {book.no_de_edition && <span className="text-slate-500">🇩🇪 keine deutsche Ausgabe</span>}
-        <button className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300" onClick={() => void copy()}>
-          {copied ? "✓ kopiert" : "📋 Titel kopieren"}
-        </button>
+        <CopyButton text={book.title_de ?? book.title} label="Titel" />
+        {book.author && <CopyButton text={book.author} label="Autor" />}
         {searchLinks(book).map((l) => (
           <a key={l.label} className="rounded-full bg-sky-900/50 px-2 py-0.5 text-sky-200" href={l.href} target="_blank" rel="noreferrer">
             {l.label}
