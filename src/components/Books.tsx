@@ -21,8 +21,50 @@ const STATUS_LABEL: Record<BookStatus, string> = {
   done: "Gelesen",
 };
 
+/** eBay.de search in "Bücher" – from there "Suche speichern" notifies when a copy is listed. */
+function ebayUrl(book: Book) {
+  const lastName = book.author?.split(" ").pop() ?? "";
+  const q = `${book.title_de ?? book.title} ${lastName}`.trim();
+  return `https://www.ebay.de/sch/267/i.html?_nkw=${encodeURIComponent(q)}`;
+}
+
+/** German title with copy + eBay buttons (or a note that there is none). */
+function GermanTitle({ book }: { book: Book }) {
+  const [copied, setCopied] = useState(false);
+  if (!book.title_de && !book.no_de_edition) return null;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(book.title_de ?? "");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      prompt("Zum Kopieren:", book.title_de ?? "");
+    }
+  }
+
+  return (
+    <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
+      {book.title_de ? (
+        <>
+          <span className="min-w-0 flex-1 truncate text-slate-300">🇩🇪 {book.title_de}</span>
+          <button className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300" onClick={() => void copy()}>
+            {copied ? "✓ kopiert" : "📋 Kopieren"}
+          </button>
+        </>
+      ) : (
+        <span className="flex-1 text-slate-500">🇩🇪 keine deutsche Ausgabe</span>
+      )}
+      <a className="rounded-full bg-sky-900/50 px-2 py-0.5 text-sky-200" href={ebayUrl(book)} target="_blank" rel="noreferrer">
+        🔎 eBay
+      </a>
+    </div>
+  );
+}
+
 function BookCard({ book, onPatch, onLog }: { book: Book; onPatch: (b: Book, p: Partial<Book>) => void; onLog: (b: Book) => void }) {
   const [open, setOpen] = useState(false);
+  const showDe = open || book.status === "to_buy"; // to buy: copy / eBay right away
 
   function setProgress() {
     const raw = prompt(`Fortschritt für „${book.title}“ in % (0–100):`, String(book.progress_pct ?? ""));
@@ -40,6 +82,7 @@ function BookCard({ book, onPatch, onLog }: { book: Book; onPatch: (b: Book, p: 
             {book.author && `${book.author} · `}
             {book.field}
           </div>
+          {!showDe && book.title_de && book.title_de !== book.title && <div className="text-[11px] text-slate-400">🇩🇪 {book.title_de}</div>}
         </button>
         {book.status === "reading" && (
           <button className="btn-ghost px-2 py-1 text-xs" onClick={() => onLog(book)}>
@@ -47,6 +90,7 @@ function BookCard({ book, onPatch, onLog }: { book: Book; onPatch: (b: Book, p: 
           </button>
         )}
       </div>
+      {showDe && <GermanTitle book={book} />}
       {book.status === "reading" && (
         <button onClick={setProgress} className="mt-2 flex w-full items-center gap-2">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-800">

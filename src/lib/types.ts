@@ -149,6 +149,8 @@ export interface Book {
   notes: string | null;
   position: number;
   finished_at: string | null;
+  title_de: string | null; // German title, for copying / eBay search
+  no_de_edition: boolean; // researched: no German edition exists
 }
 
 export interface ReadingLog {
