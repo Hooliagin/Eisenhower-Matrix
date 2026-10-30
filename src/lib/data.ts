@@ -291,23 +291,25 @@ export interface Meal {
 export type DrinkKind = "water_glass" | "water_bottle" | "coffee";
 
 export function useNutrition() {
-  return useLive<{ today: NutritionDay | null; meals: Meal[]; sizes: Record<DrinkKind, number> }>(
+  return useLive<{ today: NutritionDay | null; meals: Meal[]; sizes: Record<DrinkKind, number>; lastDrinkAt: string | null }>(
     async () => {
       const today = isoDate();
-      const [n, m, s] = await Promise.all([
+      const [n, m, s, d] = await Promise.all([
         supabase.from("nutrition_daily").select("*").eq("day", today).maybeSingle(),
         supabase.from("meals").select("id, meal, description, kcal, protein_g, protein_quality, notes, walk_minutes").eq("day", today).order("created_at"),
         supabase.from("nutrition_settings").select("glass_ml, bottle_ml, coffee_ml").maybeSingle(),
+        supabase.from("drink_log").select("created_at").eq("day", today).order("created_at", { ascending: false }).limit(1),
       ]);
       const st = must(s) as { glass_ml: number; bottle_ml: number; coffee_ml: number } | null;
       return {
         today: must(n) as NutritionDay | null,
         meals: must(m),
         sizes: { water_glass: st?.glass_ml ?? 250, water_bottle: st?.bottle_ml ?? 1000, coffee: st?.coffee_ml ?? 250 },
+        lastDrinkAt: (must(d) as { created_at: string }[])[0]?.created_at ?? null,
       };
     },
     ["drink_log", "meals", "workout_sessions", "tasks", "events"],
-    { today: null, meals: [], sizes: { water_glass: 250, water_bottle: 1000, coffee: 250 } },
+    { today: null, meals: [], sizes: { water_glass: 250, water_bottle: 1000, coffee: 250 }, lastDrinkAt: null },
   );
 }
 

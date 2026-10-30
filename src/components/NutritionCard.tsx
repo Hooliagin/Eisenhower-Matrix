@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { addDrink, removeLastDrink, useNutrition, type DrinkKind, type Meal } from "../lib/data";
 import { isoDate } from "../lib/dates";
+import { hydrationNudge } from "../lib/hydration";
 import { supabase } from "../lib/supabase";
 
 const DRINKS: { kind: DrinkKind; icon: string; label: string }[] = [
@@ -22,12 +23,19 @@ export default function NutritionCard() {
   const { data, setData, refresh } = useNutrition();
   const [showMeals, setShowMeals] = useState(false);
   const n = data.today;
+  // Re-check the drink reminder every minute while the app is open.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   async function add(kind: DrinkKind) {
     const ml = data.sizes[kind];
     if (n)
       setData({
         ...data,
+        lastDrinkAt: new Date().toISOString(),
         today: {
           ...n,
           fluid_ml: n.fluid_ml + ml,
@@ -78,6 +86,7 @@ export default function NutritionCard() {
   const surplus = n.kcal_surplus ?? 0;
   const target = burn + surplus;
   const toGo = target - n.kcal_in;
+  const nudge = hydrationNudge(now, data.lastDrinkAt ? new Date(data.lastDrinkAt) : null, n.fluid_ml, n.fluid_target_ml);
 
   return (
     <section className="card flex flex-col gap-2.5 p-3">
@@ -101,6 +110,11 @@ export default function NutritionCard() {
           <Bar value={n.fluid_ml} max={n.fluid_target_ml} color="#38bdf8" />
         </div>
       </div>
+      {nudge && (
+        <p className={`rounded-lg px-2 py-1.5 text-[11px] ${nudge.level === "urgent" ? "bg-sky-500/25 text-sky-100" : "bg-sky-500/10 text-sky-300"}`}>
+          {nudge.text}
+        </p>
+      )}
       <div className="grid grid-cols-3 gap-1.5">
         {DRINKS.map((d) => (
           <button key={d.kind} onClick={() => add(d.kind)} className="btn-ghost flex-col gap-0 py-1.5 text-[11px]">
