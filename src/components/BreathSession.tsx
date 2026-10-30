@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { EXERCISES, type BreathExercise, type BreathStep } from "../lib/breath";
+import { EXERCISES, stepsFor, type BreathExercise, type BreathStep } from "../lib/breath";
 import { breathSound, SOUNDS, unlockAudio } from "../lib/sound";
 import { isoDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
@@ -9,8 +9,19 @@ import { BreathSensor, listenMotion, requestMotionPermission } from "../lib/brea
 
 type WakeLock = { release: () => Promise<void> };
 
-/** Picker + guided run of a breathing exercise; finished sessions are logged as a done task (Spiritualität / Wasser). */
-export default function BreathSession({ onClose }: { onClose: () => void }) {
+/** Picker + guided run of a breathing exercise; finished sessions are logged as a done task (Spiritualität / Wasser).
+ *  With `minutes` (e.g. the daylight lamp) every exercise runs that long and `onSaved` gets the real duration. */
+export default function BreathSession({
+  onClose,
+  minutes: fixedMinutes,
+  context,
+  onSaved,
+}: {
+  onClose: () => void;
+  minutes?: number;
+  context?: string;
+  onSaved?: (minutes: number) => void;
+}) {
   const [ex, setEx] = useState<BreathExercise | null>(null);
   const [steps, setSteps] = useState<BreathStep[]>([]);
   const [idx, setIdx] = useState(-1);
@@ -131,7 +142,7 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
 
   function begin(e: BreathExercise) {
     unlockAudio();
-    const s = e.steps();
+    const s = stepsFor(e, fixedMinutes);
     setEx(e);
     setSteps(s);
     setHolds([]);
@@ -178,6 +189,7 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
       avg_rate: r.length ? Math.round((r.reduce((a, b) => a + b, 0) / r.length) * 10) / 10 : null,
       task_id: task.id,
     });
+    onSaved?.(minutes);
     setSaved(true);
   }
 
@@ -190,12 +202,17 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
             <h1 className="text-xl font-semibold">🫁 Atemübungen</h1>
             <button className="btn-ghost h-11 w-11 text-lg" onClick={onClose} aria-label="Schließen">✕</button>
           </div>
+          {context && (
+            <p className="rounded-lg bg-amber-500/15 px-3 py-2 text-sm text-amber-200">
+              {context} · wähle eine Übung, sie läuft {fixedMinutes} min
+            </p>
+          )}
           {EXERCISES.map((e) => (
             <button key={e.id} onClick={() => begin(e)} className="card flex flex-col gap-1 p-3 text-left active:scale-[0.99]">
               <span className="font-semibold">
                 {e.emoji} {e.name} <span className="text-xs font-normal text-slate-400">· {e.goal}</span>
               </span>
-              <span className="text-xs text-slate-400">{e.how}</span>
+              <span className="text-xs text-slate-400">{fixedMinutes ? e.how.replace(/ · \d+ min/, ` · ${fixedMinutes} min`) : e.how}</span>
               {e.warning && <span className="text-[11px] text-amber-300/80">⚠️ {e.warning}</span>}
               <PastStats past={history.filter((h) => h.exercise === e.id)} />
             </button>
@@ -272,7 +289,7 @@ export default function BreathSession({ onClose }: { onClose: () => void }) {
           <>
             {!saved ? (
               <button className="btn-primary py-4 text-lg" onClick={save}>
-                ✓ Speichern (zählt für 🕊️ Spiritualität)
+                ✓ Speichern{context ? ` (${context.replace(/^\S+ /, "")} + Atemübung)` : " (zählt für 🕊️ Spiritualität)"}
               </button>
             ) : (
               <p className="text-center text-sm text-emerald-400">Gespeichert ✓</p>

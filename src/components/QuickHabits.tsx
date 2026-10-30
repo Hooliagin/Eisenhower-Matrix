@@ -10,6 +10,7 @@ import IntervalTimer from "./IntervalTimer";
 function icon(t: Task) {
   if (/pouchi/i.test(t.title) && /trick/i.test(t.title)) return "🐕";
   if (/wasserschüssel|napf/i.test(t.title)) return "🥣";
+  if (t.timer?.style === "breath") return /lampe|licht/i.test(t.title) ? "💡" : "🫁";
   if (t.timer?.style === "calm") return "🧘";
   if (t.timer) return "🥊";
   if (/lüft/i.test(t.title)) return "🌬️";
@@ -27,6 +28,7 @@ function label(t: Task) {
 /** Today's "anytime" routines as one-tap buttons: timers start right away, the rest just gets ticked off. */
 export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (id: string, p: Partial<Task>) => void }) {
   const [running, setRunning] = useState<Task | null>(null);
+  const [breathTask, setBreathTask] = useState<Task | null>(null); // e.g. daylight lamp: pick an exercise, run it for the timer length
   const [breathing, setBreathing] = useState(false);
   const [poem, setPoem] = useState(false);
   const [pouchi, setPouchi] = useState(false);
@@ -73,7 +75,7 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
         {items.map((t) => (
           <button
             key={t.id}
-            onClick={() => (t.done ? confirm(`„${label(t)}“ wieder als offen markieren?`) && undo(t) : t.timer ? setRunning(t) : complete(t))}
+            onClick={() => (t.done ? confirm(`„${label(t)}“ wieder als offen markieren?`) && undo(t) : t.timer?.style === "breath" ? setBreathTask(t) : t.timer ? setRunning(t) : complete(t))}
             className={`flex flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-center transition ${
               t.done ? "bg-emerald-600/20 text-emerald-300" : "bg-slate-800 active:scale-95"
             }`}
@@ -89,6 +91,14 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
         ))}
       </div>
       {breathing && <BreathSession onClose={() => setBreathing(false)} />}
+      {breathTask?.timer && (
+        <BreathSession
+          minutes={Math.round(breathTask.timer.work / 60)}
+          context={`${icon(breathTask)} ${label(breathTask).replace(/:.*$/, "")}`}
+          onClose={() => setBreathTask(null)}
+          onSaved={(minutes) => complete(breathTask, minutes)}
+        />
+      )}
       {poem && <PoemTrainer onClose={() => setPoem(false)} />}
       {pouchi && <PouchiPanel onClose={() => setPouchi(false)} />}
       {running?.timer && (

@@ -19,7 +19,7 @@ export interface Task {
   routine_id?: string | null;
   attribute?: string | null;
   element?: "feuer" | "wasser" | "erde" | "luft" | null;
-  timer?: { rounds: number; work: number; rest: number; prep?: number; style?: "boxing" | "calm" | "plain" } | null;
+  timer?: { rounds: number; work: number; rest: number; prep?: number; style?: "boxing" | "calm" | "plain" | "breath" } | null;
   anytime?: boolean;
   progress_seconds?: number; // saved progress of an interrupted timer session
   // Computed by the tasks_planned view (learning)

@@ -125,8 +125,8 @@ Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „�
 
 | Routine | Wann | Wo | attribute / element |
 |---|---|---|---|
-| Morgenlicht: 10 min Tageslicht in die Augen | täglich, direkt nach dem Aufstehen (Rhythmus), Position 0 | ⚡ Daily, ruhiger 10-min-Timer (`calm`) mit 🫁 Atem-Guide zum Parallel-Atmen | – / erde |
-| Tageslichtlampe: 10 min helles Licht | täglich, Anfang des Tages (gegen Winterdepression) – **zusätzlich**, nicht statt Morgenlicht | Tagesplan | – / erde |
+| Morgenlicht: 10 min Tageslicht in die Augen | täglich, direkt nach dem Aufstehen (Rhythmus), Position 0 | Tagesplan | – / erde |
+| Tageslichtlampe: 10 min helles Licht | täglich, Anfang des Tages (gegen Winterdepression) – **zusätzlich**, nicht statt Morgenlicht | ⚡ Daily 💡 → öffnet die Atemübungs-Auswahl, gewählte Übung läuft 10 min (`timer.style='breath'`, `work`=600) | – / erde |
 | Starke Mitte: 10 min Reels anderer Parteien schauen & gute an Michael schicken | täglich | Tagesplan | intellekt / luft |
 | Wohnung 10 min lüften | täglich | ⚡ Daily | – / erde |
 | Schattenboxen (3 × 3 min, 30 s Pause) | täglich | ⚡ Daily, Rundentimer | koerper / feuer |
@@ -154,6 +154,8 @@ erledigte Aufgabe „Atemübung: <Name>“ (`attribute='spirit'`, `element='wass
 | Wim Hof | 3 Runden: 30 tiefe Atemzüge → aus & halten (offen, Tippen) → ein & 15 s halten | Energie (⚠️ nur sitzend/liegend, nie im Wasser/beim Fahren) |
 | Feueratem (Kapalabhati) | 3 × 30 s aktive Ausstöße (~1/s), dazwischen 30 s ruhig | Wach werden (⚠️ nicht bei Schwangerschaft, Bluthochdruck, Herz, Epilepsie) |
 
+**Feste Länge** (`timer.style='breath'` an einer Routine, z. B. Tageslichtlampe): Auswahl zeigt oben den Anlass, `stepsFor(übung, min)`
+streckt Dauer-Übungen auf die Länge bzw. wiederholt Runden-Übungen; „Speichern“ legt die Atemübung an **und** hakt die Routine mit echter Dauer ab.
 Neue Übungen: Eintrag in `EXERCISES` (Schritte `in`/`out`/`hold`/`free`, `open` = endet per Tippen, `targetRate` = Ziel-Atemzüge/min).
 
 **📱 Atem über das Handy erkennen** (Schalter in der Übungsauswahl, pro Gerät gemerkt, `src/lib/breathSensor.ts`): Handy flach

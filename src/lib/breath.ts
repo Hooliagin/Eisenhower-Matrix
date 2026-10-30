@@ -19,7 +19,7 @@ export interface BreathExercise {
   how: string;
   warning?: string;
   targetRate?: number; // breaths per minute, compared with the sensor-measured rate
-  steps: () => BreathStep[];
+  steps: (minutes?: number) => BreathStep[]; // minutes: for continuous exercises (default 5)
 }
 
 const repeatFor = (minutes: number, cycle: BreathStep[]) => {
@@ -36,7 +36,7 @@ export const EXERCISES: BreathExercise[] = [
     emoji: "🌊",
     goal: "Ruhe & Herzratenvariabilität",
     how: "5,5 s ein, 5,5 s aus (~5,5 Atemzüge/min) · 5 min · durch die Nase, in den Bauch",
-    steps: () => repeatFor(5, [
+    steps: (minutes = 5) => repeatFor(minutes, [
       { kind: "in", seconds: 5.5, label: "Einatmen" },
       { kind: "out", seconds: 5.5, label: "Ausatmen" },
     ]),
@@ -48,7 +48,7 @@ export const EXERCISES: BreathExercise[] = [
     emoji: "😮‍💨",
     goal: "Stimmung heben, runterkommen",
     how: "2 s ein, kurz nachziehen, 6 s lang durch den Mund aus · 5 min",
-    steps: () => repeatFor(5, [
+    steps: (minutes = 5) => repeatFor(minutes, [
       { kind: "in", seconds: 2, label: "Einatmen (Nase)" },
       { kind: "in", seconds: 1, label: "Nachziehen" },
       { kind: "out", seconds: 6, label: "Langsam ausatmen (Mund)" },
@@ -61,7 +61,7 @@ export const EXERCISES: BreathExercise[] = [
     emoji: "⬜",
     goal: "Fokus & Stress",
     how: "4 s ein · 4 s halten · 4 s aus · 4 s halten · 5 min",
-    steps: () => repeatFor(5, [
+    steps: (minutes = 5) => repeatFor(minutes, [
       { kind: "in", seconds: 4, label: "Einatmen" },
       { kind: "hold", seconds: 4, label: "Halten" },
       { kind: "out", seconds: 4, label: "Ausatmen" },
@@ -125,3 +125,12 @@ export const EXERCISES: BreathExercise[] = [
 export const RESONANCE = { in: 5.5, out: 5.5 };
 
 export const totalSeconds = (steps: BreathStep[]) => steps.reduce((s, x) => s + x.seconds, 0);
+
+/** Steps for a fixed session length (e.g. 10 min under the daylight lamp): continuous exercises run that long,
+ *  round-based ones repeat their whole program until the time is (about) filled. */
+export function stepsFor(e: BreathExercise, minutes?: number): BreathStep[] {
+  const s = e.steps(minutes);
+  if (!minutes) return s;
+  const n = Math.max(1, Math.round((minutes * 60) / totalSeconds(s)));
+  return n === 1 ? s : Array.from({ length: n }, () => e.steps(minutes)).flat();
+}
