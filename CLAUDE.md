@@ -357,7 +357,7 @@ Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen:
 - **₵ Credits** (`character_meta.credits` 0–100: Pleite/Knapp/Stabil/Polster/Wohlhabend/Frei, `credits_note`, `credits_next`) = Finanzen;
   aktuell 20 „Knapp“. Bei Infos zu Einkommen/Rücklagen anpassen. `class_title` = Klasse unter dem Namen („Kämpfer · Stratege“).
 - **Pixel-Avatar** (`PixelAvatar.tsx`): blond, athletisch, **grüner Pulli** (trägt er oft); Ausrüstung = Lebenslauf: **MMA-Handschuhe** (macht aktuell
-  eher MMA als Boxen), **Doktorhut mit Quaste** (Master Politikwissenschaft), **Geschirrtuch + Namensschild** (Alltagsbegleiter in der Pflege);
+  eher MMA als Boxen), **Doktorhut mit Quaste** (Master Politikwissenschaft), **Geschirrtuch über der Schulter + Namensschild** (Alltagsbegleiter in der Pflege);
   Leuchtfarbe = stärkster Wert. Neue Lebensabschnitte/Erfolge können als Ausrüstung dazukommen.
 - **☯ Balance-Mechanik (Elemente ↔ Spiel):** aus den Element-Minuten der **letzten 7 Tage** (`element_events`):
   **Harmonie** 0–100 (normierte Entropie der vier Anteile, 100 = gleich verteilt). Anteil ≥ 22 % → **Buff**, < 10 % → **Debuff**
