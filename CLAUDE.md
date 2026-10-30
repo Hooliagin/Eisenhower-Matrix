@@ -125,7 +125,7 @@ Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „�
 
 | Routine | Wann | Wo | attribute / element |
 |---|---|---|---|
-| Morgenlicht: 10 min Tageslicht in die Augen | täglich, direkt nach dem Aufstehen (Rhythmus), Position 0 | Tagesplan | – / erde |
+| Morgenlicht: 10 min Tageslicht in die Augen | täglich, direkt nach dem Aufstehen (Rhythmus), Position 0 | ⚡ Daily, ruhiger 10-min-Timer (`calm`) mit 🫁 Atem-Guide zum Parallel-Atmen | – / erde |
 | Tageslichtlampe: 10 min helles Licht | täglich, Anfang des Tages (gegen Winterdepression) – **zusätzlich**, nicht statt Morgenlicht | Tagesplan | – / erde |
 | Starke Mitte: 10 min Reels anderer Parteien schauen & gute an Michael schicken | täglich | Tagesplan | intellekt / luft |
 | Wohnung 10 min lüften | täglich | ⚡ Daily | – / erde |
