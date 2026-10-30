@@ -128,7 +128,7 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
     if (!startedAt) return;
     const prev = last.current;
     if (plain) {
-      if (st.index !== prev.index && st.kind === "work") SOUNDS.roundStart();
+      if (st.index !== prev.index && st.kind === "work") SOUNDS.startTone();
       else if (st.index !== prev.index && st.kind === "done") {
         SOUNDS.finished();
         navigator.vibrate?.([300, 100, 300]);
@@ -153,7 +153,7 @@ export default function IntervalTimer({ title, config, onClose, onComplete, init
         navigator.vibrate?.([200, 100, 200]);
       } else if (st.kind === "done") {
         SOUNDS.roundEnd();
-        setTimeout(SOUNDS.finished, 1300);
+        setTimeout(SOUNDS.finished, 2200);
         navigator.vibrate?.([300, 100, 300, 100, 600]);
       }
     } else if (st.remaining !== prev.remaining) {

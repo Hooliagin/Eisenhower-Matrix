@@ -26,17 +26,54 @@ export function tones(list: [number, number, number][], volume = 0.3) {
   }
 }
 
+let limiter: DynamicsCompressorNode | null = null;
+
+/**
+ * Boxing-ring bell: `strikes` rapid "ding"s. Bright, inharmonic partials (≈ 2–5 kHz, where the ear is most
+ * sensitive) cut through music far better than a plain sine; a limiter keeps the overlapping strikes from clipping.
+ */
+export function bell(strikes: number, gap = 0.2, volume = 0.9) {
+  if (!audio) return;
+  if (!limiter) {
+    limiter = audio.createDynamicsCompressor();
+    limiter.threshold.value = -3;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.001;
+    limiter.release.value = 0.1;
+    limiter.connect(audio.destination);
+  }
+  const now = audio.currentTime;
+  // [frequency ratio, relative level, decay s] – metal plate/bell partials
+  const partials: [number, number, number][] = [[1, 0.45, 1.4], [2.76, 0.3, 0.9], [5.4, 0.18, 0.5], [8.93, 0.07, 0.25]];
+  for (let k = 0; k < strikes; k++) {
+    const at = now + k * gap;
+    for (const [ratio, level, decay] of partials) {
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.frequency.value = 880 * ratio;
+      gain.gain.setValueAtTime(0, at);
+      gain.gain.linearRampToValueAtTime(volume * level, at + 0.003); // hard strike
+      gain.gain.exponentialRampToValueAtTime(0.001, at + decay);
+      osc.connect(gain).connect(limiter);
+      osc.start(at);
+      osc.stop(at + decay + 0.05);
+    }
+  }
+}
+
 export const SOUNDS = {
   /** Rest timer finished */
   restDone: () => tones([[880, 0, 0.2], [880, 0.25, 0.2], [880, 0.5, 0.2]]),
-  /** Round starts: one long high tone */
-  roundStart: () => tones([[1046, 0, 0.7]], 0.4),
-  /** Round over: boxing-bell style triple */
-  roundEnd: () => tones([[660, 0, 0.35], [660, 0.4, 0.35], [660, 0.8, 0.5]], 0.4),
-  /** 10 seconds left in a round: two quick clicks */
-  tenSeconds: () => tones([[1500, 0, 0.06], [1500, 0.15, 0.06]], 0.35),
+  /** Round starts / ends: ring bell "ding-ding-ding-ding-ding" */
+  roundStart: () => bell(5),
+  roundEnd: () => bell(5),
+  /** Simple countdown starts: one long high tone */
+  startTone: () => tones([[1046, 0, 0.7]], 0.5),
+  /** 10 seconds left in a round: two sharp clicks */
+  tenSeconds: () => tones([[2500, 0, 0.07], [2500, 0.15, 0.07]], 0.6),
   /** Countdown tick (last 3 s of a pause) */
-  tick: () => tones([[1200, 0, 0.08]], 0.3),
+  tick: () => tones([[1800, 0, 0.08]], 0.5),
   /** Meditation: soft low gong */
   gong: () => tones([[196, 0, 2.5], [392, 0, 1.8], [588, 0, 1.2]], 0.25),
   /** Soft tick for a calm countdown */

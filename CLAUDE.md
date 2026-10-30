@@ -108,8 +108,8 @@ Jede aktive Routine wird pro Tag zu einer Aufgabe (`tasks.routine_id`, eindeutig
 - `weekdays` (ISO 1 = Mo … 7 = So), `null` = täglich. Verpasste Routine bleibt, bis eine neuere derselben Routine existiert
   (gestrige tägliche verschwindet, das Blumengießen vom Sonntag wartet).
 - `anytime = true` → nicht im Tagesplan, sondern als **⚡ Daily**-Button auf der Startseite (zwischendurch abhaken).
-- `timer` (jsonb, Sekunden): `{"rounds":3,"work":180,"rest":30,"prep":10}` → 🥊 Vollbild-Rundentimer (langer Ton = Start, Glocke =
-  Rundenende, 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong, optionalem **🫁 Atem-Guide** (Kreis + leises Atemgeräusch im
+- `timer` (jsonb, Sekunden): `{"rounds":3,"work":180,"rest":30,"prep":10}` → 🥊 Vollbild-Rundentimer (Ringglocke „Ding ×5“ = Rundenstart
+  und Rundenende – laute, helle Glocke mit Limiter, damit sie über Musik hörbar ist; 2 Klicks = 10 s übrig, Ticken = Pause endet). `"style":"calm"` → Meditationstimer mit Gong, optionalem **🫁 Atem-Guide** (Kreis + leises Atemgeräusch im
 Resonanz-Tempo 5,5 s ein / 5,5 s aus ≈ 5,5 Atemzüge/min) und **Hintergrundrauschen** (Stille/Weiß/Rosa/Braun/Regen/Brummen +
 Lautstärke, im Browser erzeugt – keine Audiodateien; Wahl wird pro Gerät gemerkt, Standard Braun; läuft nur während der
 Meditation, stoppt bei Pause/Ende; Schleife 30 s mit Equal-Power-Überblendung, damit es nicht periodisch leiser wird).
