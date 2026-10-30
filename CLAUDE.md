@@ -307,10 +307,10 @@ update shopping_items set done = true where name ilike '%milch%';
 
 Startseite, Karte „Körper heute“: Getränke per Tipp – 🥛 Glas 250 ml, 🍶 Flasche 1 L, ☕ Kaffee = **Becher Milchkaffee** (~150 ml Filterkaffee
 ≈ 90 mg Koffein + ~150 ml Vollmilch ≈ 100 kcal & 5 g Protein, automatisch mitgezählt, 300 ml; Werte in `nutrition_settings`). Trinkziel 2,5 L (Kaffee zählt mit).
-**⚡ Koffein** immer sichtbar: „~X mg / 400 mg“ mit Leiste (EFSA 2015: bis 400 mg/Tag unbedenklich, bis 200 mg auf einmal), ab 400 mg gelb. Dazu Dienst-Buttons, gegessene vs. verbrauchte kcal und **verwertbares** Protein.
-**💧 Trink-Erinnerung** (`src/lib/hydration.ts`, nur in der Karte, solange die App offen ist, 7–22 Uhr): noch nichts getrunken →
+**⚡ Koffein** immer sichtbar: „~X mg / 400 mg“ mit Leiste (EFSA 2015: bis 400 mg/Tag unbedenklich, bis 200 mg auf einmal), ab 400 mg gelb. **Schlaf ~1–9 Uhr** → letzter Kaffee **bis 16 Uhr** (`CAFFEINE_CUTOFF_HOUR`, ≥ 8,8 h vor dem Schlafen laut Gardiner 2023), danach Hinweis „🌙 kein Kaffee mehr“. Dazu Dienst-Buttons, gegessene vs. verbrauchte kcal und **verwertbares** Protein.
+**💧 Trink-Erinnerung** (`src/lib/hydration.ts`, nur in der Karte, solange die App offen ist, 9–23 Uhr passend zum Schlaf 1–9 Uhr): noch nichts getrunken →
 „großes Glas nach der Nacht“; ≥ 90 min seit dem letzten Getränk → Hinweis, ≥ 150 min → kräftiger; dazu „~X ml hinter dem
-Tagesziel“ (Ziel linear über 7–22 Uhr verteilt). Keine Push-Nachrichten bei geschlossener App.
+Tagesziel“ (Ziel linear über 9–23 Uhr verteilt). Keine Push-Nachrichten bei geschlossener App.
 
 **Essen trägt Claude ein**, wenn Joshua es erzählt (kein Scannen):
 1. Portionen realistisch schätzen; Annahmen in `notes`. **Joshuas Portionen:** Teller Nudeln ≈ **150 g trocken** (isst 500 g in 2 Tagen),

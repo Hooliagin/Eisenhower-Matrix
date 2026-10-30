@@ -7,8 +7,15 @@
  * schaffen höchstens ~0,8–1 L pro Stunde – lieber alle 1–2 h ein Glas als abends eine Flasche auf einmal.
  */
 
-export const DAY_START_HOUR = 7;
-export const DAY_END_HOUR = 22;
+// Joshua sleeps ~1:00–9:00. Drink target is spread over 9–23 h (the last two hours before bed stay light, fewer night trips).
+export const DAY_START_HOUR = 9;
+export const DAY_END_HOUR = 23;
+
+/**
+ * Last coffee: caffeine's half-life is ~5 h; a 2023 meta-analysis (Gardiner et al., Sleep Med Rev) found a cup of coffee
+ * (~100 mg) should be had at least ~8.8 h before bed to spare sleep. Bed at 1:00 → last coffee by 16:00.
+ */
+export const CAFFEINE_CUTOFF_HOUR = 16;
 
 export interface HydrationNudge {
   level: "hint" | "urgent";

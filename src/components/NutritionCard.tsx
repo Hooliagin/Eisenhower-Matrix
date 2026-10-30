@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { addDrink, removeLastDrink, useNutrition, type DrinkKind, type Meal } from "../lib/data";
 import { isoDate } from "../lib/dates";
-import { hydrationNudge } from "../lib/hydration";
+import { CAFFEINE_CUTOFF_HOUR, hydrationNudge } from "../lib/hydration";
 import { supabase } from "../lib/supabase";
 
 const DRINKS: { kind: DrinkKind; icon: string; label: string }[] = [
@@ -86,6 +86,7 @@ export default function NutritionCard() {
   const surplus = n.kcal_surplus ?? 0;
   const target = burn + surplus;
   const toGo = target - n.kcal_in;
+  const afterCutoff = now.getHours() >= CAFFEINE_CUTOFF_HOUR;
   const nudge = hydrationNudge(now, data.lastDrinkAt ? new Date(data.lastDrinkAt) : null, n.fluid_ml, n.fluid_target_ml);
 
   return (
@@ -112,8 +113,12 @@ export default function NutritionCard() {
             <span>
               ⚡ <b>~{n.caffeine_mg} mg</b> <span className="text-slate-500">/ 400 mg Koffein</span>
             </span>
-            <span className={`text-[10px] ${n.caffeine_mg >= 400 ? "text-amber-400" : "text-slate-500"}`}>
-              {n.caffeine_mg >= 400 ? "Tagesgrenze erreicht" : `noch ~${400 - n.caffeine_mg} mg`}
+            <span className={`text-[10px] ${n.caffeine_mg >= 400 || afterCutoff ? "text-amber-400" : "text-slate-500"}`}>
+              {n.caffeine_mg >= 400
+                ? "Tagesgrenze erreicht"
+                : afterCutoff
+                  ? `🌙 ab ${CAFFEINE_CUTOFF_HOUR} Uhr kein Kaffee mehr (Schlaf)`
+                  : `noch ~${400 - n.caffeine_mg} mg · letzter bis ${CAFFEINE_CUTOFF_HOUR} Uhr`}
             </span>
           </div>
           <Bar value={n.caffeine_mg} max={400} color={n.caffeine_mg >= 400 ? "#f59e0b" : "#a16207"} />
