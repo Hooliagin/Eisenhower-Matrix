@@ -133,7 +133,7 @@ Pause/Weiter), z. B. Pouchi-Tricks. Freier Boxtimer auch unter Fitness → „�
 | Meditieren (10 min) | täglich | ⚡ Daily, Gong-Timer | spirit / wasser |
 | Tricks mit Pouchi (10 min) | täglich | ⚡ Daily, einfacher Timer mit Pause | verbunden / wasser |
 | Pouchi: Wasserschüssel abwaschen & frisches Wasser | täglich | ⚡ Daily (abhaken) | – / erde |
-| Tagebuch schreiben | täglich | ⚡ Daily (abhaken) | kreativ / feuer |
+| Tagebuch schreiben (über Gefühle) | täglich | ⚡ Daily (abhaken) | spirit / wasser |
 | Blumen gießen | sonntags (zuletzt So 25.10.2026) | Tagesplan | – / erde |
 ```sql
 insert into routines (title, estimate_minutes, position, attribute, element, anytime) values ('Beten', 10, 7, 'spirit', 'wasser', true);
