@@ -59,7 +59,7 @@ Diese Tabelle entspricht den Views `xp_events`, `element_events` und `nutrition_
 | Gedicht geübt (`poem_attempts.seconds`) | 🧠 Intellekt (Minuten) · gemeistert (`poems.mastered_on`) +60 | 💨 Luft | – |
 | Gehen nach dem Essen (`meals.walk_minutes`) | 💪 Körper (Minuten) | 🌍 Erde | +4 kcal/min |
 | Detox-Fenster geschafft (`detox_sessions.result='success'`) | – | 🌍 Erde (30/60 min) | – |
-| Cappuccino (`drink_log.kind='coffee'`) | – | – | Aufnahme: +100 kcal, +5 g Protein, 75 mg Koffein |
+| Kaffee (`drink_log.kind='coffee'`) | – | – | Aufnahme: +100 kcal, +5 g Protein, ~90 mg Koffein |
 | Mahlzeit (`meals`) | – | – | Aufnahme: kcal, Protein × `protein_quality` |
 
 `element_of(attribute)`: koerper/kreativ → feuer · spirit/verbunden → wasser · intellekt/charisma → luft.
@@ -305,9 +305,9 @@ update shopping_items set done = true where name ilike '%milch%';
 
 ## Ernährung & Getränke (`meals`, `drink_log`, `nutrition_settings`, View `nutrition_daily`)
 
-Startseite, Karte „Körper heute“: Getränke per Tipp – 🥛 Glas 250 ml, 🍶 Flasche 1 L, ☕ Kaffee = **Cappuccino** (1 Espresso
-≈ 75 mg Koffein + ~150 ml Vollmilch ≈ 100 kcal & 5 g Protein, automatisch mitgezählt, 200 ml). Trinkziel 2,5 L (Kaffee zählt mit),
-Warnung ab 400 mg Koffein (EFSA). Dazu Dienst-Buttons, gegessene vs. verbrauchte kcal und **verwertbares** Protein.
+Startseite, Karte „Körper heute“: Getränke per Tipp – 🥛 Glas 250 ml, 🍶 Flasche 1 L, ☕ Kaffee = **Becher Milchkaffee** (~150 ml Filterkaffee
+≈ 90 mg Koffein + ~150 ml Vollmilch ≈ 100 kcal & 5 g Protein, automatisch mitgezählt, 300 ml; Werte in `nutrition_settings`). Trinkziel 2,5 L (Kaffee zählt mit).
+**⚡ Koffein** immer sichtbar: „~X mg / 400 mg“ mit Leiste (EFSA 2015: bis 400 mg/Tag unbedenklich, bis 200 mg auf einmal), ab 400 mg gelb. Dazu Dienst-Buttons, gegessene vs. verbrauchte kcal und **verwertbares** Protein.
 **💧 Trink-Erinnerung** (`src/lib/hydration.ts`, nur in der Karte, solange die App offen ist, 7–22 Uhr): noch nichts getrunken →
 „großes Glas nach der Nacht“; ≥ 90 min seit dem letzten Getränk → Hinweis, ≥ 150 min → kräftiger; dazu „~X ml hinter dem
 Tagesziel“ (Ziel linear über 7–22 Uhr verteilt). Keine Push-Nachrichten bei geschlossener App.

@@ -104,10 +104,19 @@ export default function NutritionCard() {
             </span>
             <span className="text-[10px] text-slate-500">
               Wasser {(n.water_ml / 1000).toLocaleString("de-DE", { maximumFractionDigits: 2 })} L · ☕ {n.coffees}
-              {n.caffeine_mg >= 400 && <span className="text-amber-400"> · ~{n.caffeine_mg} mg Koffein</span>}
             </span>
           </div>
           <Bar value={n.fluid_ml} max={n.fluid_target_ml} color="#38bdf8" />
+          {/* EFSA 2015: up to 400 mg caffeine/day is safe for adults, up to 200 mg at once */}
+          <div className="mt-1.5 flex items-baseline justify-between text-xs">
+            <span>
+              ⚡ <b>~{n.caffeine_mg} mg</b> <span className="text-slate-500">/ 400 mg Koffein</span>
+            </span>
+            <span className={`text-[10px] ${n.caffeine_mg >= 400 ? "text-amber-400" : "text-slate-500"}`}>
+              {n.caffeine_mg >= 400 ? "Tagesgrenze erreicht" : `noch ~${400 - n.caffeine_mg} mg`}
+            </span>
+          </div>
+          <Bar value={n.caffeine_mg} max={400} color={n.caffeine_mg >= 400 ? "#f59e0b" : "#a16207"} />
         </div>
       </div>
       {nudge && (
