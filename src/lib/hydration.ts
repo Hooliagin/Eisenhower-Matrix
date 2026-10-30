@@ -42,7 +42,7 @@ export function hydrationNudge(now: Date, lastDrinkAt: Date | null, fluidMl: num
 
   if (!lastDrinkAt || fluidMl <= 0)
     return {
-      level: hour >= 9 ? "urgent" : "hint",
+      level: hour >= DAY_START_HOUR + 1 ? "urgent" : "hint",
       text: "☀️ Noch nichts getrunken. Über Nacht hast du ~0,5 L verloren – starte mit einem großen Glas Wasser.",
     };
 
