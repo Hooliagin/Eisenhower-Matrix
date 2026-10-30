@@ -21,14 +21,18 @@ const STATUS_LABEL: Record<BookStatus, string> = {
   done: "Gelesen",
 };
 
-/** Used-book searches by title only – titles differ between editions, so Joshua narrows by author on the site himself.
- *  (German new prices are fixed by law, so "new" is the same everywhere.) */
+/** Searches by full author name – Joshua finds the right work in the author's listings himself (titles differ between
+ *  editions). Without an author (Bibel, Koran) the title is used. German new prices are fixed by law, so "new" is the same everywhere. */
 function searchLinks(book: Book) {
-  // main title only: "Propaganda. Die Kunst der Public Relations" → "Propaganda"
-  const q = encodeURIComponent((book.title_de ?? book.title).split(/[.:]/)[0].trim());
+  if (!book.author) {
+    const q = encodeURIComponent((book.title_de ?? book.title).split(/[.:]/)[0].trim());
+    return [{ label: "♻️ booklooker", href: `https://www.booklooker.de/B%C3%BCcher/Angebote/titel=${q}` }];
+  }
+  const q = encodeURIComponent(book.author);
   return [
-    { label: "♻️ booklooker", href: `https://www.booklooker.de/B%C3%BCcher/Angebote/titel=${q}` },
-    { label: "📚 ZVAB", href: `https://www.zvab.com/servlet/SearchResults?tn=${q}` },
+    { label: "♻️ booklooker", href: `https://www.booklooker.de/B%C3%BCcher/Angebote/autor=${q}` },
+    { label: "📚 ZVAB", href: `https://www.zvab.com/servlet/SearchResults?an=${q}` },
+    { label: "🛒 eBay", href: `https://www.ebay.de/sch/267/i.html?_nkw=${q}` },
   ];
 }
 
@@ -50,7 +54,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   );
 }
 
-/** Buying tip, copy buttons for title and full author name, and used-book searches by title. */
+/** Buying tip, copy buttons for title and full author name, and used-book searches by author. */
 function GermanTitle({ book }: { book: Book }) {
   if (!book.title_de && !book.no_de_edition && !book.buy_tip) return null;
   return (

@@ -272,7 +272,7 @@ insert into voice_samples (text, context, followup_id) values ('<Rohdiktat>', 'N
 - **Kauf-Tipp** (`buy_tip`): Joshua kauft neu, wenn gebraucht kaum billiger ist; sonst gebraucht. Kleinanzeigen bringt nichts (meist nicht
   verfügbar). Neupreise sind wegen Buchpreisbindung überall gleich → nur Neupreis vs. Gebrauchtpreis (booklooker, ZVAB, medimops)
   vergleichen, Ergebnis kurz mit 🆕/♻️/⚖️ in `buy_tip`. App zeigt Tipp + 📋 Titel + 📋 Autor + ♻️ booklooker + 📚 ZVAB
-  (Suche **nur nach dem Titel**, ohne Autor, Untertitel nach „.“/„:“ abgeschnitten) (bei „Besorgen“
+  + 🛒 eBay (Suche **nur nach dem vollen Autornamen** – Joshua sucht sich das Werk in der Trefferliste selbst; ohne Autor nach Titel) (bei „Besorgen“
   und „Vorschläge“ immer sichtbar, sonst nach Antippen).
 - Lesezeit „heute 40 min“ → `reading_log` (Startseiten-Kachel zeigt Wochensumme). Religion-Bücher zählen für Spiritualität/Wasser.
 - Übungen aus Büchern (Impro: Statustransaktionen) als `tasks` im Projekt Lesen mit `attribute='charisma'`.
