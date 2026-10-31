@@ -357,7 +357,8 @@ Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen:
   Nicht schönrechnen. Joshuas Selbsteinschätzung: Kampfsport Intermediate (~10 J., Amateurboxkämpfe; aktuell mehr MMA als Boxen), Schießen Anfänger.
   Beruf: Pflegehelfer/Alltagsbegleiter (30 h/Woche).
 - **Erfolge** (`achievements`): `kind='background'` = Lebenslauf (Master Politikwissenschaft, 10 J. Kampfsport, Mitgründer Pluma Media,
-  KI-Startup MPU – vorerst gescheitert, Kreuzheben 210), `kind='milestone'` = neue Meilensteine mit `earned_on` (Rekorde, Check-ups,
+  KI-Startup MPU – vorerst gescheitert, Kreuzheben 210, **verlobt nach 10 Jahren Beziehung, Hochzeit Januar 2027**; stabiler Freundeskreis →
+  Skills „Partnerschaft“ Stufe 4 und „Freundeskreis“ Stufe 3 unter Verbundenheit; nach der Hochzeit Partnerschaft → Stufe 5 + Meilenstein), `kind='milestone'` = neue Meilensteine mit `earned_on` (Rekorde, Check-ups,
   gelernte Gedichte, Events …) – bei echten Meilensteinen eintragen.
 - **₵ Credits** (`character_meta.credits` 0–100: Pleite/Knapp/Stabil/Polster/Wohlhabend/Frei, `credits_note`, `credits_next`) = Finanzen;
   aktuell 20 „Knapp“. Bei Infos zu Einkommen/Rücklagen anpassen. `class_title` = Klasse unter dem Namen („Kämpfer · Stratege“).
