@@ -290,15 +290,35 @@ export interface Meal {
 
 export type DrinkKind = "water_glass" | "water_bottle" | "coffee";
 
-export function useNutrition() {
-  return useLive<{ today: NutritionDay | null; meals: Meal[]; sizes: Record<DrinkKind, number>; lastDrinkAt: string | null }>(
+/** One day of the week strip. */
+export type NutritionWeekDay = Pick<
+  NutritionDay,
+  "day" | "kcal_in" | "protein_effective_g" | "protein_target_g" | "burn_base" | "burn_activity" | "kcal_surplus" | "fluid_ml" | "fluid_target_ml"
+>;
+
+/** Nutrition of one day (default today) plus the Mon–Sun week around it. `nutrition_daily` covers the last 30 days. */
+export function useNutrition(day: string = isoDate()) {
+  return useLive<{
+    today: NutritionDay | null;
+    meals: Meal[];
+    sizes: Record<DrinkKind, number>;
+    lastDrinkAt: string | null;
+    week: NutritionWeekDay[];
+  }>(
     async () => {
-      const today = isoDate();
-      const [n, m, s, d] = await Promise.all([
+      const today = day;
+      const monday = weekStart(new Date(`${day}T12:00:00`));
+      const [n, m, s, d, w] = await Promise.all([
         supabase.from("nutrition_daily").select("*").eq("day", today).maybeSingle(),
         supabase.from("meals").select("id, meal, description, kcal, protein_g, protein_quality, notes, walk_minutes").eq("day", today).order("created_at"),
         supabase.from("nutrition_settings").select("glass_ml, bottle_ml, coffee_ml").maybeSingle(),
         supabase.from("drink_log").select("created_at").eq("day", today).order("created_at", { ascending: false }).limit(1),
+        supabase
+          .from("nutrition_daily")
+          .select("day, kcal_in, protein_effective_g, protein_target_g, burn_base, burn_activity, kcal_surplus, fluid_ml, fluid_target_ml")
+          .gte("day", isoDate(monday))
+          .lte("day", isoDate(addDays(monday, 6)))
+          .order("day"),
       ]);
       const st = must(s) as { glass_ml: number; bottle_ml: number; coffee_ml: number } | null;
       return {
@@ -306,20 +326,21 @@ export function useNutrition() {
         meals: must(m),
         sizes: { water_glass: st?.glass_ml ?? 250, water_bottle: st?.bottle_ml ?? 1000, coffee: st?.coffee_ml ?? 250 },
         lastDrinkAt: (must(d) as { created_at: string }[])[0]?.created_at ?? null,
+        week: must(w) as NutritionWeekDay[],
       };
     },
     ["drink_log", "meals", "workout_sessions", "tasks", "events"],
-    { today: null, meals: [], sizes: { water_glass: 250, water_bottle: 1000, coffee: 250 }, lastDrinkAt: null },
+    { today: null, meals: [], sizes: { water_glass: 250, water_bottle: 1000, coffee: 250 }, lastDrinkAt: null, week: [] },
   );
 }
 
-export async function addDrink(kind: DrinkKind, ml: number) {
-  must(await supabase.from("drink_log").insert({ kind, ml, day: isoDate() }));
+export async function addDrink(kind: DrinkKind, ml: number, day: string = isoDate()) {
+  must(await supabase.from("drink_log").insert({ kind, ml, day }));
 }
 
-/** Undo the most recent drink of today. */
-export async function removeLastDrink() {
-  const { data } = await supabase.from("drink_log").select("id").eq("day", isoDate()).order("created_at", { ascending: false }).limit(1);
+/** Undo the most recent drink of the given day (default today). */
+export async function removeLastDrink(day: string = isoDate()) {
+  const { data } = await supabase.from("drink_log").select("id").eq("day", day).order("created_at", { ascending: false }).limit(1);
   if (data?.[0]) must(await supabase.from("drink_log").delete().eq("id", data[0].id));
 }
 

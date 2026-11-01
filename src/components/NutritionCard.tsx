@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { addDrink, removeLastDrink, useNutrition, type DrinkKind, type Meal } from "../lib/data";
-import { isoDate } from "../lib/dates";
+import { addDrink, removeLastDrink, useNutrition, type DrinkKind, type Meal, type NutritionWeekDay } from "../lib/data";
+import { addDays, isoDate, parseDate, WEEKDAY_SHORT, weekStart } from "../lib/dates";
 import { CAFFEINE_CUTOFF_HOUR, hydrationNudge } from "../lib/hydration";
 import { supabase } from "../lib/supabase";
 
@@ -18,9 +18,67 @@ function Bar({ value, max, color }: { value: number; max: number; color: string 
   );
 }
 
-/** Drinks with one tap, plus Claude-estimated calories & protein vs. estimated burn. */
+const kcalTarget = (d: NutritionWeekDay) => d.burn_base + d.burn_activity + (d.kcal_surplus ?? 0);
+const shortDate = (day: string) => {
+  const d = parseDate(day);
+  return `${WEEKDAY_SHORT[(d.getDay() + 6) % 7]} ${d.getDate()}.${d.getMonth() + 1}.`;
+};
+
+/** Mon–Sun strip: kcal reached (orange bar) and protein goal (✓) per day; tap a day to open it, plus week averages. */
+function WeekStrip({ week, day, today, onPick }: { week: NutritionWeekDay[]; day: string; today: string; onPick: (d: string) => void }) {
+  if (!week.length) return null;
+  const monday = weekStart(parseDate(day));
+  const cells = Array.from({ length: 7 }, (_, i) => isoDate(addDays(monday, i)));
+  const byDay = new Map(week.map((w) => [w.day, w]));
+  const past = week.filter((w) => w.day <= today && w.kcal_in > 0);
+  const avg = (f: (w: NutritionWeekDay) => number) => Math.round(past.reduce((s, w) => s + f(w), 0) / Math.max(1, past.length));
+  const proteinDays = past.filter((w) => w.protein_effective_g >= w.protein_target_g).length;
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((c, i) => {
+          const w = byDay.get(c);
+          const future = c > today;
+          const pct = w ? Math.min(1, w.kcal_in / Math.max(1, kcalTarget(w))) : 0;
+          return (
+            <button
+              key={c}
+              disabled={future || !w}
+              onClick={() => onPick(c)}
+              className={`flex flex-col items-center gap-0.5 rounded-md py-1 text-[10px] ${c === day ? "bg-slate-700 text-slate-100" : "text-slate-500"} ${future ? "opacity-30" : ""}`}
+            >
+              {WEEKDAY_SHORT[i]}
+              <span className="flex h-6 w-2.5 items-end overflow-hidden rounded-sm bg-slate-800">
+                <span className="w-full rounded-sm bg-orange-500" style={{ height: `${pct * 100}%` }} />
+              </span>
+              <span className={w && w.protein_effective_g >= w.protein_target_g ? "text-emerald-400" : "text-slate-700"}>●</span>
+            </button>
+          );
+        })}
+      </div>
+      {past.length > 1 && (
+        <p className="text-[10px] text-slate-500">
+          Woche Ø {avg((w) => w.kcal_in)} / {avg(kcalTarget)} kcal · Ø {avg((w) => w.protein_effective_g)} g Protein · Protein-Ziel an {proteinDays}/{past.length} Tagen
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Drinks with one tap, plus Claude-estimated calories & protein vs. estimated burn. Days can be flipped back (‹ ›). */
 export default function NutritionCard() {
-  const { data, setData, refresh } = useNutrition();
+  const today = isoDate();
+  const [day, setDay] = useState(today);
+  const isToday = day === today;
+  const { data, setData, refresh } = useNutrition(day);
+  useEffect(() => {
+    void refresh();
+  }, [day, refresh]);
+  const oldest = isoDate(addDays(new Date(), -29)); // nutrition_daily keeps 30 days
+  const shiftDay = (n: number) => setDay((d) => {
+    const next = isoDate(addDays(parseDate(d), n));
+    return next > today ? today : next < oldest ? oldest : next;
+  });
   const [showMeals, setShowMeals] = useState(false);
   const n = data.today;
   // Re-check the drink reminder every minute while the app is open.
@@ -43,12 +101,12 @@ export default function NutritionCard() {
           coffees: n.coffees + (kind === "coffee" ? 1 : 0),
         },
       });
-    await addDrink(kind, ml);
+    await addDrink(kind, ml, day);
     void refresh();
   }
 
   async function undo() {
-    await removeLastDrink();
+    await removeLastDrink(day);
     void refresh();
   }
 
@@ -56,7 +114,7 @@ export default function NutritionCard() {
     if (n?.shift_event_id) await supabase.from("events").delete().eq("id", n.shift_event_id);
     await supabase
       .from("events")
-      .insert({ title: "Dienst", event_date: isoDate(), kind: "dienst", shift_hours: hours, ride_km_each_way: 13, source: "app" });
+      .insert({ title: "Dienst", event_date: day, kind: "dienst", shift_hours: hours, ride_km_each_way: 13, source: "app" });
     void refresh();
   }
 
@@ -86,15 +144,25 @@ export default function NutritionCard() {
   const surplus = n.kcal_surplus ?? 0;
   const target = burn + surplus;
   const toGo = target - n.kcal_in;
-  const afterCutoff = now.getHours() >= CAFFEINE_CUTOFF_HOUR;
-  const nudge = hydrationNudge(now, data.lastDrinkAt ? new Date(data.lastDrinkAt) : null, n.fluid_ml, n.fluid_target_ml);
+  const afterCutoff = isToday && now.getHours() >= CAFFEINE_CUTOFF_HOUR;
+  const nudge = isToday && hydrationNudge(now, data.lastDrinkAt ? new Date(data.lastDrinkAt) : null, n.fluid_ml, n.fluid_target_ml);
 
   return (
     <section className="card flex flex-col gap-2.5 p-3">
-      <div className="flex items-baseline justify-between">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">🍽️ Körper heute</span>
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+          <button className="px-1 text-base leading-none text-slate-400 disabled:opacity-30" disabled={day <= oldest} onClick={() => shiftDay(-1)} aria-label="Tag zurück">‹</button>
+          🍽️ {isToday ? "Körper heute" : shortDate(day)}
+          <button className="px-1 text-base leading-none text-slate-400 disabled:opacity-30" disabled={isToday} onClick={() => shiftDay(1)} aria-label="Tag vor">›</button>
+          {!isToday && (
+            <button className="ml-1 rounded-full bg-slate-800 px-2 py-0.5 normal-case tracking-normal text-slate-300" onClick={() => setDay(today)}>
+              Heute
+            </button>
+          )}
+        </span>
         <button className="text-[10px] text-slate-600" onClick={undo}>letztes Getränk ↶</button>
       </div>
+      <WeekStrip week={data.week} day={day} today={today} onPick={setDay} />
 
       <div className="flex items-center gap-2">
         <div className="flex-1">
@@ -116,7 +184,9 @@ export default function NutritionCard() {
             <span className={`text-[10px] ${n.caffeine_mg >= 400 || afterCutoff ? "text-amber-400" : "text-slate-500"}`}>
               {n.caffeine_mg >= 400
                 ? "Tagesgrenze erreicht"
-                : afterCutoff
+                : !isToday
+                  ? ""
+                  : afterCutoff
                   ? `🌙 ab ${CAFFEINE_CUTOFF_HOUR} Uhr kein Kaffee mehr (Schlaf)`
                   : `noch ~${400 - n.caffeine_mg} mg · letzter bis ${CAFFEINE_CUTOFF_HOUR} Uhr`}
             </span>
@@ -138,7 +208,7 @@ export default function NutritionCard() {
       </div>
 
       <div className="flex items-center gap-1.5 text-[11px]">
-        <span className="text-slate-500">👟 Dienst heute:</span>
+        <span className="text-slate-500">👟 Dienst{isToday ? " heute" : ""}:</span>
         {n.shift_hours ? (
           <>
             <span className="rounded-full bg-violet-600/30 px-2 py-0.5 text-violet-200">{Number(n.shift_hours).toLocaleString("de-DE")} h</span>
