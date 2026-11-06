@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { isoDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 
-interface Trick {
+export interface Trick {
   id: string;
   name: string;
   cue: string | null;
@@ -10,6 +10,7 @@ interface Trick {
   difficulty: number;
   how_to: string | null;
   mastered_on: string | null;
+  position: number;
 }
 
 interface Game {
@@ -20,23 +21,62 @@ interface Game {
   how_to: string;
 }
 
+/** Trainingsplan (`dog_trick_plan`): Reihenfolge + Voraussetzungen. */
+interface PlanStep {
+  trick_id: string;
+  step: number;
+  requires: string[];
+  why: string | null;
+}
+
 const KIND = { nase: "👃 Nase", puzzle: "🧩 Puzzle", kopf: "🧠 Kopf", bewegung: "🐾 Bewegung" } as const;
 
 function usePouchi() {
   const [tricks, setTricks] = useState<Trick[]>([]);
   const [games, setGames] = useState<Game[]>([]);
+  const [plan, setPlan] = useState<PlanStep[]>([]);
   async function load() {
-    const [t, g] = await Promise.all([
+    const [t, g, p] = await Promise.all([
       supabase.from("dog_tricks").select("*").order("position"),
       supabase.from("dog_games").select("*").order("position"),
+      supabase.from("dog_trick_plan").select("trick_id, step, requires, why").order("step"),
     ]);
     setTricks((t.data ?? []) as Trick[]);
     setGames((g.data ?? []) as Game[]);
+    setPlan((p.data ?? []) as PlanStep[]);
   }
   useEffect(() => {
     void load();
   }, []);
-  return { tricks, games, reload: load };
+  return { tricks, games, plan, reload: load };
+}
+
+export interface PlannedIdea {
+  trick: Trick;
+  step: PlanStep | null;
+  missing: Trick[]; // Voraussetzungen, die er noch nicht kann
+}
+
+/** Ideen in Plan-Reihenfolge (ohne Plan-Eintrag ans Ende) mit fehlenden Voraussetzungen; `next` = erster bereiter Trick. */
+export function trainingPath(tricks: Trick[], plan: PlanStep[]): { ideas: PlannedIdea[]; next: PlannedIdea | null } {
+  const byId = new Map(tricks.map((t) => [t.id, t]));
+  const stepOf = new Map(plan.map((p) => [p.trick_id, p]));
+  const ideas = tricks
+    .filter((t) => t.status === "idee")
+    .map((t) => {
+      const step = stepOf.get(t.id) ?? null;
+      const missing = (step?.requires ?? []).map((id) => byId.get(id)).filter((r): r is Trick => !!r && r.status !== "kann");
+      return { trick: t, step, missing };
+    })
+    .sort((a, b) => (a.step?.step ?? 1e6) - (b.step?.step ?? 1e6) || a.trick.position - b.trick.position);
+  return { ideas, next: ideas.find((i) => i.step && i.missing.length === 0) ?? null };
+}
+
+function buildsOn(tricks: Trick[], step: PlanStep | null) {
+  return (step?.requires ?? [])
+    .map((id) => tricks.find((t) => t.id === id)?.name)
+    .filter(Boolean)
+    .join(", ");
 }
 
 /** Practice and games count like other Pouchi time: a done task (Verbundenheit XP, Wasser). */
@@ -60,12 +100,12 @@ const stars = (n: number) => "★".repeat(n) + "☆".repeat(3 - n);
 
 /** Fullscreen sheet: tricks Pouchi knows / is learning / could learn next, and enrichment games to tick off. */
 export function PouchiPanel({ onClose }: { onClose: () => void }) {
-  const { tricks, games, reload } = usePouchi();
+  const { tricks, games, plan, reload } = usePouchi();
   const [msg, setMsg] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const known = tricks.filter((t) => t.status === "kann");
   const learning = tricks.filter((t) => t.status === "lernt");
-  const ideas = tricks.filter((t) => t.status === "idee");
+  const { ideas, next } = trainingPath(tricks, plan);
   const gameOfDay = games.length ? games[dayIndex() % games.length] : null;
   const review = known.length ? [0, 1, 2].map((i) => known[(dayIndex() * 3 + i) % known.length]).filter((t, i, a) => a.indexOf(t) === i) : [];
 
@@ -84,7 +124,13 @@ export function PouchiPanel({ onClose }: { onClose: () => void }) {
         kind: "milestone",
         earned_on: isoDate(),
       });
-      flash(`🎉 Pouchi kann jetzt „${t.name}“!`);
+      // Nächsten Trick schon mit dem neuen Stand berechnen, damit die Meldung ihn nennen kann.
+      const after = trainingPath(
+        tricks.map((x) => (x.id === t.id ? { ...x, status: "kann" as const } : x)),
+        plan,
+      ).next;
+      setMsg(`🎉 Pouchi kann jetzt „${t.name}“!${after ? ` Als Nächstes: ${after.trick.name}` : ""}`);
+      setTimeout(() => setMsg(null), 4500);
     }
     void reload();
   }
@@ -125,6 +171,23 @@ export function PouchiPanel({ onClose }: { onClose: () => void }) {
           </section>
         ))}
 
+        {learning.length === 0 && next && (
+          <section className="pixel-frame bg-slate-900/80 p-3" style={{ ["--glow" as string]: "#34d39955" }}>
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-base">▶ Nächster Trick: {next.trick.name}</h2>
+              <span className="text-xs text-amber-300">{stars(next.trick.difficulty)}</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Schritt {next.step?.step} im Plan{buildsOn(tricks, next.step) && ` · baut auf: ${buildsOn(tricks, next.step)}`}
+            </p>
+            {next.step?.why && <p className="mt-1 text-xs text-emerald-200">{next.step.why}</p>}
+            {next.trick.how_to && <p className="mt-1 text-xs leading-relaxed text-slate-300">{next.trick.how_to}</p>}
+            <button className="btn-primary mt-2 w-full py-2 text-xs" onClick={() => void setStatus(next.trick, "lernt")}>
+              🎯 Jetzt lernen
+            </button>
+          </section>
+        )}
+
         {gameOfDay && (
           <section className="card p-3">
             <h2 className="text-sm">🎲 Spiel des Tages</h2>
@@ -150,16 +213,23 @@ export function PouchiPanel({ onClose }: { onClose: () => void }) {
         )}
 
         <section className="card p-3">
-          <h2 className="text-sm">✨ Als Nächstes lernen</h2>
+          <h2 className="text-sm">🗺️ Trainingsplan</h2>
+          <p className="text-[11px] text-slate-500">Der Reihe nach – 🔒 = erst die Voraussetzung lernen.</p>
           <ul className="mt-1 flex flex-col">
-            {ideas.map((t) => (
+            {ideas.map(({ trick: t, step, missing }) => (
               <li key={t.id} className="border-t border-slate-800 py-2 first:border-0">
-                <button className="flex w-full items-baseline justify-between text-left text-sm" onClick={() => setOpen(open === t.id ? null : t.id)}>
-                  <span>{t.name}</span>
-                  <span className="text-xs text-amber-300">{stars(t.difficulty)}</span>
+                <button className="flex w-full items-baseline justify-between gap-2 text-left text-sm" onClick={() => setOpen(open === t.id ? null : t.id)}>
+                  <span className={missing.length ? "text-slate-500" : ""}>
+                    {step && <span className="mr-1.5 text-[11px] text-slate-500">{step.step}.</span>}
+                    {missing.length ? "🔒 " : ""}
+                    {t.name}
+                  </span>
+                  <span className="shrink-0 text-xs text-amber-300">{stars(t.difficulty)}</span>
                 </button>
+                {missing.length > 0 && <p className="text-[11px] text-slate-500">erst: {missing.map((m) => m.name).join(", ")}</p>}
                 {open === t.id && (
                   <>
+                    {step?.why && <p className="mt-1 text-xs text-emerald-200/80">{step.why}</p>}
                     {t.how_to && <p className="mt-1 text-xs leading-relaxed text-slate-400">{t.how_to}</p>}
                     <button className="btn-primary mt-2 w-full py-2 text-xs" onClick={() => void setStatus(t, "lernt")}>
                       🎯 Jetzt lernen
@@ -226,9 +296,10 @@ function GameRow({ g, open, onToggle, onDone }: { g: Game; open: boolean; onTogg
 
 /** Compact hint inside the "Tricks mit Pouchi" timer: what to work on right now. */
 export function PouchiTimerHint() {
-  const { tricks, games } = usePouchi();
+  const { tricks, games, plan } = usePouchi();
   const [panel, setPanel] = useState(false);
   const learning = tricks.filter((t) => t.status === "lernt");
+  const next = learning.length ? null : trainingPath(tricks, plan).next;
   const known = tricks.filter((t) => t.status === "kann");
   const review = known.length ? [0, 1, 2].map((i) => known[(dayIndex() * 3 + i) % known.length].name) : [];
   const game = games.length ? games[dayIndex() % games.length] : null;
@@ -238,6 +309,11 @@ export function PouchiTimerHint() {
       {learning.length > 0 && (
         <p>
           🎯 <b>Neu:</b> {learning.map((t) => t.name).join(", ")}
+        </p>
+      )}
+      {next && (
+        <p>
+          ▶ <b>Nächster Trick:</b> {next.trick.name} <span className="text-slate-500">(im Panel „🎯 Jetzt lernen“)</span>
         </p>
       )}
       {review.length > 0 && (

@@ -195,7 +195,13 @@ wiederholen · Spiel danach) mit Knopf zu allen Tricks & Spielen. Pixel-Pouchi (
 - `dog_tricks.status`: `kann` · `lernt` · `idee`; `difficulty` 1–3 (★); `how_to` = kurze Trainingsschritte. App: „✓ 5 min geübt“,
   „🎉 Kann er!“ (→ `kann`, `mastered_on`, Erfolg „Pouchi kann: …“), „🎯 Jetzt lernen“ bei Ideen. Wiederholen: täglich 3 bekannte Tricks.
 - Kann (Stand 29.10.2026): Sitz, Platz, Dreh dich, Komm hoch, Sitz schön (Männchen), High Five links/rechts, Pfötchen, anderes Pfötchen,
-  Gib zehn. Lernt: Touch. Ideen: Andersrum drehen, Winken, Verbeugen, Bleib, Rolle, Peng, Rückwärts, Acht, Schäm dich, Aufräumen, Decke.
+  Gib zehn, Touch („Stupsi“, Nase an Hand, seit 03.11.2026). Lernt: –. Ideen: siehe Trainingsplan.
+- **🗺️ Trainingsplan** (`dog_trick_plan`: `trick_id`, `step`, `requires` uuid[], `why`): App zeigt „▶ Nächster Trick“ = niedrigster
+  `step`, der noch `idee` ist und dessen Voraussetzungen alle `kann` sind (nur wenn gerade nichts `lernt`); nach „🎉 Kann er!“ nennt
+  sie direkt den nächsten. Liste in Plan-Reihenfolge, 🔒 = Voraussetzung fehlt (`trainingPath()` in `Pouchi.tsx`). Plan (Stand 06.11.2026):
+  1 Andersrum drehen · 2 Hand folgen (aus Touch) · 3 Winken · 4 Bleib · 5 Touch Gegenstand (Post-it) · 6 Verbeugen · 7 Rückwärts ·
+  8 Auf die Decke · 9 Rolle · 10 Acht · 11 Klingel drücken · 12 Schäm dich · 13 Peng · 14 Bring & Aus · 15 Aufräumen · 16 Tür zumachen.
+  Neue Ideen per `insert` in `dog_tricks` **und** `dog_trick_plan` (Insert geht direkt, Plan ist deshalb eine eigene Tabelle).
 - `dog_games` (Nase/Puzzle/Kopf/Bewegung): Spiel des Tages rotiert täglich; „✓ Gespielt“.
 - Alles Geübte/Gespielte = erledigte Aufgabe „Pouchi: …“ (`attribute='verbunden'`, `element='wasser'`) → zählt wie Aufgaben.
 - Erzählt Joshua „Pouchi kann jetzt X“ → `insert`/Änderungsvorschlag (`dog_tricks` ist in `change_requests` nicht erlaubt → als
