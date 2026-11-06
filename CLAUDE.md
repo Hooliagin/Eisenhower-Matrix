@@ -235,10 +235,16 @@ where id = (select id from detox_sessions where kind = 'evening' and result is n
 
 Ordner: **Starke Mitte** (= die Partei: Recruiting, Event-Reihe „Wein & Brezel“, Social Media) · **Pluma Media** (Content,
 Werbekampagnen, Konzept über Dienstleistung hinaus; Kim) · **Baumklettern** (AS1-Schein) · **Lesen** (`kind='books'`) ·
-**Michael Rentsch Consulting Website**. Unterordner über `projects.parent_id`. Einträge = `tasks` mit `project_id`
+**Michael Rentsch Consulting Website** · **Freunde** · **Arbeit** 🩺 (Pflege, Checkliste Antonia). Unterordner über `projects.parent_id`. Einträge = `tasks` mit `project_id`
 (Quadrant `schedule`, `due_date` = Projekt-Deadline).
 **Michael Rentsch** (gesprochen mit Ä, Anrede immer „Hey Michael“) gibt es in zwei Projekten – nicht verwechseln:
 Partei-Videos/Instagram-Reels → **Starke Mitte**; seine Consulting-Website (Link, Prototyp, Fotos, Brainstorming) → **Website-Projekt**.
+
+**📋 Checklisten** (`checklists` → `checklist_items` → `checklist_checks`, `Checklists.tsx`, in jedem Projekt oben): tägliche
+Abhak-Listen. Tipp = Haken für heute (`checked_on`, Europe/Berlin) → Punkt verschwindet; am nächsten Tag ist die Liste wieder voll.
+„↶ Rückgängig“, „Erledigt: n“ zum Wieder-Öffnen, „Punkt hinzufügen…“ in der App. Aktuell: Projekt **Arbeit** 🩺 → „Checkliste Antonia“
+(Feierabend-Checkliste aus der Pflege, 19 Punkte). Punkt entfernen = `active=false` (per Änderungsvorschlag), neue per Insert:
+`insert into checklist_items (checklist_id, text, position) select id, '…', 20 from checklists where title = 'Checkliste Antonia';`
 
 `followups` = Leute, denen Joshua hinterher sein muss:
 - `status='todo'`: muss schreiben → `draft` = vorformulierte Nachricht (Kopieren-Button in der App)

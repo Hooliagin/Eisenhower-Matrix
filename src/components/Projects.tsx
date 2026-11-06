@@ -4,6 +4,7 @@ import { isoDate, parseDate } from "../lib/dates";
 import { fire, supabase } from "../lib/supabase";
 import type { Followup, Project } from "../lib/types";
 import BooksPanel from "./Books";
+import Checklists from "./Checklists";
 import { countdown } from "./Calendar";
 import { UndoToast, useTaskActions } from "./Matrix";
 import TaskCard from "./TaskCard";
@@ -194,6 +195,8 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
       </header>
 
       {project.kind === "books" && <BooksPanel />}
+
+      <Checklists projectId={project.id} />
 
       {project.kind !== "books" && (children.length > 0 || !project.parent_id) && (
         <section className="flex flex-col gap-2">
