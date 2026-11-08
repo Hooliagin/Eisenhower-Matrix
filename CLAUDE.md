@@ -428,7 +428,7 @@ siehe RPG-Schicht). Quellen: siehe „Querverbindungen“.
 
 ## Fitness (`exercises`, `workout_templates`, `template_exercises`, `workout_sessions`, `set_logs`)
 
-Split: **A** Schulter & Rücken (2×/Woche) · **B** Brust & Arme (2×/Woche: Curls+Pushdowns als Supersatz · Dips · Overhead Trizepsdrücken (Kabel) · Preacher · Hammer ·
+Split: **A** Schulter & Rücken (2×/Woche: Shoulder Press · Seated Shoulder Press · Seitheben · Latzug · Stehendes Rudern (statt T-Bar Rows, seit 08.11.2026) · Shrugs · Klimmzüge breit (Körpergewicht = `weight 0`) · Jefferson Curls fest am Ende) · **B** Brust & Arme (2×/Woche: Curls+Pushdowns als Supersatz · Dips · Overhead Trizepsdrücken (Kabel) · Preacher · Hammer ·
 Einarmige Trizeps-Extensions · Butterflies am Ende) · **C** Beine & Bauch (1×/Woche) ·
 **D** Sprint (**mindestens 1×/Woche**; Übung `Sprints`, `metric='sprint'`: `seconds` (2 Nachkommastellen) + `meters`) · **E** Unterarme (**bei Bedarf**,
 `times_per_week = 0` → wird nie „empfohlen“, zählt aber normal; zuletzt Mi 28.10.2026). · **F** Beine Home (Variante von C für zu Hause, `times_per_week = 0`: Belt Squats · Sissy Squats ·
