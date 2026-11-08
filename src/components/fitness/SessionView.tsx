@@ -188,6 +188,11 @@ export default function SessionView({ id, templates, back }: Props) {
       <button className="btn-primary py-3" onClick={finish}>
         {session.finished_at ? "Speichern & zurück" : "Training abschließen ✓"}
       </button>
+      {!session.finished_at && (
+        <p className="text-center text-[11px] text-slate-500">
+          Jeder Satz ist sofort gespeichert. Vergessen abzuschließen? Kein Problem, 90 min nach dem letzten Satz schließt die App das Training automatisch ab.
+        </p>
+      )}
       <button className="text-xs text-red-400/70" onClick={remove}>Training löschen</button>
     </div>
   );

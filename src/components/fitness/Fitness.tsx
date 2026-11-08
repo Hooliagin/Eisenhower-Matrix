@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { suggestTemplate, useSessions, useTemplates } from "../../lib/data";
 import { formatLong, isoDate, parseDate } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
@@ -24,6 +24,14 @@ export default function Fitness() {
   const [boxing, setBoxing] = useState(false);
   const { data: templates } = useTemplates();
   const { data: sessions, refresh } = useSessions();
+  const starting = useRef(false);
+
+  // Offene Trainings mit Sätzen automatisch abschließen, wenn der letzte Satz > 90 min her ist (App einfach zugemacht).
+  useEffect(() => {
+    void supabase.rpc("autofinish_sessions").then(({ data }) => {
+      if (data) void refresh();
+    });
+  }, []);
 
   useEffect(() => {
     const on = () => setView(readView());
@@ -61,8 +69,22 @@ export default function Fitness() {
     // An unfinished session of this plan from today → just continue it instead of starting a second one.
     const open = sessions.find((s) => !s.finished_at && s.template_id === templateId && s.session_date === isoDate());
     if (open) return nav({ kind: "session", id: open.id });
+    if (starting.current) return; // Doppeltipp auf „Start“ → nicht zwei Trainings anlegen
+    starting.current = true;
     const { data, error } = await supabase.from("workout_sessions").insert({ template_id: templateId, session_date: isoDate() }).select().single();
-    if (error) return alert(error.message);
+    starting.current = false;
+    if (error) {
+      // Schon eine offene Session für diesen Plan heute (z. B. auf dem anderen Gerät gestartet) → die öffnen.
+      const { data: existing } = await supabase
+        .from("workout_sessions")
+        .select("id")
+        .eq("template_id", templateId)
+        .eq("session_date", isoDate())
+        .is("finished_at", null)
+        .maybeSingle();
+      if (existing) return nav({ kind: "session", id: existing.id });
+      return alert(error.message);
+    }
     if ("Notification" in window && Notification.permission === "default") void Notification.requestPermission();
     await refresh();
     nav({ kind: "session", id: data.id });

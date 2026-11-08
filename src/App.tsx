@@ -54,7 +54,11 @@ export default function App() {
       .then(({ data }) => {
         setOwner(!!data);
         // Today's routine tasks (idempotent on the server).
-        if (data) fire(supabase.rpc("spawn_routine_tasks", { d: isoDate() }));
+        if (data) {
+          fire(supabase.rpc("spawn_routine_tasks", { d: isoDate() }));
+          // Vergessenes „Training abschließen“ nachholen (letzter Satz > 90 min her oder Vortag).
+          fire(supabase.rpc("autofinish_sessions"));
+        }
       });
   }, [session]);
 

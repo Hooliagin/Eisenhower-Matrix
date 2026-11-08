@@ -449,6 +449,11 @@ Nennt Joshua Zeiten im Chat: `set_logs` mit `seconds = 8.12, meters = 60` in ein
 **Laufendes Training** (heute begonnen, nicht abgeschlossen): Fitness-Reiter und Startseiten-Kachel springen direkt hinein;
 nach „‹“ bleibt man in der Übersicht (bis zum nächsten Öffnen). „Start“ beim selben Plan öffnet das laufende statt ein zweites.
 
+**Automatisch abschließen:** Sätze werden sofort gespeichert; vergisst Joshua „Training abschließen“, setzt `autofinish_sessions()`
+(beim App-Start und im Fitness-Reiter) `finished_at` = Zeit des letzten Satzes, sobald der > 90 min her ist oder der Tag vorbei ist
+(Notiz „automatisch abgeschlossen“). Doppelstart verhindert: Unique-Index `workout_sessions_one_open` (eine offene Session pro Plan & Tag)
++ Sperre gegen Doppeltipp in `start()`; bei Konflikt öffnet die App die vorhandene Session.
+
 Pause 120 s (`rest_seconds`); `superset_group` = Supersatz (Timer erst nach der letzten Übung der Gruppe); `optional` = eingeklappt.
 `exercises.metric`: `weight_reps` · `weight_distance` (Farmers Walk) · `weight_time`.
 ```sql
