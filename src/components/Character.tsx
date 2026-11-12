@@ -30,10 +30,10 @@ import {
   type Skill,
 } from "../lib/character";
 
-type Leveled = { s: AttrSummary; bg: number; xp: number; level: number; pct: number; toNext: number };
+export type Leveled = { s: AttrSummary; bg: number; xp: number; level: number; pct: number; toNext: number };
 
 /** Attribute levels from activity XP plus background XP (skills you already had before the app). */
-function levels(summary: AttrSummary[], skills: Skill[]) {
+export function levels(summary: AttrSummary[], skills: Skill[]) {
   const by = (a: Attribute) => summary.find((s) => s.attribute === a) ?? { attribute: a, xp_total: 0, xp_14: 0, xp_prev_14: 0 };
   return Object.fromEntries(
     ATTR_ORDER.map((a) => {
@@ -54,7 +54,7 @@ function Bar({ pct, color, h = "h-1.5" }: { pct: number; color: string; h?: stri
 }
 
 /** Segmented "pixel" bar like an RPG HP/XP bar. */
-function PixelBar({ pct, color, segments = 12 }: { pct: number; color: string; segments?: number }) {
+export function PixelBar({ pct, color, segments = 12 }: { pct: number; color: string; segments?: number }) {
   const on = Math.round(Math.max(0, Math.min(1, pct)) * segments);
   return (
     <div className="flex gap-[2px]">
@@ -146,7 +146,7 @@ export function BalancePanel({ b, bonusTotal, thisWeek }: { b: Balance; bonusTot
 }
 
 /** Pick a quest of the day from the skills' next steps (rotates daily). */
-function questOfDay(skills: Skill[]): Skill | null {
+export function questOfDay(skills: Skill[]): Skill | null {
   const q = skills.filter((s) => s.next_step);
   if (!q.length) return null;
   const day = Math.floor(Date.now() / 86_400_000);
@@ -154,7 +154,7 @@ function questOfDay(skills: Skill[]): Skill | null {
 }
 
 /** Remembers last seen levels on this device and reports what went up since. */
-function useLevelUps(levelsNow: Record<string, number>, ready: boolean): string[] {
+export function useLevelUps(levelsNow: Record<string, number>, ready: boolean): string[] {
   const [ups, setUps] = useState<string[]>([]);
   const key = JSON.stringify(levelsNow);
   useEffect(() => {
@@ -171,7 +171,7 @@ function useLevelUps(levelsNow: Record<string, number>, ready: boolean): string[
 }
 
 /** Today's new personal bests – one quiet line on the home card, only when there is something. */
-function TodayRecords() {
+export function TodayRecords() {
   const { data } = useProgress();
   const recs = data.filter((m) => m.is_record && m.latest_day === isoDate());
   if (!recs.length) return null;

@@ -2,7 +2,7 @@
  * Pixel-art Joshua: blond, athletic, green sweater (what he often wears), MMA gloves, Master cap, tea towel & badge from care work.
  * Drawn from a character map so it stays crisp at any size; an outline is added automatically.
  */
-const SPRITE = [
+export const SPRITE = [
   "....KKKKKKKKKKKK....",
   "...KkkkkkkkkkkkkKY..",
   "......KKKKKKKK...Y..",
@@ -34,7 +34,7 @@ const SPRITE = [
 ];
 
 // Outfit: Master cap with gold tassel (Politikwissenschaft), MMA gloves, tea towel + name badge (Alltagsbegleiter in der Pflege).
-const PALETTE: Record<string, string> = {
+export const PALETTE: Record<string, string> = {
   K: "#475569", // mortarboard
   k: "#94a3b8",
   Y: "#fbbf24", // tassel

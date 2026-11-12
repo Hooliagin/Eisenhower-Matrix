@@ -5,7 +5,8 @@ import { addDays, formatLong, isoDate, parseDate } from "../lib/dates";
 import { buildSchedule, fmtMinutes, hhmm, todayTasks } from "../lib/schedule";
 import { supabase } from "../lib/supabase";
 import AddTask from "./AddTask";
-import { CharacterCard, CharacterView } from "./Character";
+import { CharacterView } from "./Character";
+import HeroCard from "./HeroCard";
 import DetoxCard from "./DetoxCard";
 import NutritionCard from "./NutritionCard";
 import QuickHabits from "./QuickHabits";
@@ -75,7 +76,7 @@ export default function Home() {
   if (sub === "character") return <CharacterView />;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="page flex flex-col gap-3 pt-4">
       <header className="flex items-start justify-between">
         <div>
           <p className="text-sm text-slate-400">{formatLong(now)}</p>
@@ -85,7 +86,7 @@ export default function Home() {
       </header>
 
       <ChangeRequests />
-      <CharacterCard />
+      <HeroCard />
 
       <DetoxCard />
 

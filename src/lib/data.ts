@@ -1,42 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
+import { useLive } from "./live";
 import type { Book, CalendarEvent, Followup, Project, Quadrant, ReadingLog, ShoppingItem, Task, WorkoutSession, WorkoutTemplate } from "./types";
 import type { Achievement, AttrSummary, CharacterMeta, CharacterStat, Element, Skill } from "./character";
 import { addDays, isoDate, weekStart } from "./dates";
-
-/** Refetch on mount, when the tab regains focus, and on realtime changes to `tables`. */
-function useLive<T>(load: () => Promise<T>, tables: string[], initial: T) {
-  const [data, setData] = useState<T>(initial);
-  const [loading, setLoading] = useState(true);
-  const loadRef = useRef(load);
-  loadRef.current = load;
-  const key = tables.join("-");
-
-  const refresh = useCallback(async () => {
-    try {
-      setData(await loadRef.current());
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-    const onFocus = () => document.visibilityState === "visible" && void refresh();
-    document.addEventListener("visibilitychange", onFocus);
-    const channel = supabase.channel(`live-${key}-${Math.random().toString(36).slice(2)}`);
-    key.split("-").forEach((table) =>
-      channel.on("postgres_changes", { event: "*", schema: "public", table }, () => void refresh()),
-    );
-    channel.subscribe();
-    return () => {
-      document.removeEventListener("visibilitychange", onFocus);
-      void supabase.removeChannel(channel);
-    };
-  }, [refresh, key]);
-
-  return { data, setData, loading, refresh };
-}
 
 function must<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message);
@@ -47,6 +13,7 @@ function must<T>(res: { data: T | null; error: { message: string } | null }): T 
 
 export function useTasks() {
   return useLive<Task[]>(
+    "tasks",
     async () => {
       // Open tasks plus everything finished in the last 7 days.
       const since = addDays(new Date(), -7).toISOString();
@@ -83,6 +50,7 @@ export async function deleteTask(id: string) {
 
 export function useShopping() {
   return useLive<ShoppingItem[]>(
+    "shopping",
     async () => must(await supabase.from("shopping_items").select("*").order("done").order("position")),
     ["shopping_items"],
     [],
@@ -93,6 +61,7 @@ export function useShopping() {
 
 export function useProjects() {
   return useLive<{ projects: Project[]; followups: Followup[]; tasks: Task[] }>(
+    "projects",
     async () => {
       const since = addDays(new Date(), -14).toISOString();
       const [p, f, t] = await Promise.all([
@@ -154,6 +123,7 @@ export function useCharacter() {
     elements7: Partial<Record<Element, number>>;
     harmonyWeeks: HarmonyWeek[];
   }>(
+    "character",
     async () => {
       const [s, c, k, a, m, e, h] = await Promise.all([
         supabase.from("character_summary").select("*"),
@@ -176,7 +146,7 @@ export function useCharacter() {
         harmonyWeeks: (h.data ?? []) as HarmonyWeek[],
       };
     },
-    ["tasks", "reading_log", "workout_sessions", "character_stats", "events", "skills", "achievements", "character_meta", "poem_attempts", "poems", "detox_sessions"],
+    ["tasks", "reading_log", "workout_sessions", "character_stats", "events", "skills", "achievements", "character_meta", "poem_attempts", "poems", "detox_sessions", "meals"],
     { summary: [], stats: [], skills: [], achievements: [], meta: null, elements7: {}, harmonyWeeks: [] },
   );
 }
@@ -200,6 +170,7 @@ export interface MetricProgress {
 
 export function useProgress() {
   return useLive<MetricProgress[]>(
+    "progress",
     async () => must(await supabase.from("metric_progress").select("*").order("label")),
     ["tasks", "reading_log", "workout_sessions", "breath_sessions", "meals", "drink_log", "events"],
     [],
@@ -218,6 +189,7 @@ export function fmtMetric(value: number | null, unit: string): string {
 
 export function useElements() {
   return useLive<{ element: string; day: string; minutes: number; label: string }[]>(
+    "elements",
     async () =>
       must(
         await supabase
@@ -226,7 +198,7 @@ export function useElements() {
           .gte("day", isoDate(addDays(weekStart(), -7 * 4)))
           .order("day", { ascending: false }),
       ),
-    ["tasks", "reading_log", "workout_sessions", "events"],
+    ["tasks", "reading_log", "workout_sessions", "events", "detox_sessions", "poem_attempts", "meals"],
     [],
   );
 }
@@ -243,6 +215,7 @@ export interface DetoxSession {
 
 export function useDetox() {
   return useLive<DetoxSession[]>(
+    "detox",
     async () =>
       must(
         await supabase
@@ -305,6 +278,7 @@ export function useNutrition(day: string = isoDate()) {
     lastDrinkAt: string | null;
     week: NutritionWeekDay[];
   }>(
+    `nutrition:${day}`,
     async () => {
       const today = day;
       const monday = weekStart(new Date(`${day}T12:00:00`));
@@ -348,6 +322,7 @@ export async function removeLastDrink(day: string = isoDate()) {
 
 export function useBooks() {
   return useLive<{ books: Book[]; log: ReadingLog[] }>(
+    "books",
     async () => {
       const from = isoDate(addDays(weekStart(), -7 * 7));
       const [b, l] = await Promise.all([
@@ -383,6 +358,7 @@ export async function updateBook(id: string, patch: Partial<Book>) {
 /** Open tasks with a deadline plus events, from `from` onwards. */
 export function useCalendar(from: string) {
   return useLive<{ events: CalendarEvent[]; deadlines: Task[] }>(
+    `calendar:${from}`,
     async () => {
       const [e, t] = await Promise.all([
         supabase.from("events").select("*").gte("event_date", from).order("event_date").order("start_time"),
@@ -409,6 +385,7 @@ export async function deleteEvent(id: string) {
 
 export function useTemplates() {
   return useLive<WorkoutTemplate[]>(
+    "templates",
     async () => {
       const rows = must(
         await supabase
@@ -427,6 +404,7 @@ export function useTemplates() {
 
 export function useSessions() {
   return useLive<WorkoutSession[]>(
+    "sessions",
     async () =>
       must(
         await supabase

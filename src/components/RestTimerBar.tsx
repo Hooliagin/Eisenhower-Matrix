@@ -20,7 +20,7 @@ export default function RestTimerBar() {
   const pct = total ? (1 - remaining / total) * 100 : 100;
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+3.6rem)] z-40 px-3">
+    <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.9rem)] z-40 px-3">
       <div
         className={`mx-auto flex max-w-md items-center gap-3 overflow-hidden rounded-2xl border p-3 shadow-2xl ${
           done ? "animate-pulse border-emerald-400 bg-emerald-600" : "border-slate-700 bg-slate-900"
