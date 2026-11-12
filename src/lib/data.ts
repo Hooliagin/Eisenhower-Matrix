@@ -151,6 +151,56 @@ export function useCharacter() {
   );
 }
 
+// ---------- Activity (XP per day) ----------
+
+export interface XpEvent {
+  attribute: string;
+  day: string;
+  xp: number;
+  label: string;
+}
+
+/** Every XP event of the last ~17 weeks – feeds the streak, the activity heatmap and the weekly review. */
+export function useActivity() {
+  return useLive<XpEvent[]>(
+    "activity",
+    async () => must(await supabase.from("xp_events").select("attribute, day, xp, label").gte("day", isoDate(addDays(weekStart(), -7 * 16))).order("day")),
+    ["tasks", "reading_log", "workout_sessions", "events", "poem_attempts", "poems", "meals"],
+    [],
+  );
+}
+
+/** A day counts as active from 10 XP (≈ 10 focused minutes). */
+export const ACTIVE_XP = 10;
+
+export function xpByDay(events: XpEvent[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const e of events) m.set(e.day, (m.get(e.day) ?? 0) + Number(e.xp));
+  return m;
+}
+
+/**
+ * Days in a row with activity. Today only extends the streak – a streak that ran until yesterday is still alive
+ * ("open") until the day is over, so opening the app in the morning never shows a broken streak.
+ */
+export function streak(events: XpEvent[], today = isoDate()): { days: number; todayDone: boolean; best: number } {
+  const by = xpByDay(events);
+  const active = (d: string) => (by.get(d) ?? 0) >= ACTIVE_XP;
+  const todayDone = active(today);
+  let days = 0;
+  for (let d = todayDone ? new Date() : addDays(new Date(), -1); active(isoDate(d)); d = addDays(d, -1)) days++;
+  // longest run in the loaded window
+  let best = 0;
+  let run = 0;
+  const first = events[0]?.day;
+  if (first)
+    for (let d = new Date(`${first}T12:00:00`); isoDate(d) <= today; d = addDays(d, 1)) {
+      run = active(isoDate(d)) ? run + 1 : 0;
+      best = Math.max(best, run);
+    }
+  return { days, todayDone, best: Math.max(best, days) };
+}
+
 // ---------- Progress & records ----------
 
 export interface MetricProgress {
