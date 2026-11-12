@@ -4,7 +4,7 @@ import { PixelPouchi } from "../components/Pouchi";
 import type { Balance } from "../lib/character";
 import { worldBus } from "./bus";
 import { skyAt } from "./sky";
-import type { Hit, World, WorldState } from "./World";
+import type { Hit, View, World, WorldState } from "./World";
 
 export type { Hit };
 
@@ -33,6 +33,8 @@ export function use3D(): [boolean, (on: boolean) => void] {
 interface Props {
   balance: Balance;
   enabled?: boolean;
+  /** Whole island (start page) or close-up of Joshua and Pouchi (character sheet). */
+  view?: View;
   onTap?: (hit: Hit) => void;
   className?: string;
   /** HUD drawn over the scene. */
@@ -43,7 +45,7 @@ interface Props {
  * The living island: sky by CSS (instant), the 3D scene loads on demand on top of it.
  * The scene only renders while it is on screen and the app is in the foreground.
  */
-export default function WorldView({ balance, enabled = true, onTap, className = "", children }: Props) {
+export default function WorldView({ balance, enabled = true, view = "island", onTap, className = "", children }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const world = useRef<World | null>(null);
@@ -66,6 +68,8 @@ export default function WorldView({ balance, enabled = true, onTap, className = 
   );
   const stateRef = useRef(state);
   stateRef.current = state;
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
   useEffect(() => {
     if (!enabled) return;
@@ -79,6 +83,7 @@ export default function WorldView({ balance, enabled = true, onTap, className = 
         world.current = w;
         if (import.meta.env.DEV) (window as unknown as { __world?: World }).__world = w;
         w.setState(stateRef.current);
+        w.setView(viewRef.current);
         const el = box.current;
         const size = () => w!.resize(el.clientWidth, el.clientHeight, window.devicePixelRatio || 1);
         size();
@@ -118,6 +123,9 @@ export default function WorldView({ balance, enabled = true, onTap, className = 
   useEffect(() => {
     world.current?.setState(state);
   }, [state, ready]);
+  useEffect(() => {
+    world.current?.setView(view);
+  }, [view, ready]);
 
   const show3D = enabled && !failed;
   return (

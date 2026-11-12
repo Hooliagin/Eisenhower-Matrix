@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ask } from "./ui/Sheet";
 import { createEvent, createTasks, deleteEvent, updateTask, useCalendar, useSessions, useTemplates } from "../lib/data";
 import { addDays, isoDate, parseDate, weekStart, WEEKDAY_SHORT } from "../lib/dates";
 import type { CalendarEvent, Task } from "../lib/types";
@@ -109,7 +110,7 @@ export default function Calendar() {
   }
 
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="page flex flex-col gap-4 pt-4">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Kalender</h1>
         <div className="flex items-center gap-1">
@@ -176,7 +177,7 @@ export default function Calendar() {
                   e.title
                 )}
               </span>
-              <button className="text-xs text-slate-600" onClick={() => confirm(`„${e.title}“ löschen?`) && void deleteEvent(e.id)}>✕</button>
+              <button className="text-xs text-slate-600" onClick={async () => (await ask.confirm(`„${e.title}“ löschen?`, { ok: "Löschen", danger: true })) && void deleteEvent(e.id)}>✕</button>
             </li>
           ))}
           {sel.deadlines.map((t) => (

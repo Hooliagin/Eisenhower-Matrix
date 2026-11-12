@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ask } from "./ui/Sheet";
 import { supabase } from "../lib/supabase";
 
 interface ChangeRequest {
@@ -37,7 +38,7 @@ export default function ChangeRequests() {
     if (apply) {
       const q = supabase.from(r.table_name);
       const { error } = r.action === "delete" ? await q.delete().eq("id", r.row_id) : await q.update(r.patch ?? {}).eq("id", r.row_id);
-      if (error) return alert(`Konnte nicht übernommen werden: ${error.message}`);
+      if (error) return void ask.show("Konnte nicht übernommen werden", error.message);
     }
     await supabase.from("change_requests").update({ status: apply ? "applied" : "rejected", decided_at: new Date().toISOString() }).eq("id", r.id);
     setItems((xs) => xs.filter((x) => x.id !== r.id));

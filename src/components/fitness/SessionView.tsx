@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ask } from "../ui/Sheet";
 import { fire, supabase } from "../../lib/supabase";
 import { formatLong, parseDate } from "../../lib/dates";
 import { useRestTimer } from "../../lib/timer";
@@ -77,12 +78,12 @@ export default function SessionView({ id, templates, back }: Props) {
       .insert({ session_id: id, exercise_id: te.exercise_id, set_number: setNumber, ...values })
       .select()
       .single();
-    if (error) return alert(error.message);
+    if (error) return void ask.show("Satz nicht gespeichert", error.message);
     setLogs((l) => [...l, data]);
   }
 
   async function removeSet(log: SetLog) {
-    if (!confirm(`Satz ${log.set_number} löschen?`)) return;
+    if (!(await ask.confirm(`Satz ${log.set_number} löschen?`, { ok: "Löschen", danger: true }))) return;
     setLogs((l) => l.filter((x) => x.id !== log.id));
     await supabase.from("set_logs").delete().eq("id", log.id);
   }
@@ -96,7 +97,7 @@ export default function SessionView({ id, templates, back }: Props) {
   }
 
   async function remove() {
-    if (!confirm("Dieses Training komplett löschen?")) return;
+    if (!(await ask.confirm("Dieses Training komplett löschen?", { text: "Alle Sätze dieses Trainings gehen verloren.", ok: "Löschen", danger: true }))) return;
     await supabase.from("workout_sessions").delete().eq("id", id);
     back();
   }

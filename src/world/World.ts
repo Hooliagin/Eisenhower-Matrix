@@ -43,6 +43,8 @@ export interface WorldState {
 }
 
 export type Hit = "hero" | "dog" | Element;
+/** "island" shows the whole world, "portrait" moves in on Joshua and Pouchi (character sheet). */
+export type View = "island" | "portrait";
 
 const U = TERRAIN;
 const HERO_SCALE = 1.22;
@@ -161,6 +163,7 @@ export class World {
   private state: WorldState | null = null;
   private built = "";
   private running = false;
+  private view: View = "island";
   private last = 0;
   private t = 0;
 
@@ -374,14 +377,29 @@ export class World {
     this.renderer.setPixelRatio(Math.min(dpr, 2));
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
-    const tan = Math.tan((this.camera.fov * Math.PI) / 360);
-    const dist = Math.max(13.2 / 2 / (tan * this.camera.aspect), 9.6 / 2 / tan);
-    const el = 0.25;
-    this.camera.position.set(0, 1.5 + Math.sin(el) * dist, Math.cos(el) * dist);
-    this.camera.lookAt(0, 1.5, 0);
+    this.frameCamera();
     this.camera.updateProjectionMatrix();
     this.placeOrb();
     if (!this.running) this.frame(performance.now());
+  }
+
+  setView(v: View) {
+    if (v === this.view) return;
+    this.view = v;
+    this.frameCamera();
+    this.camera.updateProjectionMatrix();
+    this.placeOrb();
+  }
+
+  /** Put the camera so that the island (or the hero) just fills the canvas, whatever its shape. */
+  private frameCamera() {
+    const tan = Math.tan((this.camera.fov * Math.PI) / 360);
+    const portrait = this.view === "portrait";
+    const [w, h, el] = portrait ? [5.6, 5.4, 0.13] : [13.2, 9.6, 0.25];
+    const dist = Math.max(w / 2 / (tan * this.camera.aspect), h / 2 / tan);
+    const target = portrait ? new Vector3(0.35, 2.15, 0.4) : new Vector3(0, 1.5, 0);
+    this.camera.position.set(target.x, target.y + Math.sin(el) * dist, target.z + Math.cos(el) * dist);
+    this.camera.lookAt(target);
   }
 
   setRunning(on: boolean) {

@@ -428,7 +428,8 @@ export function useCalendar(from: string) {
     async () => {
       const [e, t] = await Promise.all([
         supabase.from("events").select("*").gte("event_date", from).order("event_date").order("start_time"),
-        supabase.from("tasks").select("*").not("due_date", "is", null).gte("due_date", from).order("due_date"),
+        // routines get a task per day – those are not deadlines and would paint every calendar day red
+        supabase.from("tasks").select("*").not("due_date", "is", null).is("routine_id", null).gte("due_date", from).order("due_date"),
       ]);
       return { events: must(e), deadlines: must(t) };
     },

@@ -35,10 +35,10 @@ export default {
         shimmer: { from: { backgroundPosition: "200% 0" }, to: { backgroundPosition: "-200% 0" } },
       },
       animation: {
-        rise: "rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both",
+        rise: "rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards",
         fade: "fade 0.3s ease-out both",
-        pop: "pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both",
-        sheet: "sheet 0.32s cubic-bezier(0.2, 0.85, 0.25, 1) both",
+        pop: "pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards",
+        sheet: "sheet 0.32s cubic-bezier(0.2, 0.85, 0.25, 1) backwards",
         shimmer: "shimmer 2.4s linear infinite",
       },
     },

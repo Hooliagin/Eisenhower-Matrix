@@ -25,13 +25,13 @@ export default function Tasks() {
   const go = (s: Segment) => (location.hash = `tasks/${s}`);
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
-      <div className="flex rounded-xl bg-slate-900 p-1">
+    <div className="page flex flex-col gap-3 pt-4">
+      <div className="flex rounded-2xl border border-white/5 bg-white/[0.04] p-1">
         {SEGMENTS.map((s) => (
           <button
             key={s.id}
             onClick={() => go(s.id)}
-            className={`flex-1 rounded-lg py-1.5 text-sm ${seg === s.id ? "bg-slate-100 font-medium text-slate-900" : "text-slate-400"}`}
+            className={`flex-1 rounded-xl py-1.5 text-sm transition ${seg === s.id ? "bg-slate-100 font-medium text-slate-900 shadow" : "text-slate-400"}`}
           >
             {s.label}
           </button>

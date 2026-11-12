@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ask } from "./ui/Sheet";
 import { createTasks, isDue, resolvedPatch, sentPatch, updateFollowup, useProjects } from "../lib/data";
 import { isoDate, parseDate } from "../lib/dates";
 import { fire, supabase } from "../lib/supabase";
@@ -35,7 +36,7 @@ export function FollowupCard({ f, project, onPatch }: { f: Followup; project?: P
     try {
       await navigator.clipboard.writeText(draft);
     } catch {
-      prompt("Zum Kopieren markieren:", draft);
+      await ask.show("Zum Kopieren markieren", draft);
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
@@ -184,7 +185,7 @@ function ProjectDetail({ project, back }: { project: Project; back: () => void }
   const openTasks = tasks.filter((t) => !t.done).sort((a, b) => (a.due_date ?? "9").localeCompare(b.due_date ?? "9"));
 
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="page flex flex-col gap-4 pt-4">
       <header className="flex items-center gap-2">
         <button className="btn-ghost px-2" onClick={back}>‹</button>
         <div>
@@ -322,7 +323,7 @@ export default function Projects() {
   const due = data.followups.filter((f) => isDue(f, today));
 
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="page flex flex-col gap-4 pt-4">
       <h1 className="text-2xl font-semibold">Projekte</h1>
 
       {due.length > 0 && (

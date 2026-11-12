@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ask } from "./ui/Sheet";
 import { logReading, minutesThisWeek, updateBook, useBooks } from "../lib/data";
 import { isoDate, weekDays, WEEKDAY_SHORT } from "../lib/dates";
 import { fmtMinutes } from "../lib/schedule";
@@ -44,7 +45,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      prompt("Zum Kopieren:", text);
+      await ask.show("Zum Kopieren markieren", text);
     }
   }
   return (
@@ -78,11 +79,11 @@ function BookCard({ book, onPatch, onLog }: { book: Book; onPatch: (b: Book, p: 
   const [open, setOpen] = useState(false);
   const showDe = open || book.status === "to_buy" || book.status === "idea"; // buying info right away
 
-  function setProgress() {
-    const raw = prompt(`Fortschritt für „${book.title}“ in % (0–100):`, String(book.progress_pct ?? ""));
+  async function setProgress() {
+    const raw = await ask.number({ title: "Wie weit bist du?", text: book.title_de ?? book.title, value: book.progress_pct, unit: "%", chips: [10, 25, 50, 75, 90, 100] });
     if (raw === null) return;
-    const n = Math.max(0, Math.min(100, Math.round(Number(raw.replace("%", "")))));
-    if (!Number.isNaN(n)) onPatch(book, n === 100 ? { status: "done" } : { progress_pct: n });
+    const n = Math.max(0, Math.min(100, Math.round(raw)));
+    onPatch(book, n === 100 ? { status: "done" } : { progress_pct: n });
   }
 
   return (
@@ -127,7 +128,7 @@ function BookCard({ book, onPatch, onLog }: { book: Book; onPatch: (b: Book, p: 
             ))}
             <button
               className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-red-400"
-              onClick={() => confirm(`„${book.title}“ entfernen?`) && fire(supabase.from("books").delete().eq("id", book.id))}
+              onClick={async () => (await ask.confirm(`„${book.title}“ entfernen?`, { ok: "Entfernen", danger: true })) && fire(supabase.from("books").delete().eq("id", book.id))}
             >
               Entfernen
             </button>
@@ -160,8 +161,8 @@ export default function BooksPanel() {
   };
 
   async function log(book: Book | null) {
-    const raw = prompt(book ? `Wie viele Minuten hast du heute „${book.title}“ gelesen?` : "Wie viele Minuten hast du heute gelesen?", "30");
-    const n = raw ? Math.round(Number(raw.replace(",", "."))) : 0;
+    const raw = await ask.number({ title: "Wie lange hast du gelesen?", text: book ? (book.title_de ?? book.title) : "Heute, ohne Buch", value: 30, unit: "min", chips: [10, 15, 20, 30, 45, 60, 90] });
+    const n = raw ? Math.round(raw) : 0;
     if (n > 0) {
       await logReading(n, book?.id ?? null);
       void refresh();

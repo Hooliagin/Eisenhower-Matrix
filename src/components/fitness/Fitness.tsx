@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ask } from "../ui/Sheet";
 import { suggestTemplate, useSessions, useTemplates } from "../../lib/data";
 import { formatLong, isoDate, parseDate } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
@@ -83,7 +84,7 @@ export default function Fitness() {
         .is("finished_at", null)
         .maybeSingle();
       if (existing) return nav({ kind: "session", id: existing.id });
-      return alert(error.message);
+      return void ask.show("Training konnte nicht gestartet werden", error.message);
     }
     if ("Notification" in window && Notification.permission === "default") void Notification.requestPermission();
     await refresh();
@@ -103,14 +104,22 @@ export default function Fitness() {
   const tName = (id: string | null) => templates.find((t) => t.id === id)?.name ?? "Training";
 
   return (
-    <div className="flex flex-col gap-4 pt-4">
-      <header className="flex items-center justify-between">
+    <div className="page flex flex-col gap-4 pt-4">
+      <header>
         <h1 className="text-2xl font-semibold">Fitness</h1>
-        <div className="flex gap-2">
-          <button className="btn-ghost" onClick={() => setBoxing(true)}>🥊 Timer</button>
-          <button className="btn-ghost" onClick={() => nav({ kind: "plan" })}>Plan</button>
-          <button className="btn-ghost" onClick={() => nav({ kind: "progress" })}>Fortschritt</button>
-          <button className="btn-ghost" onClick={() => nav({ kind: "body" })}>📏 Werte</button>
+        <div className="mt-2 grid grid-cols-4 gap-1.5">
+          <button className="btn-ghost flex-col gap-0.5 py-2 text-[11px]" onClick={() => setBoxing(true)}>
+            <span className="text-lg leading-none">🥊</span>Timer
+          </button>
+          <button className="btn-ghost flex-col gap-0.5 py-2 text-[11px]" onClick={() => nav({ kind: "plan" })}>
+            <span className="text-lg leading-none">📋</span>Plan
+          </button>
+          <button className="btn-ghost flex-col gap-0.5 py-2 text-[11px]" onClick={() => nav({ kind: "progress" })}>
+            <span className="text-lg leading-none">📈</span>Fortschritt
+          </button>
+          <button className="btn-ghost flex-col gap-0.5 py-2 text-[11px]" onClick={() => nav({ kind: "body" })}>
+            <span className="text-lg leading-none">📏</span>Werte
+          </button>
         </div>
       </header>
 
@@ -128,16 +137,16 @@ export default function Fitness() {
         {weekly.map(({ t, thisWeek }) => {
           const isNext = next?.id === t.id;
           return (
-            <div key={t.id} className={`card flex items-center gap-3 p-3 ${isNext ? "border-slate-400" : ""}`}>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 text-lg font-bold">{t.code}</div>
+            <div key={t.id} className={`card flex items-center gap-3 p-3 ${isNext ? "border-amber-300/40" : ""}`}>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl font-pixel text-lg ${isNext ? "bg-amber-400 text-slate-950" : "bg-white/[0.07]"}`}>{t.code}</div>
               <div className="flex-1">
                 <div className="font-medium">{t.name}</div>
                 <div className="text-xs text-slate-500">
                   {t.template_exercises.filter((e) => !e.optional).length} Übungen · {t.times_per_week ? `${thisWeek}/${t.times_per_week}` : `${thisWeek}×`} diese Woche{!t.times_per_week && " · bei Bedarf"}
-                  {isNext && <span className="ml-1 text-sky-400">· empfohlen</span>}
+                  {isNext && <span className="ml-1 text-amber-300">· empfohlen</span>}
                 </div>
               </div>
-              <button className={isNext ? "btn-primary" : "btn-ghost"} onClick={() => start(t.id)}>
+              <button className={isNext ? "btn-gold" : "btn-ghost"} onClick={() => start(t.id)}>
                 Start
               </button>
             </div>

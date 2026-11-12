@@ -53,7 +53,7 @@ export default function Elements() {
   const weakest = ranked[ranked.length - 1];
 
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="page flex flex-col gap-4 pt-4">
       <header>
         <h1 className="text-2xl font-semibold">Elemente</h1>
         <p className="text-xs text-slate-500">Wo deine Zeit diese Woche hinfließt – und was gerade zu kurz kommt.</p>

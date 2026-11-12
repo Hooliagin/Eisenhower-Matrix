@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ask } from "./ui/Sheet";
 import { addDrink, removeLastDrink, useNutrition, type DrinkKind, type Meal, type NutritionWeekDay } from "../lib/data";
 import { addDays, isoDate, parseDate, WEEKDAY_SHORT, weekStart } from "../lib/dates";
 import { CAFFEINE_CUTOFF_HOUR, hydrationNudge } from "../lib/hydration";
@@ -313,12 +314,12 @@ function MealEditor({ meal, onDone }: { meal: Meal; onDone: () => void }) {
       .from("meals")
       .update({ description, kcal: Math.round(num(kcal)), protein_g: num(protein), walk_minutes: walk ? Math.round(num(walk)) : null })
       .eq("id", meal.id);
-    if (error) return alert(error.message);
+    if (error) return void ask.show("Speichern hat nicht geklappt", error.message);
     onDone();
   }
 
   async function remove() {
-    if (!confirm(`„${meal.description}“ löschen?`)) return;
+    if (!(await ask.confirm(`„${meal.description}“ löschen?`, { ok: "Löschen", danger: true }))) return;
     await supabase.from("meals").delete().eq("id", meal.id);
     onDone();
   }

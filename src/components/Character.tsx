@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { fmtMetric, useCharacter, useProgress, type MetricProgress } from "../lib/data";
+import { useState } from "react";
+import { fmtMetric, streak, useActivity, useCharacter, useProgress, type MetricProgress } from "../lib/data";
+import WorldView, { use3D } from "../world/WorldView";
+import { Heatmap } from "./WeekReview";
 import { isoDate, parseDate } from "../lib/dates";
 import { byMetric, useMeasurements } from "./fitness/BodyValues";
-import PixelAvatar from "./PixelAvatar";
-import { PixelPouchi } from "./Pouchi";
 import {
   ATTR_ORDER,
   ATTRS,
@@ -153,23 +153,6 @@ export function questOfDay(skills: Skill[]): Skill | null {
   return q[day % q.length];
 }
 
-/** Remembers last seen levels on this device and reports what went up since. */
-export function useLevelUps(levelsNow: Record<string, number>, ready: boolean): string[] {
-  const [ups, setUps] = useState<string[]>([]);
-  const key = JSON.stringify(levelsNow);
-  useEffect(() => {
-    if (!ready) return;
-    try {
-      const prev = JSON.parse(localStorage.getItem("char-levels") ?? "null") as Record<string, number> | null;
-      if (prev) setUps(Object.keys(levelsNow).filter((k) => prev[k] != null && levelsNow[k] > prev[k]));
-      localStorage.setItem("char-levels", key);
-    } catch {
-      /* storage unavailable */
-    }
-  }, [key, ready]);
-  return ups;
-}
-
 /** Today's new personal bests – one quiet line on the home card, only when there is something. */
 export function TodayRecords() {
   const { data } = useProgress();
@@ -225,118 +208,6 @@ function Progress() {
         </tbody>
       </table>
     </section>
-  );
-}
-
-/** RPG character sheet on the home page: pixel avatar, character level, six attributes with ranks, credits, quest. */
-export function CharacterCard() {
-  const { data, loading } = useCharacter();
-  const L = levels(data.summary, data.skills);
-  const B = balance(data.elements7);
-  const bonus = data.harmonyWeeks.reduce((s, w) => s + w.bonus_xp, 0);
-  const totalXp = ATTR_ORDER.reduce((s, a) => s + L[a].xp, 0) + bonus;
-  const C = characterLevel(totalXp);
-  const top = [...ATTR_ORDER].sort((a, b) => L[b].xp - L[a].xp)[0];
-  // A starving element beats the skill quest: the balance mechanic asks for it first.
-  const debuffed = ELEMENT_ORDER.find((e) => B.effects[e] === "debuff");
-  const skillQuest = questOfDay(data.skills);
-  const quest = debuffed
-    ? { label: `${ELEMENTS[debuffed].emoji} ${EFFECT_NAMES[debuffed].debuff}`, text: `${ELEMENTS[debuffed].label} stärken: ${ELEMENTS[debuffed].ideas.split(",")[0]}` }
-    : skillQuest && { label: "QUEST", text: skillQuest.next_step };
-  const credits = data.meta?.credits ?? 0;
-  const ups = useLevelUps(
-    { char: C.level, ...Object.fromEntries(ATTR_ORDER.map((a) => [a, L[a].level])) },
-    !loading && data.skills.length > 0,
-  );
-  const upLabel = ups.map((u) => (u === "char" ? `Charakter LV ${C.level}` : `${ATTRS[u as Attribute].label} LV ${L[u as Attribute].level}`));
-
-  return (
-    <button
-      onClick={() => (location.hash = "today/character")}
-      className="pixel-frame relative overflow-hidden bg-gradient-to-b from-slate-900 to-[#0b0f17] p-3 text-left"
-      style={{ ["--glow" as string]: ATTRS[top].color + "66" }}
-    >
-      {upLabel.length > 0 && (
-        <div className="animate-levelup pointer-events-none absolute inset-x-0 top-8 z-10 text-center font-pixel text-xl text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,.8)]">
-          ⬆ LEVEL UP!
-          <div className="text-xs text-amber-200">{upLabel.join(" · ")}</div>
-        </div>
-      )}
-      <div className="flex items-baseline justify-between">
-        <span className="font-pixel text-lg leading-none text-slate-100">JOSHUA</span>
-        <span className="font-pixel text-sm text-amber-300">LV {C.level}</span>
-      </div>
-      <div className="font-pixel text-[11px] text-cyan-300">{data.meta?.class_title ?? "Abenteurer"}</div>
-
-      <div className="mt-2 flex gap-3">
-        <div className="flex shrink-0 flex-col items-center justify-end">
-          <div className="flex items-end">
-            <PixelAvatar size={112} glow={ATTRS[top].color} />
-            <span className="-ml-2 mb-0.5">
-              <PixelPouchi size={30} />
-            </span>
-          </div>
-          <div className="mt-1.5">
-            <ElementOrbs b={B} size={20} />
-          </div>
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
-          {ATTR_ORDER.map((a) => {
-            const t = trend(L[a].s);
-            return (
-              <div key={a}>
-                <div className="flex items-baseline gap-1 text-[11px] leading-none">
-                  <span className="w-4 text-center">{ATTRS[a].emoji}</span>
-                  <span className="truncate font-pixel text-slate-300">{rank(a, L[a].level).title}</span>
-                  <span className={`text-[8px] ${t === "up" ? "text-emerald-400" : t === "down" ? "text-red-400" : "text-slate-600"}`}>{TREND_ICON[t]}</span>
-                  <span className="ml-auto font-pixel" style={{ color: ATTRS[a].color }}>
-                    {L[a].level}
-                  </span>
-                </div>
-                <div className="mt-0.5 pl-5">
-                  <PixelBar pct={L[a].pct} color={ATTRS[a].color} segments={10} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mt-2.5 flex flex-col gap-1.5">
-        <div className="flex items-center gap-2 text-[10px]">
-          <span className="w-12 font-pixel text-amber-300">XP</span>
-          <div className="flex-1">
-            <PixelBar pct={C.pct} color="#fbbf24" segments={20} />
-          </div>
-          <span className="font-pixel text-slate-400">{C.toNext} → LV {C.level + 1}</span>
-        </div>
-        <div className="flex items-center gap-2 text-[10px]">
-          <span className="w-12 font-pixel text-violet-300">☯ {B.harmony}</span>
-          <div className="flex-1">
-            <PixelBar pct={B.harmony / 100} color="#a78bfa" segments={20} />
-          </div>
-          <span className="font-pixel text-slate-400">
-            {ELEMENT_ORDER.filter((e) => B.effects[e] !== "neutral")
-              .map((e) => `${B.effects[e] === "buff" ? "▲" : "▼"}${ELEMENTS[e].emoji}`)
-              .join(" ") || "Harmonie"}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-[10px]">
-          <span className="w-12 font-pixel text-emerald-300">₵ {credits}</span>
-          <div className="flex-1">
-            <PixelBar pct={credits / 100} color="#34d399" segments={20} />
-          </div>
-          <span className="font-pixel text-slate-400">{creditTier(credits)}</span>
-        </div>
-      </div>
-
-      {quest && (
-        <div className="mt-2 truncate rounded-sm border border-slate-800 bg-slate-950/60 px-2 py-1 text-[11px]">
-          <span className={`font-pixel ${debuffed ? "text-red-300" : "text-amber-300"}`}>▶ {quest.label}</span> <span className="text-slate-300">{quest.text}</span>
-        </div>
-      )}
-      <TodayRecords />
-    </button>
   );
 }
 
@@ -404,36 +275,46 @@ export function CharacterView() {
   const bonus = data.harmonyWeeks.reduce((s, w) => s + w.bonus_xp, 0);
   const totalXp = ATTR_ORDER.reduce((s, a) => s + L[a].xp, 0) + bonus;
   const C = characterLevel(totalXp);
-  const top = [...ATTR_ORDER].sort((a, b) => L[b].xp - L[a].xp)[0];
   const [tab, setTab] = useState<Tab>("werte");
   const credits = data.meta?.credits ?? 0;
+  const [mode3d] = use3D();
+  const { data: activity } = useActivity();
+  const st = streak(activity);
 
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="page flex flex-col gap-4 pt-4">
       <header className="flex items-center gap-2">
         <button className="btn-ghost px-2" onClick={() => (location.hash = "today")}>‹</button>
         <h1 className="text-xl font-semibold">Charakter</h1>
       </header>
 
-      <section className="pixel-frame flex items-center gap-4 bg-gradient-to-b from-slate-900 to-[#0b0f17] p-4" style={{ ["--glow" as string]: ATTRS[top].color + "66" }}>
-        <div className="flex items-end">
-          <PixelAvatar size={150} glow={ATTRS[top].color} />
-          <span className="-ml-3 mb-1">
-            <PixelPouchi size={40} />
-          </span>
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="font-pixel text-2xl leading-none">JOSHUA</span>
-          <span className="font-pixel text-xs text-cyan-300">{data.meta?.class_title ?? "Abenteurer"}</span>
-          <span className="font-pixel text-3xl text-amber-300">LV {C.level}</span>
-          <PixelBar pct={C.pct} color="#fbbf24" segments={14} />
-          <span className="text-[10px] text-slate-500">
-            {totalXp.toLocaleString("de-DE")} XP{bonus ? ` (inkl. ${bonus} Harmonie-Bonus)` : ""} · noch {C.toNext} bis LV {C.level + 1}
-          </span>
-          <span className="mt-1 font-pixel text-xs text-emerald-300">
-            ₵ {credits} · {creditTier(credits)}
-          </span>
-          <PixelBar pct={credits / 100} color="#34d399" segments={14} />
+      <section className="card overflow-hidden">
+        <WorldView balance={B} enabled={mode3d} view="portrait" className="h-64">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-10">
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="font-pixel text-2xl leading-none text-white">JOSHUA</div>
+                <div className="mt-0.5 font-pixel text-xs text-amber-200/90">{data.meta?.class_title ?? "Abenteurer"}</div>
+              </div>
+              <div className="font-pixel text-4xl leading-none text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,.55)]">LV {C.level}</div>
+            </div>
+          </div>
+        </WorldView>
+        <div className="flex flex-col gap-2 p-3">
+          <div>
+            <PixelBar pct={C.pct} color="#fbbf24" segments={24} />
+            <p className="mt-1 text-[11px] text-slate-500">
+              {totalXp.toLocaleString("de-DE")} XP{bonus ? ` (inkl. ${bonus} Harmonie-Bonus)` : ""} · noch {C.toNext} bis LV {C.level + 1}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-24 font-pixel text-xs text-emerald-300">
+              ₵ {credits} · {creditTier(credits)}
+            </span>
+            <div className="flex-1">
+              <PixelBar pct={credits / 100} color="#34d399" segments={16} />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -446,7 +327,7 @@ export function CharacterView() {
             ["fortschritt", "Stats"],
           ] as const
         ).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} className={`rounded-sm py-2 ${tab === k ? "bg-amber-400 text-slate-900" : "bg-slate-800 text-slate-300"}`}>
+          <button key={k} onClick={() => setTab(k)} className={`rounded-xl py-2 transition ${tab === k ? "bg-amber-400 text-slate-900" : "bg-white/[0.07] text-slate-300"}`}>
             {l}
           </button>
         ))}
@@ -602,6 +483,15 @@ export function CharacterView() {
 
       {tab === "fortschritt" && (
         <>
+          <section className="card p-3">
+            <div className="mb-2 flex items-baseline justify-between">
+              <h2 className="text-sm font-semibold text-slate-300">🔥 Aktivität · 16 Wochen</h2>
+              <span className="font-pixel text-xs text-slate-400">
+                Serie {st.days} · Bestwert {st.best}
+              </span>
+            </div>
+            <Heatmap events={activity} today={isoDate()} />
+          </section>
           <Progress />
           <Measurements />
         </>
