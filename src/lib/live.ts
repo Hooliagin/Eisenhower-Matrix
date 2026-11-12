@@ -201,5 +201,6 @@ export function useLive<T>(key: string, load: () => Promise<T>, tables: string[]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  return { data: data ?? initial, setData, loading: data === undefined && !fetched, refresh };
+  // `fresh`: this value came from the server in this session (not just the snapshot kept from the last visit)
+  return { data: data ?? initial, setData, loading: data === undefined && !fetched, fresh: fetched > 1, refresh };
 }

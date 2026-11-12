@@ -36,8 +36,30 @@ function Window({ kind, sessions, now, onChange }: { kind: Kind; sessions: Detox
     fire(supabase.from("detox_sessions").update({ result, answered_at: new Date().toISOString() }).eq("id", latest.id));
   }
 
+  const dots = answered.length > 0 && (
+    <div className="flex gap-1">
+      {answered.map((s) => (
+        <span key={s.id} className={`h-1.5 flex-1 rounded-full ${s.result === "success" ? "bg-emerald-400" : "bg-red-400/70"}`} />
+      ))}
+    </div>
+  );
+
+  // Idle: one quiet row. It only grows while a window is running or waiting for its answer.
+  if (!running && !pending)
+    return (
+      <button className="flex flex-1 flex-col gap-1.5 rounded-xl bg-white/[0.05] px-2.5 py-2 text-left transition active:scale-[0.97]" onClick={start} title={w.rule}>
+        <span className="flex items-center justify-between gap-1">
+          <span className="whitespace-nowrap text-xs font-medium">
+            {w.icon} {w.label} <span className="font-normal text-slate-500">{w.minutes}′</span>
+          </span>
+          <span className="whitespace-nowrap rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-slate-200">▶ Start</span>
+        </span>
+        {dots || <span className="text-[10px] leading-tight text-slate-500">{kind === "morning" ? "ohne Handy in den Tag" : "ohne Bildschirm ins Bett"}</span>}
+      </button>
+    );
+
   return (
-    <div className={`flex flex-1 flex-col gap-1.5 rounded-lg p-2 ${running ? "bg-indigo-950/60" : "bg-slate-900"}`}>
+    <div className={`flex flex-1 flex-col gap-1.5 rounded-xl p-2.5 ${running ? "bg-indigo-500/20" : "bg-white/[0.07]"}`}>
       <div className="flex items-baseline justify-between">
         <span className="text-xs font-medium">
           {w.icon} {w.label} · {w.minutes} min
@@ -47,34 +69,22 @@ function Window({ kind, sessions, now, onChange }: { kind: Kind; sessions: Detox
 
       {running ? (
         <>
-          <span className="font-mono text-2xl font-semibold tabular-nums">{fmt(endsAt - now)}</span>
-          <span className="text-[10px] leading-tight text-slate-400">{w.rule}</span>
-          <button className="text-left text-[10px] text-red-400/80" onClick={() => answer("fail")}>
+          <span className="font-pixel text-3xl tabular-nums">{fmt(endsAt - now)}</span>
+          <span className="text-[10px] leading-tight text-slate-300">{w.rule}</span>
+          <button className="text-left text-[10px] text-red-300/80" onClick={() => answer("fail")}>
             abbrechen – nicht geschafft
           </button>
         </>
-      ) : pending ? (
+      ) : (
         <>
           <span className="text-xs leading-tight">{w.ask}</span>
           <div className="flex gap-1.5">
-            <button className="btn flex-1 bg-emerald-600 py-1.5 text-xs" onClick={() => answer("success")}>✓ Ja</button>
-            <button className="btn flex-1 bg-slate-700 py-1.5 text-xs" onClick={() => answer("fail")}>✗ Nein</button>
+            <button className="btn flex-1 bg-emerald-500 py-1.5 text-xs text-slate-950" onClick={() => answer("success")}>✓ Ja</button>
+            <button className="btn-ghost flex-1 py-1.5 text-xs" onClick={() => answer("fail")}>✗ Nein</button>
           </div>
         </>
-      ) : (
-        <>
-          <span className="text-[10px] leading-tight text-slate-500">{w.rule}</span>
-          <button className="btn-ghost py-1.5 text-xs" onClick={start}>▶ Jetzt starten</button>
-        </>
       )}
-
-      {answered.length > 0 && (
-        <div className="flex gap-1">
-          {answered.map((s) => (
-            <span key={s.id} className={`h-1.5 flex-1 rounded-full ${s.result === "success" ? "bg-emerald-500" : "bg-red-500/70"}`} />
-          ))}
-        </div>
-      )}
+      {dots}
     </div>
   );
 }
@@ -94,7 +104,7 @@ export default function DetoxCard() {
   const order: Kind[] = new Date(now).getHours() < 12 ? ["morning", "evening"] : ["evening", "morning"];
 
   return (
-    <section className="card flex gap-2 p-2">
+    <section className="card flex items-start gap-2 p-2">
       {order.map((k) => (
         <Window key={k} kind={k} sessions={data} now={now} onChange={setData} />
       ))}

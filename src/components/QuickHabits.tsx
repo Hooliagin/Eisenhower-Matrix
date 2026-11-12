@@ -108,7 +108,7 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
         <Ring done={doneCount} total={items.length} />
         <div className="min-w-0 flex-1">
           <h2 className="text-base leading-tight">Dailies</h2>
-          <p className="truncate text-[11px] text-slate-500">{doneCount === items.length ? "Alle geschafft – stark." : "Zwischendurch antippen"}</p>
+          <p className="truncate text-[11px] text-slate-500">{doneCount === items.length ? "Alle geschafft" : `${items.length - doneCount} offen`}</p>
         </div>
         <button className="btn bg-orange-500/15 px-2.5 py-1.5 text-base" onClick={() => setPouchi(true)} aria-label="Pouchi">
           🐕
@@ -133,7 +133,7 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
               }`}
               style={t.done ? undefined : { boxShadow: `inset 0 -2px 0 0 ${tint}55` }}
             >
-              <span className={`text-[22px] leading-none transition ${t.done ? "opacity-40 grayscale" : ""}`}>{icon(t)}</span>
+              <span className={`text-[22px] leading-none transition ${t.done ? "opacity-60 saturate-50" : ""}`}>{icon(t)}</span>
               {t.done && (
                 <span className="absolute right-1.5 top-1.5 grid h-4 w-4 animate-pop place-items-center rounded-full bg-emerald-400 text-[10px] font-bold text-slate-950">✓</span>
               )}

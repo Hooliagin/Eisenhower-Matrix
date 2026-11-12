@@ -24,7 +24,7 @@ function block(id: string, title: string, start: string, minutes: number, e: Cal
 }
 
 /** Timed events become fixed blocks; a shift also gets its bike ride there and back (~3 min per km). */
-function eventBlocks(e: CalendarEvent): Task[] {
+export function eventBlocks(e: CalendarEvent): Task[] {
   const start = toMin(e.start_time!);
   const minutes = e.end_time ? Math.max(15, toMin(e.end_time) - start) : 120;
   const main = block(`event-${e.id}`, e.kind === "dienst" ? `Dienst${e.title !== "Dienst" ? `: ${e.title}` : ""}` : e.title, e.start_time!, minutes, e);

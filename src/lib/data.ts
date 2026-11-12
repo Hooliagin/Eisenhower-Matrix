@@ -358,6 +358,22 @@ export function useNutrition(day: string = isoDate()) {
   );
 }
 
+/** The last 30 days of nutrition (everything `nutrition_daily` keeps) – for the weekly review. */
+export function useNutritionHistory() {
+  return useLive<NutritionWeekDay[]>(
+    "nutrition-history",
+    async () =>
+      must(
+        await supabase
+          .from("nutrition_daily")
+          .select("day, kcal_in, protein_effective_g, protein_target_g, burn_base, burn_activity, kcal_surplus, fluid_ml, fluid_target_ml")
+          .order("day"),
+      ) as NutritionWeekDay[],
+    ["drink_log", "meals", "workout_sessions", "tasks", "events"],
+    [],
+  );
+}
+
 export async function addDrink(kind: DrinkKind, ml: number, day: string = isoDate()) {
   must(await supabase.from("drink_log").insert({ kind, ml, day }));
 }

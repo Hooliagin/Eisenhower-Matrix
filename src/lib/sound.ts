@@ -62,7 +62,47 @@ export function bell(strikes: number, gap = 0.2, volume = 0.9) {
   }
 }
 
+/** Game sounds can be switched off in the menu (timers and bells always play). */
+export function sfxEnabled(): boolean {
+  try {
+    return localStorage.getItem("sfx") !== "0";
+  } catch {
+    return true;
+  }
+}
+export function setSfx(on: boolean) {
+  try {
+    localStorage.setItem("sfx", on ? "1" : "0");
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** Soft plucked notes for rewards: a triangle wave with a quick decay sits under music and is never shrill. */
+function pluck(list: [number, number, number][], volume = 0.16) {
+  if (!audio || !sfxEnabled()) return;
+  const now = audio.currentTime;
+  for (const [freq, at, dur] of list) {
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, now + at);
+    gain.gain.exponentialRampToValueAtTime(volume, now + at + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + at + dur);
+    osc.connect(gain).connect(audio.destination);
+    osc.start(now + at);
+    osc.stop(now + at + dur + 0.05);
+  }
+}
+
 export const SOUNDS = {
+  /** XP gained: two quick rising notes */
+  xp: () => pluck([[784, 0, 0.16], [1175, 0.07, 0.28]]),
+  /** Level up: a little fanfare */
+  levelUp: () => pluck([[523, 0, 0.2], [659, 0.11, 0.2], [784, 0.22, 0.2], [1047, 0.33, 0.5], [1319, 0.5, 0.7]], 0.2),
+  /** Everything of a set done (all dailies) */
+  complete: () => pluck([[659, 0, 0.18], [784, 0.09, 0.18], [988, 0.18, 0.18], [1319, 0.27, 0.5]], 0.17),
   /** Rest timer finished */
   restDone: () => tones([[880, 0, 0.2], [880, 0.25, 0.2], [880, 0.5, 0.2]]),
   /** Round starts / ends: ring bell "ding-ding-ding-ding-ding" */
