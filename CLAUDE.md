@@ -290,6 +290,14 @@ Abhak-Listen. Tipp = Haken für heute (`checked_on`, Europe/Berlin) → Punkt ve
 (Feierabend-Checkliste aus der Pflege, 19 Punkte). Punkt entfernen = `active=false` (per Änderungsvorschlag), neue per Insert:
 `insert into checklist_items (checklist_id, text, position) select id, '…', 20 from checklists where title = 'Checkliste Antonia';`
 
+**🚲 Abfahrt-Checklisten** (`LaunchLists.tsx`, zwei Buttons oben auf „Heute“): „Zur Arbeit“ (`checklists.title = 'Zur Arbeit fahren'`, ohne Projekt, `project_id = null`:
+Lichter · Schloss · Regensachen prüfen · Portemonnaie · Schlüssel · Handy · Kopfhörer · Wasserflasche · Sportsachen (falls Sport nach der Arbeit))
+und „Zum Sport“ (`'Zum Sport fahren'`: Kopfhörer · Karte · Sportsachen). Gleiche Tabellen und Tages-Logik wie die Projekt-Checklisten
+(Haken gilt nur heute). **Ist die Arbeits-Liste komplett abgehakt, trägt die App die Radfahrt ein:** Dienst-Event für heute mit
+`ride_km_each_way = 13` (neu, falls es noch keinen gibt, sonst wird das Rad ergänzt; `shift_hours` bleibt leer – Stunden trägt er mit
+„+ 6 h“ nach). Punkte ändern/ergänzen wie bei den anderen Listen (Insert direkt, Entfernen = `active=false` per Änderungsvorschlag).
+Die Erkennung läuft über den Titel (enthält „Arbeit“ → Arbeitsliste, sonst Sportliste).
+
 `followups` = Leute, denen Joshua hinterher sein muss:
 - `status='todo'`: muss schreiben → `draft` = vorformulierte Nachricht (Kopieren-Button in der App)
 - `status='waiting'`: Nachricht ist raus (`last_contact`), ab `follow_up_on` nachhaken (`wait_days`, Standard 2)

@@ -11,6 +11,7 @@ import { eventBlocks } from "./DayPlan";
 import DetoxCard from "./DetoxCard";
 import HeroCard from "./HeroCard";
 import NutritionCard from "./NutritionCard";
+import LaunchLists from "./LaunchLists";
 import QuickHabits from "./QuickHabits";
 import QuickLog from "./QuickLog";
 import WeekReview from "./WeekReview";
@@ -230,6 +231,8 @@ export default function Home() {
 
       <ChangeRequests />
       <HeroCard />
+
+      <LaunchLists />
 
       <FocusCard slots={slots} open={plan.length} doneToday={doneToday} patch={patch} />
 

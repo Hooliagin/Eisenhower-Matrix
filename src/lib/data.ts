@@ -374,6 +374,58 @@ export function useNutritionHistory() {
   );
 }
 
+// ---------- Departure checklists ("Zur Arbeit fahren", "Zum Sport fahren") ----------
+
+export interface LaunchList {
+  id: string;
+  title: string;
+  kind: "work" | "sport";
+  items: { id: string; text: string; checked: boolean }[];
+}
+
+/** Checklists without a project (departure lists). A tick only counts for today – tomorrow the list is full again. */
+export function useLaunchLists() {
+  const today = isoDate();
+  return useLive<LaunchList[]>(
+    `launch:${today}`,
+    async () => {
+      const ls = must(await supabase.from("checklists").select("id, title").is("project_id", null).order("position")) as { id: string; title: string }[];
+      if (!ls.length) return [];
+      const items = must(
+        await supabase.from("checklist_items").select("id, checklist_id, text, position").in("checklist_id", ls.map((l) => l.id)).eq("active", true).order("position"),
+      ) as { id: string; checklist_id: string; text: string }[];
+      const checks = items.length ? (must(await supabase.from("checklist_checks").select("item_id").eq("checked_on", today).in("item_id", items.map((i) => i.id))) as { item_id: string }[]) : [];
+      const done = new Set(checks.map((c) => c.item_id));
+      return ls.map((l) => ({
+        id: l.id,
+        title: l.title,
+        kind: /arbeit/i.test(l.title) ? ("work" as const) : ("sport" as const),
+        items: items.filter((i) => i.checklist_id === l.id).map((i) => ({ id: i.id, text: i.text, checked: done.has(i.id) })),
+      }));
+    },
+    ["checklists", "checklist_items", "checklist_checks"],
+    [],
+  );
+}
+
+export async function setCheck(itemId: string, on: boolean) {
+  const today = isoDate();
+  if (on) must(await supabase.from("checklist_checks").upsert({ item_id: itemId, checked_on: today }, { onConflict: "item_id,checked_on" }));
+  else must(await supabase.from("checklist_checks").delete().eq("item_id", itemId).eq("checked_on", today));
+}
+
+/** Rode to work: today's shift gets the bike commute (13 km each way) – creates the shift if there is none yet. */
+export async function logCommuteToWork(day: string = isoDate()): Promise<"created" | "updated" | "already"> {
+  const existing = must(await supabase.from("events").select("id, ride_km_each_way").eq("kind", "dienst").eq("event_date", day).order("created_at").limit(1)) as { id: string; ride_km_each_way: number | null }[];
+  if (existing[0]) {
+    if (existing[0].ride_km_each_way) return "already";
+    must(await supabase.from("events").update({ ride_km_each_way: 13 }).eq("id", existing[0].id));
+    return "updated";
+  }
+  must(await supabase.from("events").insert({ title: "Dienst", event_date: day, kind: "dienst", ride_km_each_way: 13, source: "app" }));
+  return "created";
+}
+
 // ---------- Favourite meals ----------
 
 export interface MealFavorite {
