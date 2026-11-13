@@ -12,6 +12,7 @@ import DetoxCard from "./DetoxCard";
 import HeroCard from "./HeroCard";
 import NutritionCard from "./NutritionCard";
 import QuickHabits from "./QuickHabits";
+import QuickLog from "./QuickLog";
 import WeekReview from "./WeekReview";
 import Icon from "./ui/Icon";
 import { ask } from "./ui/Sheet";
@@ -125,6 +126,7 @@ export default function Home() {
   const [now, setNow] = useState(new Date());
   const [menu, setMenu] = useState(false);
   const [review, setReview] = useState(false);
+  const [quick, setQuick] = useState(false);
   const [sfx, setSfxState] = useState(sfxEnabled);
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
@@ -185,6 +187,9 @@ export default function Home() {
           >
             <Icon name="flame" size={16} style={st.todayDone ? { color: "#fb923c", filter: "drop-shadow(0 0 5px rgba(251,146,60,.8))" } : undefined} />
             {st.days}
+          </button>
+          <button className="btn-gold h-9 w-9 rounded-full p-0 text-xl leading-none" onClick={() => setQuick(true)} aria-label="Schnell eintragen">
+            +
           </button>
           <button className="rounded-full bg-white/[0.07] p-2 text-slate-300" onClick={() => setMenu(!menu)} aria-label="Menü">
             <Icon name="more" size={18} />
@@ -293,6 +298,7 @@ export default function Home() {
       <NutritionCard />
 
       {review && <WeekReview onClose={() => setReview(false)} />}
+      {quick && <QuickLog onClose={() => setQuick(false)} />}
     </div>
   );
 }

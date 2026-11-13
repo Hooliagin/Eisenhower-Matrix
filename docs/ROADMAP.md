@@ -73,9 +73,9 @@ Reihenfolge nach Wirkung pro Aufwand. **A** = klein (1 Session-Teil), **B** = mi
 ### Phase 2 · Erfassen in einem Tipp (größter Hebel gegen das Einschlafen)
 | # | Was | Warum | Aufwand |
 |---|---|---|---|
-| 2.1 | **Lieblingsmahlzeiten**: häufige Mahlzeiten (z. B. „500 g Magerquark“) aus der Historie als Ein-Tipp-Knöpfe | Essen wurde nach 12 Tagen nicht mehr eingetragen – Wiederholtes darf keinen Chat brauchen | A |
-| 2.2 | **Schnell-Log** (ein „+“ auf der Startseite): Lesen (Minuten-Chips), Getränk, Gewicht, Mahlzeit | ein Ort für alles, was unter 5 Sekunden dauern soll | A |
-| 2.3 | **Plausibilitätsprüfung beim Satz-Loggen** (Gewicht > 150 % vom letzten Mal → Rückfrage) | verhindert Ausreißer wie die 220 kg | A |
+| 2.1 ✅ | **Lieblingsmahlzeiten**: häufige Mahlzeiten (z. B. „500 g Magerquark“) aus der Historie als Ein-Tipp-Knöpfe | Essen wurde nach 12 Tagen nicht mehr eingetragen – Wiederholtes darf keinen Chat brauchen | A |
+| 2.2 ✅ | **Schnell-Log** (ein „+“ auf der Startseite): Lesen (Minuten-Chips), Getränk, Gewicht, Mahlzeit | ein Ort für alles, was unter 5 Sekunden dauern soll | A |
+| 2.3 ✅ | **Plausibilitätsprüfung beim Satz-Loggen** (Gewicht > 150 % vom letzten Mal → Rückfrage) | verhindert Ausreißer wie die 220 kg | A |
 | 2.4 | **Essen per Foto oder Sprachnotiz** über eine Edge Function mit Claude | macht den Umweg über den Chat überflüssig. Braucht einen Anthropic-API-Schlüssel als Supabase-Secret | B |
 | 2.5 | **Offline schreiben**: Änderungen ohne Netz in eine Warteschlange, später abgleichen | im Studio-Keller geht dann kein Satz verloren | B |
 

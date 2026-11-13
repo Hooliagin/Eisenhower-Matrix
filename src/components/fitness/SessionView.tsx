@@ -228,11 +228,18 @@ function ExerciseBlock({ te, logs, prev, restAfter, onLog, onRemove }: BlockProp
     if (p[second.key] != null) setValue(String(p[second.key]));
   }, [prev]);
 
-  function submit() {
+  async function submit() {
     const v = Number(value.replace(",", "."));
     if (!v) return;
     if (sprint) return onLog({ seconds: v, meters: Number(meters) || null }, restAfter);
-    onLog({ weight: weight === "" ? null : Number(weight.replace(",", ".")), [second.key]: v }, restAfter);
+    const w = weight === "" ? null : Number(weight.replace(",", "."));
+    // A typo (220 instead of 22) would poison records and "letztes Mal": ask when the weight jumps far beyond what is known.
+    const known = Math.max(0, ...logs.map((l) => Number(l.weight ?? 0)), ...(prev?.sets ?? []).map((l) => Number(l.weight ?? 0)));
+    if (w && known > 0 && (w > known * 1.5 || w < known * 0.4)) {
+      const ok = await ask.confirm(`${w} kg bei ${te.exercise.name}?`, { text: `Bisher höchstens ${known} kg. Wenn das stimmt: stark – sonst kurz korrigieren.`, ok: "Stimmt so" });
+      if (!ok) return;
+    }
+    onLog({ weight: w, [second.key]: v }, restAfter);
   }
 
   return (
@@ -298,7 +305,7 @@ function ExerciseBlock({ te, logs, prev, restAfter, onLog, onRemove }: BlockProp
           <input inputMode={sprint ? "decimal" : "numeric"} className="w-full py-2 text-center" placeholder={second.label} value={value} onChange={(e) => setValue(e.target.value)} />
           <span className="text-xs text-slate-500">{second.label}</span>
         </label>
-        <button className="btn-primary px-4 py-2.5" onClick={submit}>
+        <button className="btn-primary px-4 py-2.5" onClick={() => void submit()}>
           ✓ Satz {logs.length + 1}
         </button>
       </div>

@@ -372,6 +372,12 @@ Getränke, ↶ und Dienst-Buttons wirken auf den angezeigten Tag (zum Nachtragen
 „großes Glas nach der Nacht“; ≥ 90 min seit dem letzten Getränk → Hinweis, ≥ 150 min → kräftiger; dazu „~X ml hinter dem
 Tagesziel“ (Ziel linear über 9–23 Uhr verteilt). Keine Push-Nachrichten bei geschlossener App.
 
+**⭐ Lieblingsmahlzeiten & Schnell-Log:** Was Joshua in den letzten 90 Tagen gegessen hat, steht als Ein-Tipp-Knöpfe in
+„Körper heute“ und im **Schnell-Log** (goldenes **+** im Kopf der Startseite: Lesezeit in Minuten-Chips, Getränk, Mahlzeit nochmal,
+Gewicht → `measurements` „Körpergewicht“). Ein Tipp kopiert die Mahlzeit mit allen Werten (`source='app'`, `meal` nach Uhrzeit).
+Gruppiert wird nach **exakt gleicher `description`** – wiederkehrende Mahlzeiten deshalb **immer gleich benennen**
+(„500 g Magerquark“, nicht mal „Magerquark 500g“), Varianten bewusst anders.
+
 **Essen trägt Claude ein**, wenn Joshua es erzählt (kein Scannen):
 1. Portionen realistisch schätzen; Annahmen in `notes`. **Joshuas Portionen:** Teller Nudeln ≈ **150 g trocken** (isst 500 g in 2 Tagen),
    **Quark = immer Magerquark** (100 g ≈ 67 kcal, 12 g P), Löffel Pesto ≈ 20 g.
@@ -498,6 +504,9 @@ nach „‹“ bleibt man in der Übersicht (bis zum nächsten Öffnen). „Star
 (beim App-Start und im Fitness-Reiter) `finished_at` = Zeit des letzten Satzes, sobald der > 90 min her ist oder der Tag vorbei ist
 (Notiz „automatisch abgeschlossen“). Doppelstart verhindert: Unique-Index `workout_sessions_one_open` (eine offene Session pro Plan & Tag)
 + Sperre gegen Doppeltipp in `start()`; bei Konflikt öffnet die App die vorhandene Session.
+
+**Plausibilitätsprüfung:** Weicht ein Gewicht stark vom Bekannten ab (> 150 % oder < 40 % des bisherigen Höchstwerts dieser
+Übung in dieser/der letzten Session), fragt die App vor dem Speichern nach.
 
 Pause 120 s (`rest_seconds`); `superset_group` = Supersatz (Timer erst nach der letzten Übung der Gruppe); `optional` = eingeklappt.
 `exercises.metric`: `weight_reps` · `weight_distance` (Farmers Walk) · `weight_time`.

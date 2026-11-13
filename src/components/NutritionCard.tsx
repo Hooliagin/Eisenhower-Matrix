@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ask } from "./ui/Sheet";
-import { addDrink, removeLastDrink, useNutrition, type DrinkKind, type Meal, type NutritionWeekDay } from "../lib/data";
+import { addDrink, logFavorite, removeLastDrink, useMealFavorites, useNutrition, type DrinkKind, type Meal, type MealFavorite, type NutritionWeekDay } from "../lib/data";
+import { toast } from "./Rewards";
 import { addDays, isoDate, parseDate, WEEKDAY_SHORT, weekStart } from "../lib/dates";
 import { CAFFEINE_CUTOFF_HOUR, hydrationNudge } from "../lib/hydration";
 import { supabase } from "../lib/supabase";
@@ -62,6 +63,46 @@ function WeekStrip({ week, day, today, onPick }: { week: NutritionWeekDay[]; day
           Woche Ø {avg((w) => w.kcal_in)} / {avg(kcalTarget)} kcal · Ø {avg((w) => w.protein_effective_g)} g Protein · Protein-Ziel an {proteinDays}/{past.length} Tagen
         </p>
       )}
+    </div>
+  );
+}
+
+/** Meals he has eaten before as one-tap chips ("⭐ Nochmal"). */
+export function FavoriteMeals({ day, onLogged }: { day?: string; onLogged?: () => void }) {
+  const { data } = useMealFavorites();
+  const [busy, setBusy] = useState<string | null>(null);
+  if (!data.length) return null;
+  async function add(f: MealFavorite) {
+    if (busy) return;
+    setBusy(f.description);
+    try {
+      await logFavorite(f, day);
+      toast({ icon: "🍽️", title: `${f.kcal} kcal · ${Math.round(f.protein_g)} g Protein`, sub: f.description.slice(0, 44), color: "#f97316" });
+      onLogged?.();
+    } catch (e) {
+      void ask.show("Eintragen hat nicht geklappt", e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+  return (
+    <div>
+      <p className="mb-1 text-[11px] text-slate-500">⭐ Nochmal gegessen? Ein Tipp trägt es ein.</p>
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" style={{ scrollbarWidth: "none" }}>
+        {data.map((f) => (
+          <button
+            key={f.description}
+            disabled={busy !== null}
+            onClick={() => void add(f)}
+            className="flex w-36 shrink-0 flex-col rounded-xl bg-white/[0.06] px-2.5 py-2 text-left transition active:scale-95 disabled:opacity-50"
+          >
+            <span className="line-clamp-2 min-h-[2rem] text-[11px] leading-tight text-slate-200">{f.description}</span>
+            <span className="mt-1 font-pixel text-[10px] text-slate-400">
+              {f.kcal} kcal · {Math.round(f.protein_g)} g P
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -258,6 +299,8 @@ export default function NutritionCard() {
           </div>
         )}
       </button>
+
+      <FavoriteMeals day={day} />
 
       {showMeals && (
         <ul className="flex flex-col gap-1 border-t border-slate-800 pt-2 text-xs">

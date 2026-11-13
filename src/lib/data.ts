@@ -374,6 +374,63 @@ export function useNutritionHistory() {
   );
 }
 
+// ---------- Favourite meals ----------
+
+export interface MealFavorite {
+  description: string;
+  kcal: number;
+  protein_g: number;
+  protein_quality: number;
+  carbs_g: number | null;
+  fat_g: number | null;
+  fiber_g: number | null;
+  notes: string | null;
+  count: number;
+  last: string;
+}
+
+/** What he eats again and again (last 90 days), most frequent and most recent first – one tap logs it again. */
+export function useMealFavorites() {
+  return useLive<MealFavorite[]>(
+    "meal-favorites",
+    async () => {
+      const rows = must(
+        await supabase
+          .from("meals")
+          .select("day, description, kcal, protein_g, protein_quality, carbs_g, fat_g, fiber_g, notes")
+          .gte("day", isoDate(addDays(new Date(), -90)))
+          .order("created_at", { ascending: false })
+          .limit(300),
+      ) as (Omit<MealFavorite, "count" | "last"> & { day: string })[];
+      const by = new Map<string, MealFavorite>();
+      for (const r of rows) {
+        const k = r.description.trim().toLowerCase();
+        const hit = by.get(k);
+        if (hit) hit.count++;
+        else by.set(k, { ...r, count: 1, last: r.day }); // newest entry carries the values
+      }
+      return [...by.values()].sort((a, b) => b.count - a.count || b.last.localeCompare(a.last)).slice(0, 8);
+    },
+    ["meals"],
+    [],
+  );
+}
+
+/** Breakfast, lunch, dinner or snack – from the clock (he gets up around 9). */
+export function mealSlot(now = new Date()): string {
+  const h = now.getHours();
+  return h < 4 ? "Abend" : h < 12 ? "Frühstück" : h < 16 ? "Mittag" : h < 18 ? "Snack" : "Abend";
+}
+
+export async function logFavorite(f: MealFavorite, day: string = isoDate()) {
+  const { count: _c, last: _l, ...meal } = f;
+  must(await supabase.from("meals").insert({ ...meal, day, meal: day === isoDate() ? mealSlot() : null, source: "app" }));
+}
+
+export async function logWeight(kg: number) {
+  must(await supabase.from("measurements").insert({ metric: "Körpergewicht", value: kg, unit: "kg", note: "selbst gewogen (Schnell-Log)" }));
+}
+
 export async function addDrink(kind: DrinkKind, ml: number, day: string = isoDate()) {
   must(await supabase.from("drink_log").insert({ kind, ml, day }));
 }
