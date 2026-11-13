@@ -1,10 +1,13 @@
--- Referenzfoto zu einem Checklisten-Punkt (z. B. „So soll der Tisch aussehen“). Privat in der Datenbank (data-URL, verkleinert),
+-- Referenzfotos zu einem Checklisten-Punkt (z. B. „So soll der Tisch aussehen“, mehrere Blickwinkel). Privat in der Datenbank (data-URL, verkleinert),
 -- nicht im Code oder in einem öffentlichen Ordner. Die App lädt das Bild erst beim Antippen.
 create table public.checklist_item_photos (
-  item_id uuid primary key references public.checklist_items (id) on delete cascade,
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references public.checklist_items (id) on delete cascade,
+  position int not null default 0,
   data text not null,
   created_at timestamptz not null default now()
 );
+create index on public.checklist_item_photos (item_id, position);
 alter table public.checklist_item_photos enable row level security;
 create policy "owner full access" on public.checklist_item_photos for all to authenticated
   using ((select public.is_owner())) with check ((select public.is_owner()));

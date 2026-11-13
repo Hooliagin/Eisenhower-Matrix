@@ -410,9 +410,9 @@ export function useLaunchLists() {
   );
 }
 
-export async function loadItemPhoto(itemId: string): Promise<string | null> {
-  const { data } = await supabase.from("checklist_item_photos").select("data").eq("item_id", itemId).maybeSingle();
-  return (data?.data as string | undefined) ?? null;
+export async function loadItemPhotos(itemId: string): Promise<string[]> {
+  const { data } = await supabase.from("checklist_item_photos").select("data").eq("item_id", itemId).order("position");
+  return (data ?? []).map((p) => p.data as string);
 }
 
 export async function setCheck(itemId: string, on: boolean) {

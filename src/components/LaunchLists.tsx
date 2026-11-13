@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { loadItemPhoto, logCommuteToWork, setCheck, useLaunchLists, type LaunchList } from "../lib/data";
+import { loadItemPhotos, logCommuteToWork, setCheck, useLaunchLists, type LaunchList } from "../lib/data";
 import { SOUNDS } from "../lib/sound";
 import { toast } from "./Rewards";
 import Icon from "./ui/Icon";
@@ -14,12 +14,12 @@ const LOOK = {
 export default function LaunchLists() {
   const { data: lists, setData } = useLaunchLists();
   const [openId, setOpenId] = useState<string | null>(null);
-  const [photo, setPhoto] = useState<{ title: string; src: string | null } | null>(null);
+  const [photo, setPhoto] = useState<{ title: string; srcs: string[] | null } | null>(null);
   if (!lists.length) return null;
 
   async function showPhoto(itemId: string, title: string) {
-    setPhoto({ title, src: null });
-    setPhoto({ title, src: await loadItemPhoto(itemId) });
+    setPhoto({ title, srcs: null });
+    setPhoto({ title, srcs: await loadItemPhotos(itemId) });
   }
   const open = lists.find((l) => l.id === openId) ?? null;
 
@@ -115,8 +115,12 @@ export default function LaunchLists() {
               <Icon name="close" size={16} />
             </button>
           </div>
-          <div className="flex flex-1 items-center justify-center overflow-auto p-2">
-            {photo.src ? <img src={photo.src} alt={photo.title} className="max-h-full max-w-full rounded-lg object-contain" /> : <span className="text-sm text-slate-500">Lädt …</span>}
+          <div className="flex flex-1 flex-col items-center gap-3 overflow-y-auto p-2">
+            {photo.srcs === null ? (
+              <span className="m-auto text-sm text-slate-500">Lädt …</span>
+            ) : (
+              photo.srcs.map((src, k) => <img key={k} src={src} alt={`${photo.title} (${k + 1}/${photo.srcs!.length})`} className="w-full max-w-lg rounded-lg object-contain" />)
+            )}
           </div>
           <p className="pb-6 text-center text-[11px] text-slate-500">tippen zum Schließen</p>
         </div>
