@@ -18,6 +18,7 @@ join (values
   ('Zur Arbeit fahren', 'Kopfhörer', 7),
   ('Zur Arbeit fahren', 'Wasserflasche', 8),
   ('Zur Arbeit fahren', 'Sportsachen (falls Sport nach der Arbeit)', 9),
+  ('Zur Arbeit fahren', 'Ladekabel', 10),
   ('Zum Sport fahren', 'Kopfhörer', 1),
   ('Zum Sport fahren', 'Karte', 2),
   ('Zum Sport fahren', 'Sportsachen', 3)

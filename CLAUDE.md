@@ -291,7 +291,7 @@ Abhak-Listen. Tipp = Haken für heute (`checked_on`, Europe/Berlin) → Punkt ve
 `insert into checklist_items (checklist_id, text, position) select id, '…', 20 from checklists where title = 'Checkliste Antonia';`
 
 **🚲 Abfahrt-Checklisten** (`LaunchLists.tsx`, zwei Buttons oben auf „Heute“): „Zur Arbeit“ (`checklists.title = 'Zur Arbeit fahren'`, ohne Projekt, `project_id = null`:
-Lichter · Schloss · Regensachen prüfen · Portemonnaie · Schlüssel · Handy · Kopfhörer · Wasserflasche · Sportsachen (falls Sport nach der Arbeit))
+Lichter · Schloss · Regensachen prüfen · Portemonnaie · Schlüssel · Handy · Kopfhörer · Wasserflasche · Sportsachen (falls Sport nach der Arbeit) · Ladekabel)
 und „Zum Sport“ (`'Zum Sport fahren'`: Kopfhörer · Karte · Sportsachen). Gleiche Tabellen und Tages-Logik wie die Projekt-Checklisten
 (Haken gilt nur heute). **Ist die Arbeits-Liste komplett abgehakt, trägt die App die Radfahrt ein:** Dienst-Event für heute mit
 `ride_km_each_way = 13` (neu, falls es noch keinen gibt, sonst wird das Rad ergänzt; `shift_hours` bleibt leer – Stunden trägt er mit
