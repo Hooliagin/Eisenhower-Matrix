@@ -43,3 +43,16 @@ export const WEEKDAY_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 export function formatLong(d: Date = new Date()): string {
   return d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
 }
+
+export function daysUntil(date: string): number {
+  return Math.round((parseDate(date).getTime() - parseDate(isoDate()).getTime()) / 86_400_000);
+}
+
+/** "heute", "morgen", "in 3 T", "2 T überfällig" */
+export function countdown(date: string): string {
+  const d = daysUntil(date);
+  if (d < 0) return `${-d} T überfällig`;
+  if (d === 0) return "heute";
+  if (d === 1) return "morgen";
+  return `in ${d} T`;
+}

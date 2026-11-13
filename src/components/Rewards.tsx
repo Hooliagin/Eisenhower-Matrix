@@ -194,7 +194,7 @@ export default function Rewards() {
         <button className="fixed inset-0 z-[85] grid animate-fade place-items-center overflow-hidden bg-black/75 backdrop-blur-sm" onClick={() => setLevelUp(null)} aria-label="Level-up schließen">
           <span
             aria-hidden
-            className="absolute left-1/2 top-1/2 h-[150vmax] w-[150vmax] -translate-x-1/2 -translate-y-1/2 opacity-30"
+            className="absolute left-1/2 top-1/2 -ml-[75vmax] -mt-[75vmax] h-[150vmax] w-[150vmax] opacity-40"
             style={{ background: `repeating-conic-gradient(from 0deg, ${levelUp.color} 0deg 7deg, transparent 7deg 20deg)`, animation: "ray 26s linear infinite", maskImage: "radial-gradient(circle, #000 0%, transparent 62%)", WebkitMaskImage: "radial-gradient(circle, #000 0%, transparent 62%)" }}
           />
           <Confetti color={levelUp.color} />

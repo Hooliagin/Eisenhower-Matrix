@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import ChangeRequests from "./ChangeRequests";
 import { isDue, minutesThisWeek, streak, suggestTemplate, updateTask, useActivity, useBooks, useCalendar, useProjects, useSessions, useShopping, useTasks, useTemplates } from "../lib/data";
-import { addDays, formatLong, isoDate } from "../lib/dates";
+import { addDays, countdown, formatLong, isoDate } from "../lib/dates";
 import { buildSchedule, fmtMinutes, hhmm, minutesOf, todayTasks, type Slot } from "../lib/schedule";
 import { supabase } from "../lib/supabase";
 import type { Task } from "../lib/types";
@@ -13,9 +13,9 @@ import HeroCard from "./HeroCard";
 import NutritionCard from "./NutritionCard";
 import QuickHabits from "./QuickHabits";
 import WeekReview from "./WeekReview";
-import { countdown } from "./Calendar";
 import Icon from "./ui/Icon";
 import { ask } from "./ui/Sheet";
+import { setSfx, sfxEnabled } from "../lib/sound";
 
 function Tile({ icon, title, onClick, children, accent }: { icon: string; title: string; onClick: () => void; children: ReactNode; accent?: string }) {
   return (
@@ -125,6 +125,7 @@ export default function Home() {
   const [now, setNow] = useState(new Date());
   const [menu, setMenu] = useState(false);
   const [review, setReview] = useState(false);
+  const [sfx, setSfxState] = useState(sfxEnabled);
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
@@ -195,6 +196,15 @@ export default function Home() {
             <div className="absolute right-0 top-12 z-50 flex w-52 animate-pop flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900 text-sm shadow-lift">
               <button className="px-4 py-3 text-left active:bg-white/5" onClick={() => (setMenu(false), setReview(true))}>
                 📊 Wochenrückblick
+              </button>
+              <button
+                className="border-t border-white/5 px-4 py-3 text-left active:bg-white/5"
+                onClick={() => {
+                  setSfx(!sfx);
+                  setSfxState(!sfx);
+                }}
+              >
+                {sfx ? "🔔 Belohnungs-Töne an" : "🔕 Belohnungs-Töne aus"}
               </button>
               <button className="border-t border-white/5 px-4 py-3 text-left active:bg-white/5" onClick={() => location.reload()}>
                 🔄 Neu laden

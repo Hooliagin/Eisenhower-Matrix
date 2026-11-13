@@ -163,6 +163,7 @@ export class World {
   private state: WorldState | null = null;
   private built = "";
   private running = false;
+  private skip = false;
   private view: View = "island";
   private last = 0;
   private t = 0;
@@ -507,6 +508,11 @@ export class World {
   // ───────────── frame ─────────────
 
   private frame = (now: number) => {
+    // A calm scene does not need 60 pictures a second: render every other frame unless something is going on
+    // (a finger on the island, the hero in action, a level-up). Halves the GPU work and the battery cost.
+    const lively = this.drag !== null || this.t - this.lastTouch < 2.5 || this.action !== "idle" || this.levelUpT >= 0 || this.dogHop > 0;
+    this.skip = !lively && !this.skip;
+    if (this.skip) return;
     const dt = this.last ? Math.min(0.05, (now - this.last) / 1000) : 0.016;
     this.last = now;
     this.t += dt;

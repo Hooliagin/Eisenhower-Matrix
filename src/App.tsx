@@ -12,11 +12,18 @@ import Rewards from "./components/Rewards";
 import { SheetHost } from "./components/ui/Sheet";
 
 // Only the start page is in the first bundle; the other tabs load on demand (and are cached by the service worker).
-const Tasks = lazy(() => import("./components/Tasks"));
-const Projects = lazy(() => import("./components/Projects"));
-const Calendar = lazy(() => import("./components/Calendar"));
-const Elements = lazy(() => import("./components/Elements"));
-const Fitness = lazy(() => import("./components/fitness/Fitness"));
+const TAB_CHUNKS = {
+  tasks: () => import("./components/Tasks"),
+  projects: () => import("./components/Projects"),
+  calendar: () => import("./components/Calendar"),
+  elements: () => import("./components/Elements"),
+  fitness: () => import("./components/fitness/Fitness"),
+};
+const Tasks = lazy(TAB_CHUNKS.tasks);
+const Projects = lazy(TAB_CHUNKS.projects);
+const Calendar = lazy(TAB_CHUNKS.calendar);
+const Elements = lazy(TAB_CHUNKS.elements);
+const Fitness = lazy(TAB_CHUNKS.fitness);
 
 export type Tab = "today" | "tasks" | "projects" | "calendar" | "fitness" | "elements";
 
@@ -128,6 +135,14 @@ export default function App() {
         }
       });
   }, [userId, session === undefined]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Once the start page is up, fetch the other tabs in the background: switching is instant and,
+  // because the service worker keeps what was fetched, every tab also opens without network.
+  useEffect(() => {
+    if (!owner) return;
+    const id = setTimeout(() => Object.values(TAB_CHUNKS).forEach((load) => void load().catch(() => {})), 2500);
+    return () => clearTimeout(id);
+  }, [owner]);
 
   // Each tab starts at the top; going back to a tab you were on keeps the browser's own scroll restoration out of the way.
   useEffect(() => {

@@ -4,6 +4,7 @@ import { BalancePanel } from "./Character";
 import { useCharacter, useElements } from "../lib/data";
 import { isoDate, weekStart } from "../lib/dates";
 import { fmtMinutes } from "../lib/schedule";
+import WorldView, { use3D } from "../world/WorldView";
 
 function Diamond({ values, avg }: { values: Record<Element, number>; avg: Record<Element, number> }) {
   const max = Math.max(60, ...ELEMENT_ORDER.map((e) => Math.max(values[e], avg[e])));
@@ -34,6 +35,8 @@ export default function Elements() {
   const { data: events } = useElements();
   const { data: character } = useCharacter();
   const [open, setOpen] = useState<Element | null>(null);
+  const [mode3d] = use3D();
+  const B = balance(character.elements7);
   const ws = isoDate(weekStart());
 
   const zero = (): Record<Element, number> => ({ feuer: 0, wasser: 0, erde: 0, luft: 0 });
@@ -59,7 +62,25 @@ export default function Elements() {
         <p className="text-xs text-slate-500">Wo deine Zeit diese Woche hinfließt – und was gerade zu kurz kommt.</p>
       </header>
 
-      <BalancePanel b={balance(character.elements7)} bonusTotal={character.harmonyWeeks.reduce((x, w) => x + w.bonus_xp, 0)} thisWeek={character.harmonyWeeks.find((w) => !w.complete)?.harmony} />
+      {mode3d && (
+        <section className="card overflow-hidden">
+          <WorldView
+            balance={B}
+            className="h-[min(72vw,320px)]"
+            onTap={(hit) => {
+              if (hit === "hero" || hit === "dog") return;
+              setOpen(hit);
+              document.getElementById(`element-${hit}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
+          >
+            <p className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-3 pb-2 pt-6 text-center text-[11px] text-white/80">
+              🔥 Feuer · 💧 Teich · 🌍 Baum · 💨 Windrad – so steht es um deine Elemente. Antippen für Details.
+            </p>
+          </WorldView>
+        </section>
+      )}
+
+      <BalancePanel b={B} bonusTotal={character.harmonyWeeks.reduce((x, w) => x + w.bonus_xp, 0)} thisWeek={character.harmonyWeeks.find((w) => !w.complete)?.harmony} />
 
       <section className="card p-3">
         <Diamond values={week} avg={avg} />
@@ -94,7 +115,7 @@ export default function Elements() {
         const diff = week[e] - avg[e];
         const items = events.filter((ev) => ev.element === e && ev.day >= ws);
         return (
-          <section key={e} className="card p-3">
+          <section key={e} id={`element-${e}`} className="card p-3">
             <button className="w-full text-left" onClick={() => setOpen(open === e ? null : e)}>
               <div className="flex items-baseline justify-between">
                 <span className="font-semibold" style={{ color: ELEMENTS[e].color }}>

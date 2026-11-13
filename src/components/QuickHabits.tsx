@@ -8,6 +8,8 @@ import PoemTrainer from "./PoemTrainer";
 import { PouchiPanel } from "./Pouchi";
 import IntervalTimer from "./IntervalTimer";
 import { ask } from "./ui/Sheet";
+import { toast } from "./Rewards";
+import { SOUNDS } from "../lib/sound";
 
 function icon(t: Task) {
   if (/pouchi/i.test(t.title) && /trick/i.test(t.title)) return "🐕";
@@ -80,6 +82,13 @@ export default function QuickHabits({ tasks, patch }: { tasks: Task[]; patch: (i
     const p: Partial<Task> = { done: true, done_at: new Date().toISOString(), actual_minutes: minutes ?? t.estimate_minutes ?? null };
     patch(t.id, p);
     void updateTask(t.id, p);
+    // the last one of the day gets its own little moment
+    if (items.every((x) => x.done || x.id === t.id)) {
+      setTimeout(() => {
+        toast({ icon: "⚡", title: "Alle Dailies geschafft", sub: `${items.length} von ${items.length} – stark.`, color: "#34d399" });
+        SOUNDS.complete();
+      }, 900);
+    }
   }
 
   function saveProgress(t: Task, seconds: number) {

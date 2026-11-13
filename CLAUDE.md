@@ -34,7 +34,7 @@ insert into change_requests (table_name, row_id, action, summary) select 'tasks'
 
 | Reiter | Inhalt |
 |---|---|
-| **Heute** | Nur kompakte Übersicht – **bewusst nicht überfrachten**. Von oben: **RPG-Charakterbogen** (Pixel-Avatar, Charakter-LV, 6 Werte mit Rang, XP- & ₵-Credits-Leiste, Quest des Tages) · Detox-Fenster (☀️ Morgen / 🌙 Abend) · ⚡ Daily-Quickbuttons (+ 📜 Gedicht, 🫁 Atem) · Schnell-Eingabe · Kacheln (Heute-Plan, Leute, Kalender, Einkauf, Training, Lesen) · Karte „Körper heute“ (Getränke, Dienst, kcal, Protein). Tipp auf Avatar → Charakter-Detail mit Messungen. |
+| **Heute** | Nur kompakte Übersicht – **bewusst nicht überfrachten**. Von oben: Kopf mit 🔥 **Serie** und Menü (⋯: Wochenrückblick, Töne, Abmelden) · ✏️ Änderungsvorschläge · **Insel-Karte** (3D-Welt mit HUD: Name, Klasse, LV, XP-Leiste; darunter 6 Werte, ☯ Harmonie, ₵ Credits, Quest des Tages) · **„Jetzt dran“** (aktuelle Aufgabe mit ▶ Start / ✓ Erledigt) · ⚡ Dailies mit Fortschrittsring (+ 🐕, 📜 Gedicht, 🫁 Atem) · Detox-Zeile (☀️ Morgen / 🌙 Abend) · Schnell-Eingabe · Kacheln (Training, Leute, Kalender, Lesen, Einkauf) · Karte „Körper heute“. Tipp auf die Figur → Charakter-Detail. |
 | **Aufgaben** | Tagesplan (mit Uhrzeiten) · Eisenhower-Matrix · Einkaufsliste |
 | **Projekte** | Ordner (mit Unterordnern), Leute & Nachfassen mit Nachrichtenentwürfen, Bücherliste (Projekt „Lesen“), „✍️ Mein Schreibstil“ |
 | **Kalender** | Monat mit Deadlines (rot), Terminen (blau), Diensten (lila), Trainings (grün); „Demnächst“-Liste |
@@ -75,6 +75,44 @@ Grundverbrauch zusätzlich immer: Grundumsatz 1834 × PAL 1,4 ≈ 2568 kcal/Tag.
 
 ---
 
+## 🏝️ 3D-Insel, Belohnungen & Rückblick (`src/world/`, `Rewards.tsx`, `WeekReview.tsx`)
+
+**Insel** (Startseite, Charakter-Detail als Nahaufnahme, Reiter Elemente): Voxel-Welt mit three.js, wird nachgeladen
+(`WorldView` → `World`). Joshua und Pouchi stehen in der Mitte; die vier Elemente der **letzten 7 Tage** (`balance()`) sind Orte:
+
+| Element | Ort | normal | Buff (≥ 22 %) | Debuff (< 10 %) |
+|---|---|---|---|---|
+| 🔥 Feuer | Lagerfeuer | brennt, Größe nach Anteil | groß, Funken | nur Glut und Rauch |
+| 💧 Wasser | Teich + Wasserfall | halb bis voll | voll | ausgetrocknet, kein Wasserfall |
+| 🌍 Erde | Baum, Wiese, Blumen | grün | Blüten, mehr Blumen | Herbstlaub, dürre Wiese, keine Glühwürmchen |
+| 💨 Luft | Windrad, Wolken, Vögel | dreht nach Anteil | schnell, Vögel kreisen | steht, graue Wolke („Dicke Luft“) |
+
+Unter 60 min Aktivität in 7 Tagen steht alles ruhig in der Mitte. Himmel, Sonne/Mond und Licht folgen dem **echten Sonnenstand
+in Berlin** (`sky.ts`: Sonnenauf-/-untergang aus dem Datum); nachts ist das Lagerfeuer die Hauptlichtquelle.
+Bedienung: wischen = drehen · Figur antippen → Charakter · Pouchi antippen → hüpft, dann Pouchi-Panel · Ort antippen → Element-Info.
+Würfel-Knopf oben rechts schaltet 3D pro Gerät aus (dann Pixel-Avatar). Ohne WebGL fällt die App von selbst auf den Pixel-Avatar zurück.
+**Die 3D-Figur entsteht aus dem Pixel-Sprite** (`SPRITE`/`PALETTE` in `PixelAvatar.tsx`, in `models.ts` in die Tiefe gezogen und in
+Kopf, Rumpf, Arme, Beine geteilt): neue Ausrüstung dort einzeichnen → erscheint in 2D und 3D. Spalten/Zeilen-Logik in `buildHero()`
+beachten (Arme = Spalten 2–3 und 16–17, Handschuhe Zeilen 17–19, Hut Zeilen 1–2).
+
+**Belohnungen** (`Rewards.tsx`, hängt in `App.tsx`): beobachtet `character_summary`. Steigt ein Wert, während die App offen ist →
+„+N XP“ mit Ton, die Figur jubelt (`worldBus`). Level-up (Charakter oder Wert, inkl. neuem Rang) → eigener Vollbild-Moment.
+Was bei geschlossener App dazukam (z. B. Claude trägt im Chat etwas ein) → einmal „+N XP seit deinem letzten Besuch“.
+Deshalb gilt: **Alles, was XP bringen soll, muss in `xp_events` landen** – dann meldet die App es von selbst.
+Töne abschaltbar im Menü (⋯); Timer-Signale bleiben. `toast({icon,title,sub,color})` zeigt eigene Hinweise.
+
+**Serie** = Tage in Folge mit ≥ 10 XP (`streak()` in `data.ts`; der heutige Tag zählt erst, wenn er geschafft ist, eine Serie
+bis gestern bleibt bis Mitternacht „offen“). 🔥-Zahl im Kopf der Startseite, Tipp → Wochenrückblick.
+
+**Wochenrückblick** (`WeekReview.tsx`, auch über ⋯): XP gesamt und je Wert gegen Vorwoche und Wochenziel, Elemente + Harmonie,
+größte Brocken (`xp_events.label` summiert), Trainings, Ø Protein/Trinken, Rekorde, 16-Wochen-Kalender (Tag antippen = was war los),
+Fazit in Klartext. ‹ › blättert bis 15 Wochen zurück. Fragt Joshua „wie war meine Woche?“, dieselben Views nehmen
+(`xp_events`, `element_events`, `nutrition_daily`, `metric_progress`) und ehrlich antworten.
+
+Weitere Ideen und Reihenfolge: **`docs/ROADMAP.md`** (bei größeren Umbauten zuerst lesen und abhaken).
+
+---
+
 ## Aufgaben & Tagesplan (`tasks`, View `tasks_planned`)
 
 Quadranten: `do` (dringend & wichtig), `schedule` (wichtig), `delegate` (dringend), `eliminate`, `inbox` (unsortiert).
@@ -85,6 +123,11 @@ Quadrant `do`, **außer** `anytime`-Routinen und verpassten Routinen, in Reihenf
 - Termine/Dienste **mit Uhrzeit** sind feste, unverschiebbare Blöcke; Aufgaben werden drumherum geplant, kurze spätere Aufgaben
   füllen Lücken vor einem Block. Feste Uhrzeit einer Aufgabe (`planned_start`) kollidiert → wird orange („zu spät“) markiert.
 - Nennt Joshua eine Reihenfolge: `position = extract(epoch from now()) + rang`.
+- **Tageskapazität:** Der Plan zeigt nur, was bis **23:30** passt (nach Mitternacht bis 2:30). Der Rest steht eingeklappt als
+  „🌙 N Aufgaben passen heute nicht mehr rein“ mit „Auf morgen schieben“ (`due_date = morgen`, `quadrant = 'schedule'`).
+- **🧹 Aufräumen** (ab 3 überfälligen Aufgaben, Banner im Tagesplan): pro Aufgabe ein Tipp – Heute (`do`, heute) · Morgen ·
+  Nächste Woche (Montag) · Irgendwann (`schedule`, ohne Datum) · Weglassen (`eliminate`, ohne Datum; nichts wird gelöscht).
+  Beim Anlegen deshalb nur dann `quadrant = 'do'` oder ein nahes `due_date` setzen, wenn es wirklich heute dran ist.
 
 Felder: `estimate_minutes` (Schätzung) · `planned_start` (feste Uhrzeit) · `started_at` (läuft, ▶) · `actual_minutes` (echte Dauer,
 Stoppuhr oder „hat 80 min gedauert“) · `project_id` · `routine_id` · `attribute` · `element` · `timer` · `anytime`.
@@ -296,7 +339,8 @@ update books set progress_pct = 60 where title = 'Enemies of the Leviathan';
 
 ## Kalender (`events`, `tasks.due_date`)
 
-- **Deadline** = Aufgabe mit `due_date` (*bis* dahin). Ab dem Tag im Tagesplan.
+- **Deadline** = Aufgabe mit `due_date` (*bis* dahin). Ab dem Tag im Tagesplan. Routine-Aufgaben (`routine_id`) erscheinen im
+  Kalender nicht als Deadline.
 - **Termin** = `events` (`kind='termin'`), optional `start_time`/`end_time` (ohne Ende = 2 h); mit Uhrzeit fester Block im Plan.
 - **Dienst** = `events` (`kind='dienst'`). Joshua ist **Pflegehelfer, 30 h/Woche**, fährt mit dem Rad (je Weg 13 km).
   **Normalfall: kein Dienstplan-Upload.** Er tippt in „Körper heute“ **„+ 6 h“ / „+ 12 h“** (🚲 an/aus, ✕ löschen) oder sagt
@@ -366,7 +410,8 @@ Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen:
 ### 🎮 RPG-Schicht (`skills`, `achievements`, `character_meta`) – Joshua will Spielgefühl, Zwischenstufen und „Next Steps“
 - **Charakter-LV** aus allen XP (Schritt 90: LV n ab 90·(n−1)²). **Attribut-LV** = Aktivitäts-XP + **Vorgeschichte-XP** aus Skills
   (Stufe 1–5 = 60/240/600/1200/2000 XP, `TIER_XP` in `character.ts`) – Lebenslauf zählt, nichts startet bei null.
-  **Ränge** alle 5 Level (z. B. Körper: Rekrut → Kämpfer → Veteran → Champion → Titan → Legende). Level-ups zeigt die Karte als „⬆ LEVEL UP!“.
+  **Ränge** alle 5 Level (z. B. Körper: Rekrut → Kämpfer → Veteran → Champion → Titan → Legende). Level-ups bekommen einen eigenen
+  Vollbild-Moment (siehe „3D-Insel, Belohnungen & Rückblick“).
 - **Skills** (`skills`): `tier` 0–5 (Gesperrt · Novize · Lehrling · Fortgeschritten · Experte · Meister), `note` = ehrliche Begründung,
   `next_step` = konkrete Quest zur nächsten Stufe (Karte zeigt täglich eine als „▶ QUEST“). **Claude pflegt das aktiv:** Quest geschafft
   oder neue Info (Messwert, Erfolg, Kurs, Kampf, Umsatz) → `tier` hochsetzen, neue `next_step` setzen, ggf. Erfolg eintragen.
@@ -378,7 +423,7 @@ Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen:
   gelernte Gedichte, Events …) – bei echten Meilensteinen eintragen.
 - **₵ Credits** (`character_meta.credits` 0–100: Pleite/Knapp/Stabil/Polster/Wohlhabend/Frei, `credits_note`, `credits_next`) = Finanzen;
   aktuell 20 „Knapp“. Bei Infos zu Einkommen/Rücklagen anpassen. `class_title` = Klasse unter dem Namen („Kämpfer · Stratege“).
-- **Pixel-Avatar** (`PixelAvatar.tsx`): blond, athletisch, **grüner Pulli** (trägt er oft); Ausrüstung = Lebenslauf: **MMA-Handschuhe** (macht aktuell
+- **Avatar** (`PixelAvatar.tsx`, daraus die 3D-Figur der Insel): blond, athletisch, **grüner Pulli** (trägt er oft); Ausrüstung = Lebenslauf: **MMA-Handschuhe** (macht aktuell
   eher MMA als Boxen), **Doktorhut mit Quaste** (Master Politikwissenschaft), **Geschirrtuch über der Schulter + Namensschild** (Alltagsbegleiter in der Pflege);
   Leuchtfarbe = stärkster Wert. Neue Lebensabschnitte/Erfolge können als Ausrüstung dazukommen.
 - **☯ Balance-Mechanik (Elemente ↔ Spiel):** aus den Element-Minuten der **letzten 7 Tage** (`element_events`):
@@ -387,8 +432,8 @@ Kreativität 180 · Verbundenheit 180. Trend = 14 Tage vs. 14 davor. XP-Quellen:
   💧 Spiritualität & Verbundenheit, 💨 Intellekt & Charisma), 🌍 Erde = Fundament: alle Werte +5 % / −10 %. Effekt-Namen: Entfacht /
   Glut erlischt · Im Fluss / Ausgetrocknet · Fester Stand / Wackliger Boden · Klarer Kopf / Dicke Luft. Ein Debuff ersetzt die Quest des
   Tages durch eine **Element-Quest**. View **`harmony_weeks`** (pro Kalenderwoche Minuten, `harmony`, `bonus_xp`): abgeschlossene Woche
-  ab 300 min und Harmonie ≥ 70 → +50, ≥ 85 → +100 **Harmonie-Bonus-XP** auf das Charakter-Level. Anzeige: Element-Kugeln unter dem
-  Avatar, ☯-Leiste auf der Karte, „☯ Balance“-Panel im Charakter (Werte) und im Reiter Elemente. Logik: `balance()`/`formMultiplier()`
+  ab 300 min und Harmonie ≥ 70 → +50, ≥ 85 → +100 **Harmonie-Bonus-XP** auf das Charakter-Level. Anzeige: die vier Orte der
+  3D-Insel, ☯-Zeile auf der Insel-Karte, „☯ Balance“-Panel im Charakter (Werte) und im Reiter Elemente. Logik: `balance()`/`formMultiplier()`
   in `character.ts`. Claude erwähnt im Chat aktive Debuffs mit einer konkreten Idee, wenn es passt.
 - Ausdauer-Skill vorläufig (Ruhepuls/5 km folgen).
 ```sql
@@ -430,7 +475,7 @@ siehe RPG-Schicht). Quellen: siehe „Querverbindungen“.
 
 Split: **A** Schulter & Rücken (2×/Woche: Shoulder Press · Seated Shoulder Press · Seitheben · Latzug · Stehendes Rudern (statt T-Bar Rows, seit 08.11.2026) · Shrugs · Klimmzüge breit (Körpergewicht = `weight 0`) · Jefferson Curls fest am Ende) · **B** Brust & Arme (2×/Woche: Curls+Pushdowns als Supersatz · Dips · Overhead Trizepsdrücken (Kabel) · Preacher · Hammer ·
 Einarmige Trizeps-Extensions · Butterflies am Ende) · **C** Beine & Bauch (1×/Woche) ·
-**D** Sprint (**mindestens 1×/Woche**; Übung `Sprints`, `metric='sprint'`: `seconds` (2 Nachkommastellen) + `meters`) · **E** Unterarme (**bei Bedarf**,
+**D** Sprint (**mindestens 1×/Woche**; Übung `Sprints`, `metric='sprint'`: `seconds` (2 Nachkommastellen) + `meters` – ⚠️ Stand 13.11.2026 ist Migration `…027_sprint_metric` in der Datenbank **nicht angekommen** (Constraint erlaubt `sprint` nicht, Übung steht auf `weight_time`), der Sprint-Timer erscheint deshalb im Training noch nicht) · **E** Unterarme (**bei Bedarf**,
 `times_per_week = 0` → wird nie „empfohlen“, zählt aber normal; zuletzt Mi 28.10.2026). · **F** Beine Home (Variante von C für zu Hause, `times_per_week = 0`: Belt Squats · Sissy Squats ·
 Waiter's Walk (einarmiger Overhead Carry) · Tibialis Raises · Donkey Calf Raises · Reverse Nordic Curls · Seated Good Mornings). Übungen in D/E sind Vorschläge – Joshua passt sie an.
 Festgelegt von Joshua:
@@ -490,10 +535,32 @@ insert into allowed_users (user_id) select id from auth.users where email = '…
 
 ## Entwicklung
 - `npm install`, `npm run dev`, `npm run build` (Typecheck + Build). Env in `.env.production` (nur URL + öffentlicher Key, Schutz über RLS).
+- **Datenschicht (`src/lib/live.ts`)**: Alle Daten-Hooks in `data.ts` laufen über `useLive(key, load, tables, initial)`.
+  Ein Cache pro `key` (Parameter in den Key schreiben, z. B. `nutrition:${day}`), letzter Stand liegt in `localStorage`
+  (`q:<key>`, sofortige Anzeige beim Start, auch offline), Aktualisierung im Hintergrund. `tables` = Tabellen, deren Änderung
+  die Abfrage veraltet. Aktualisiert wird durch (1) **jeden Schreibzugriff der App** – der `fetch`-Wrapper in `supabase.ts`
+  ruft `invalidate(tabelle)` nach jedem erfolgreichen insert/update/delete/rpc, (2) **einen** Realtime-Kanal für alles
+  (`connectRealtime`), (3) Rückkehr in die App. Neue Abfrage = neuer Hook mit eigenem Key; neue RPC, die schreibt → in
+  `RPC_TABLES` eintragen. `setData` ist optimistisch und gewinnt gegen eine noch laufende Abfrage.
 - **Supabase-Queries sind lazy**: ohne `await`/`.then` wird nichts gesendet. Fire-and-forget immer mit `fire(query)` aus
   `src/lib/supabase.ts`, nie `void supabase.from(...)`.
+- **Dialoge**: nie `alert/confirm/prompt`, sondern `ask.confirm / ask.number / ask.text / ask.show` aus `components/ui/Sheet.tsx`
+  (Bottom-Sheet, `await`-bar, Zahlen mit Chips).
+- **Vollbild-Overlays** sind `position: fixed`. Kein Vorfahre darf dauerhaft ein `transform` tragen (auch nicht über eine
+  Animation mit `fill-mode: forwards/both`), sonst verrutschen sie – die Einblend-Animationen laufen deshalb mit `backwards`.
+- **Design**: Farben über die angepasste `slate`-Skala und `card` / `btn-primary` / `btn-ghost` / `btn-gold` / `label`
+  (`index.css`, `tailwind.config.js`), Icons in `components/ui/Icon.tsx`. Seiten-Wurzel mit Klasse `page` (gestaffeltes Einblenden).
+- **3D** (`src/world/`): `voxel.ts` (Würfel → ein Mesh mit Kanten-Schatten), `models.ts` (Figuren, Insel, Bauten), `World.ts`
+  (Szene, Licht, Animation, Partikel, Eingabe), `sky.ts` (Sonnenstand, ohne three.js), `WorldView.tsx` (React-Hülle, lädt `World`
+  nach, pausiert außerhalb des Bildschirms), `bus.ts` (Ereignisse an die Welt). In der Entwicklung liegt die Szene unter
+  `window.__world` (`debugView(dist, neigung, drehung, y, x, z)` für Nahaufnahmen).
+- **PWA**: `public/sw.js` (Seite netz-zuerst, `/assets/*` aus dem Cache), nur im Produktions-Build registriert. Die Reiter werden
+  2,5 s nach dem Start im Hintergrund geladen und damit auch offline verfügbar.
 - Reine Logik (testbar ohne Supabase): `src/lib/schedule.ts` (Tagesplan), `src/lib/interval.ts` (Timer-Phasen),
-  `src/lib/character.ts` (Level/Form), `src/lib/speech.ts` (Diktat-Parsing).
+  `src/lib/character.ts` (Level/Form), `src/lib/speech.ts` (Diktat-Parsing), `src/world/sky.ts` (Sonnenstand).
 - Neue Spalten an `tasks` müssen auch an den View `tasks_planned` **angehängt** werden (Spalten nur am Ende ergänzbar).
 - Neue Aktivitätsquellen in **allen drei Views** berücksichtigen: `xp_events`, `element_events`, `nutrition_daily` – und die
   Tabelle „Querverbindungen“ hier aktualisieren.
+- **Branches**: Das Repo hat keinen `main`; Standard-Branch ist `claude/daily-tracking-eisenhower-fitness-0zdcn8`. Vercel baut die
+  Live-App aus seinem Production-Branch (Vercel → Projekt → Settings → Git), andere Branches bekommen eine Vorschau-URL.
+  Der Cloud-Container erreicht `*.vercel.app` nicht – Deployments lassen sich von dort nicht prüfen.

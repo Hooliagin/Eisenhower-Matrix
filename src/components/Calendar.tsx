@@ -1,20 +1,8 @@
 import { useState } from "react";
 import { ask } from "./ui/Sheet";
 import { createEvent, createTasks, deleteEvent, updateTask, useCalendar, useSessions, useTemplates } from "../lib/data";
-import { addDays, isoDate, parseDate, weekStart, WEEKDAY_SHORT } from "../lib/dates";
+import { addDays, countdown, daysUntil, isoDate, parseDate, weekStart, WEEKDAY_SHORT } from "../lib/dates";
 import type { CalendarEvent, Task } from "../lib/types";
-
-export function daysUntil(date: string): number {
-  return Math.round((parseDate(date).getTime() - parseDate(isoDate()).getTime()) / 86_400_000);
-}
-
-export function countdown(date: string): string {
-  const d = daysUntil(date);
-  if (d < 0) return `${-d} T überfällig`;
-  if (d === 0) return "heute";
-  if (d === 1) return "morgen";
-  return `in ${d} T`;
-}
 
 const fmtDay = (s: string) => parseDate(s).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
 

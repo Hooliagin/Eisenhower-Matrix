@@ -6,7 +6,7 @@ import { fire, supabase } from "../lib/supabase";
 import type { Followup, Project } from "../lib/types";
 import BooksPanel from "./Books";
 import Checklists from "./Checklists";
-import { countdown } from "./Calendar";
+import { countdown } from "../lib/dates";
 import { UndoToast, useTaskActions } from "./Matrix";
 import TaskCard from "./TaskCard";
 
