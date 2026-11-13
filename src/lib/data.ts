@@ -380,7 +380,7 @@ export interface LaunchList {
   id: string;
   title: string;
   kind: "work" | "sport";
-  items: { id: string; text: string; checked: boolean }[];
+  items: { id: string; text: string; checked: boolean; hasPhoto: boolean }[];
 }
 
 /** Checklists without a project (departure lists). A tick only counts for today – tomorrow the list is full again. */
@@ -396,16 +396,23 @@ export function useLaunchLists() {
       ) as { id: string; checklist_id: string; text: string }[];
       const checks = items.length ? (must(await supabase.from("checklist_checks").select("item_id").eq("checked_on", today).in("item_id", items.map((i) => i.id))) as { item_id: string }[]) : [];
       const done = new Set(checks.map((c) => c.item_id));
+      // Reference photos: only which items have one (the image itself is loaded on tap). Tolerates a missing table.
+      const photos = new Set(((await supabase.from("checklist_item_photos").select("item_id")).data ?? []).map((p) => p.item_id as string));
       return ls.map((l) => ({
         id: l.id,
         title: l.title,
         kind: /arbeit/i.test(l.title) ? ("work" as const) : ("sport" as const),
-        items: items.filter((i) => i.checklist_id === l.id).map((i) => ({ id: i.id, text: i.text, checked: done.has(i.id) })),
+        items: items.filter((i) => i.checklist_id === l.id).map((i) => ({ id: i.id, text: i.text, checked: done.has(i.id), hasPhoto: photos.has(i.id) })),
       }));
     },
-    ["checklists", "checklist_items", "checklist_checks"],
+    ["checklists", "checklist_items", "checklist_checks", "checklist_item_photos"],
     [],
   );
+}
+
+export async function loadItemPhoto(itemId: string): Promise<string | null> {
+  const { data } = await supabase.from("checklist_item_photos").select("data").eq("item_id", itemId).maybeSingle();
+  return (data?.data as string | undefined) ?? null;
 }
 
 export async function setCheck(itemId: string, on: boolean) {

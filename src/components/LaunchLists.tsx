@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { logCommuteToWork, setCheck, useLaunchLists, type LaunchList } from "../lib/data";
+import { loadItemPhoto, logCommuteToWork, setCheck, useLaunchLists, type LaunchList } from "../lib/data";
 import { SOUNDS } from "../lib/sound";
 import { toast } from "./Rewards";
 import Icon from "./ui/Icon";
@@ -14,7 +14,13 @@ const LOOK = {
 export default function LaunchLists() {
   const { data: lists, setData } = useLaunchLists();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<{ title: string; src: string | null } | null>(null);
   if (!lists.length) return null;
+
+  async function showPhoto(itemId: string, title: string) {
+    setPhoto({ title, src: null });
+    setPhoto({ title, src: await loadItemPhoto(itemId) });
+  }
   const open = lists.find((l) => l.id === openId) ?? null;
 
   async function toggle(list: LaunchList, itemId: string) {
@@ -83,19 +89,36 @@ export default function LaunchLists() {
             </div>
             <ul className="flex flex-col gap-1.5">
               {open.items.map((i) => (
-                <li key={i.id}>
-                  <button
-                    onClick={() => void toggle(open, i.id)}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition active:scale-[0.98] ${i.checked ? "bg-emerald-500/10" : "bg-white/[0.06]"}`}
-                  >
+                <li key={i.id} className={`flex items-stretch gap-1.5 rounded-xl transition ${i.checked ? "bg-emerald-500/10" : "bg-white/[0.06]"}`}>
+                  <button onClick={() => void toggle(open, i.id)} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-3 text-left transition active:scale-[0.98]">
                     <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 text-xs transition ${i.checked ? "border-emerald-400 bg-emerald-400 text-slate-950" : "border-slate-500"}`}>{i.checked && "✓"}</span>
                     <span className={`text-[15px] ${i.checked ? "text-slate-500 line-through" : ""}`}>{i.text}</span>
                   </button>
+                  {i.hasPhoto && (
+                    <button onClick={() => void showPhoto(i.id, i.text)} className="mr-1.5 my-1.5 shrink-0 rounded-lg bg-white/10 px-3 text-lg" aria-label="Foto ansehen">
+                      📷
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
             {open.kind === "work" && <p className="mt-3 text-[11px] text-slate-500">Sobald alles abgehakt ist, trägt die App die Radfahrt zum Dienst für heute ein (26 km hin und zurück).</p>}
           </div>
+        </div>
+      )}
+
+      {photo && (
+        <div className="fixed inset-0 z-[80] flex flex-col bg-black/95" onClick={() => setPhoto(null)} role="dialog" aria-modal="true" aria-label="Foto">
+          <div className="flex items-center justify-between gap-3 px-4 pb-2" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}>
+            <p className="min-w-0 flex-1 truncate text-sm text-slate-300">{photo.title}</p>
+            <button className="btn-ghost h-9 w-9 p-0" onClick={() => setPhoto(null)} aria-label="Schließen">
+              <Icon name="close" size={16} />
+            </button>
+          </div>
+          <div className="flex flex-1 items-center justify-center overflow-auto p-2">
+            {photo.src ? <img src={photo.src} alt={photo.title} className="max-h-full max-w-full rounded-lg object-contain" /> : <span className="text-sm text-slate-500">Lädt …</span>}
+          </div>
+          <p className="pb-6 text-center text-[11px] text-slate-500">tippen zum Schließen</p>
         </div>
       )}
     </>

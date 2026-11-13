@@ -297,6 +297,10 @@ und „Zum Sport“ (`'Zum Sport fahren'`: Kopfhörer · Karte · Sportsachen). 
 `ride_km_each_way = 13` (neu, falls es noch keinen gibt, sonst wird das Rad ergänzt; `shift_hours` bleibt leer – Stunden trägt er mit
 „+ 6 h“ nach). Punkte ändern/ergänzen wie bei den anderen Listen (Insert direkt, Entfernen = `active=false` per Änderungsvorschlag).
 Die Erkennung läuft über den Titel (enthält „Arbeit“ → Arbeitsliste, sonst Sportliste).
+**📷 Referenzfoto an einem Punkt** (`checklist_item_photos`: `item_id`, `data` = verkleinerte JPEG-data-URL, ~1000 px / < 100 kB):
+Punkte mit Foto zeigen ein 📷, Tipp öffnet es groß (lädt erst dann). Aktuell: „Tisch richtig anordnen (Flaschen & Co. wie auf dem Foto)“
+am Ende der Arbeits-Liste. Fotos **nie ins Repo oder in einen öffentlichen Ordner** (die App-URL ist öffentlich) – nur als Zeile in dieser
+RLS-geschützten Tabelle: Bild mit PIL auf 1000 px verkleinern, base64, per `execute_sql` `insert into checklist_item_photos (item_id, data) …`.
 
 `followups` = Leute, denen Joshua hinterher sein muss:
 - `status='todo'`: muss schreiben → `draft` = vorformulierte Nachricht (Kopieren-Button in der App)
